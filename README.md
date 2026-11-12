@@ -4,13 +4,13 @@ Front-end demo of the dealership sales CRM. On a laptop or desktop it shows the 
 inside a phone frame, with a panel to switch between logins. On a real phone it runs
 full-screen with a slim login switcher at the top.
 
-**Live:** https://sricharithreddy.github.io/atom360sales/
+**Live:** deployed on Cloudflare from `main` (see the project's URL in the Cloudflare dashboard).
 
 | Login | Direct link |
 |---|---|
-| Telecaller | `/atom360sales/#telecaller` |
-| Sales Executive | `/atom360sales/#sales` |
-| Manager + Admin | `/atom360sales/#manager` |
+| Telecaller | `/#telecaller` |
+| Sales Executive | `/#sales` |
+| Manager + Admin | `/#manager` |
 
 Sample data only — nothing is saved to a server.
 
@@ -35,6 +35,9 @@ npm run dev
 
 ## Deploy
 
-Every push to `main` builds and publishes to GitHub Pages
-(`.github/workflows/deploy.yml`). To update an app, replace its file in `src/apps/`
-and push.
+Cloudflare builds every push to `main`: build command `npm run build`, deploy command
+`npx wrangler deploy` (configured in `wrangler.jsonc`). To update an app, replace its
+file in `src/apps/` and push.
+
+A GitHub Pages workflow is also included but only runs when started by hand from the
+Actions tab.
