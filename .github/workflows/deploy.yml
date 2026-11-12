@@ -1,8 +1,8 @@
 name: Deploy to GitHub Pages
 
+# Cloudflare is the live deploy. This GitHub Pages workflow only runs when
+# started by hand from the Actions tab (it needs Pages switched on in Settings).
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -25,6 +25,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          BASE_PATH: /atom360sales/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

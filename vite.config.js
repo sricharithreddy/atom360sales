@@ -2,9 +2,10 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { resolve } from "path";
 
-// GitHub Pages serves this repo at /atom360sales/
+// Cloudflare serves the site at the domain root ("/"). The GitHub Pages workflow
+// sets BASE_PATH=/atom360sales/ because Pages serves it under the repo name.
 export default defineConfig({
-  base: "/atom360sales/",
+  base: process.env.BASE_PATH || "/",
   plugins: [react()],
   build: {
     chunkSizeWarningLimit: 2000,
