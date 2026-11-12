@@ -1,0 +1,96 @@
+:root {
+  --bg: #EEF0F7;
+  --card: #FFFFFF;
+  --border: #E2E6F1;
+  --ink: #0B1946;
+  --sub: #4F5A7D;
+  --faint: #8A92AB;
+  --primary: #3B4BE8;
+  --primary-soft: rgba(59, 75, 232, 0.08);
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; padding: 0; height: 100%; }
+body { background: var(--bg); font-family: var(--font); color: var(--ink); -webkit-font-smoothing: antialiased; }
+button { font-family: inherit; cursor: pointer; }
+
+.app-frame { width: 100%; height: 100%; border: 0; background: #F3F4F9; }
+
+/* ---------- Desktop: control panel + phone ---------- */
+.d-shell {
+  height: 100%; display: flex; align-items: center; justify-content: center; gap: 64px;
+  padding: 24px 32px; overflow: hidden;
+  background:
+    radial-gradient(1200px 600px at 75% 20%, rgba(59, 75, 232, 0.10), transparent 60%),
+    radial-gradient(900px 500px at 10% 90%, rgba(11, 25, 70, 0.06), transparent 60%),
+    var(--bg);
+}
+
+.d-panel { width: 290px; flex-shrink: 0; }
+.brand { display: flex; align-items: baseline; font-weight: 800; font-size: 26px; letter-spacing: -0.8px; }
+.brand-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); margin-left: 2px; align-self: flex-start; margin-top: 6px; }
+.brand-sub { font-size: 14px; font-weight: 500; color: var(--faint); letter-spacing: 0; margin-left: 10px; }
+.eyebrow { margin: 28px 0 10px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--faint); }
+
+.roles { display: flex; flex-direction: column; gap: 8px; }
+.role {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 12px 14px; border-radius: 14px; border: 1.5px solid var(--border); background: var(--card);
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.role:hover { border-color: #C9CFE4; transform: translateY(-1px); }
+.role.on { border-color: var(--primary); box-shadow: 0 6px 20px rgba(59, 75, 232, 0.14); }
+.role-icon {
+  width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  background: var(--primary-soft); color: var(--primary);
+}
+.role.on .role-icon { background: var(--primary); color: #fff; }
+.role-text { display: flex; flex-direction: column; min-width: 0; }
+.role-name { font-size: 14px; font-weight: 700; color: var(--ink); }
+.role-sub { font-size: 12px; color: var(--sub); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.reset {
+  margin-top: 14px; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px;
+  border-radius: 9px; border: 1px solid var(--border); background: transparent; color: var(--sub); font-size: 12px; font-weight: 600;
+}
+.reset:hover { background: var(--card); color: var(--ink); }
+.note { margin: 14px 0 0; font-size: 12px; line-height: 1.5; color: var(--faint); }
+
+.d-stage { display: flex; align-items: center; justify-content: center; }
+
+.phone {
+  width: calc(390px + 26px); height: calc(844px + 26px); padding: 13px; transform-origin: top left;
+  border-radius: 62px; background: #0D0F14;
+  box-shadow:
+    0 0 0 2px #2A2D36,
+    0 0 0 4px #0D0F14,
+    0 40px 80px rgba(11, 25, 70, 0.28),
+    0 12px 28px rgba(11, 25, 70, 0.18);
+}
+.screen { position: relative; width: 390px; height: 844px; border-radius: 50px; overflow: hidden; background: #fff; display: flex; flex-direction: column; }
+.status {
+  height: 50px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 30px 0 34px; font-size: 15px; font-weight: 600; color: #000; background: #fff; position: relative;
+}
+.island { position: absolute; left: 50%; top: 11px; transform: translateX(-50%); width: 120px; height: 34px; border-radius: 20px; background: #000; }
+.status-icons { display: flex; align-items: center; gap: 5px; }
+.screen-body { flex: 1; min-height: 0; position: relative; }
+.home-bar {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  width: 134px; height: 5px; border-radius: 3px; background: rgba(0, 0, 0, 0.75); pointer-events: none;
+}
+
+/* ---------- Real phones: full-screen app with a slim login switcher ---------- */
+.m-shell { height: 100%; height: 100dvh; display: flex; flex-direction: column; background: #F3F4F9; }
+.m-bar {
+  display: flex; gap: 4px; padding: 6px; padding-top: max(6px, env(safe-area-inset-top));
+  background: var(--ink); flex-shrink: 0;
+}
+.m-tab {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 7px 4px; border: 0; border-radius: 8px; background: transparent;
+  color: rgba(255, 255, 255, 0.65); font-size: 12px; font-weight: 600;
+}
+.m-tab.on { background: #fff; color: var(--ink); }
+.m-screen { flex: 1; min-height: 0; }
