@@ -1204,14 +1204,7 @@ function Header({ screenName, onBack, onMenuClick }) {
   marginBottom: 8
 }} />
     </span>
-    {screenName && <span style={{
-  fontFamily: F,
-  fontSize: 13,
-  color: C.sub
-}}>
-  / 
-  {screenName}
-</span>}
+    {screenName && <span style={{ fontFamily: F, fontWeight: 500, fontSize: 13, color: C.faint }}>/ {screenName}</span>}
   </div>
   <div style={{
   width: 28,
@@ -8451,7 +8444,7 @@ const NAV_ITEMS = [
   ]},
 ];
 
-function CallQueueScreen({ leads, onUpdateLead, showToast, onEnterFocusMode, onAddLead, customSources, onAddCustomSource }) {
+function CallQueueScreen({ leads, subView, onUpdateLead, showToast, onEnterFocusMode, onAddLead, customSources, onAddCustomSource }) {
   const [query, setQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState([]);
   const [stageFilter, setStageFilter] = useState([]);
@@ -8491,7 +8484,15 @@ function CallQueueScreen({ leads, onUpdateLead, showToast, onEnterFocusMode, onA
     }
     return true;
   };
-  const active = allActive.filter(matches);
+  // The Leads menu opens this screen in three views: the working queue, every lead
+  // (newest first), and only leads with a follow-up date (overdue first).
+  const filtered = allActive.filter(matches);
+  const active = subView === "followup"
+    ? filtered.filter(l => l.followUpDate).sort((a, b) => new Date(a.followUpDate) - new Date(b.followUpDate))
+    : subView === "all"
+      ? [...filtered].sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate))
+      : filtered;
+  const viewTitle = subView === "followup" ? "Follow-Ups" : subView === "all" ? "All Leads" : "Call Queue";
 
   // Draft filter state — nothing applies until the sheet's CTA is tapped.
   const [draftFilters, setDraftFilters] = useState({ stage: [], source: [], model: [], customer: [], age: [] });
@@ -8624,7 +8625,7 @@ function CallQueueScreen({ leads, onUpdateLead, showToast, onEnterFocusMode, onA
       )}
 
       <div style={{ fontFamily: F, fontWeight: 800, fontSize: 14, color: C.ink, marginBottom: 10 }}>
-        Call Queue <span style={{ color: C.primary }}>({active.length})</span>
+        {viewTitle} <span style={{ color: C.primary }}>({active.length})</span>
       </div>
 
       {active.length === 0 && (
@@ -11556,7 +11557,7 @@ export default function RelationshipManagerApp() {
       setToast(msg);
       setTimeout(() => setToast(""), 2500);
     };
-    const screenName = { queue: "Call Queue", activity: "Recent Activity", delivery: "Post-delivery", inventory: "Inventory", learning: "Learning", dashboard: "Dashboard" }[activeTab];
+    const screenName = { queue: "Call Queue", "queue:all": "All Leads", "queue:followup": "Follow-Ups", activity: "Recent Activity", delivery: "Post-delivery", inventory: "Inventory", learning: "Learning", dashboard: "Dashboard" }[activeTab];
     const handleUpdateLead = (updated) => {
       setLeads((ls) => ls.map((l) => l.id === updated.id ? updated : l));
     };
@@ -11607,9 +11608,9 @@ export default function RelationshipManagerApp() {
         .rm-shell { width: 100%; height: 100vh; display: flex; background: ${C.bg}; font-family: ${F}; overflow: hidden; }
         .rm-sidebar { display: none; }
         .rm-menu-btn { display: flex; }
-        .rm-outer { flex: 1; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .rm-card { width: 100%; max-width: 420px; height: 100vh; max-height: 860px; background: ${C.bg}; display: flex; flex-direction: column; position: relative; overflow: hidden; box-shadow: 0 0 0 1px #D5DAE8, 0 24px 64px rgba(14,14,12,0.16); border-radius: 20px; }
-        .rm-content { flex: 1; min-height: 0; overflow-y: auto; }
+        .rm-outer { flex: 1; min-width: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .rm-card { width: 100%; min-width: 0; max-width: 420px; height: 100vh; max-height: 860px; background: ${C.bg}; display: flex; flex-direction: column; position: relative; overflow: hidden; box-shadow: 0 0 0 1px #D5DAE8, 0 24px 64px rgba(14,14,12,0.16); border-radius: 20px; }
+        .rm-content { flex: 1; min-height: 0; min-width: 0; overflow-y: auto; }
         input[type="search"]::-webkit-search-cancel-button,
         input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
 
@@ -11753,7 +11754,7 @@ export default function RelationshipManagerApp() {
       {focusMode ? <FocusModeScreen leads={leads} onUpdateLead={handleUpdateLead} showToast={showToast} onExit={() => setFocusMode(false)} /> : <>
   <Header screenName={screenName} onMenuClick={() => setDrawerOpen(true)} />
   <div className="rm-content">
-    {navBase === "queue" && <CallQueueScreen leads={leads} onUpdateLead={handleUpdateLead} showToast={showToast} onEnterFocusMode={() => setFocusMode(true)} onAddLead={handleAddLead} customSources={customSources} onAddCustomSource={addCustomSource} />}
+    {navBase === "queue" && <CallQueueScreen leads={leads} subView={navSub} onUpdateLead={handleUpdateLead} showToast={showToast} onEnterFocusMode={() => setFocusMode(true)} onAddLead={handleAddLead} customSources={customSources} onAddCustomSource={addCustomSource} />}
     {navBase === "activity" && <RecentActivityScreen leads={leads} onUpdateLead={handleUpdateLead} showToast={showToast} />}
     {navBase === "delivery" && <PostDeliveryScreen leads={leads} onUpdateLead={handleUpdateLead} showToast={showToast} />}
     {navBase === "inventory" && <InventoryScreen subView={navSub} leads={leads} showToast={showToast} currentUser={ME} onUpdateLead={handleUpdateLead} />}

@@ -15,9 +15,9 @@ import {
    ================================================================================== */
 
 const C = {
-  bg: "#F7F6F2", card: "#FFFFFF", border: "#E3E1DA", borderStrong: "#D8D6CF",
-  ink: "#0E0E0C", sub: "#5C5A54", faint: "#726F68", ghost: "#AEABA3",
-  primary: "#F05A28", primarySoft: "rgba(240,90,40,0.09)",
+  bg: "#F3F4F9", card: "#FFFFFF", border: "#E7EAF3", borderStrong: "#D5DAE8",
+  ink: "#0B1946", sub: "#4F5A7D", faint: "#6B7596", ghost: "#AEB4CB",
+  primary: "#3B4BE8", primarySoft: "rgba(59,75,232,0.09)",
   hot: "#E53935", hotSoft: "rgba(229,57,53,0.08)",
   warm: "#F59E0B", warmSoft: "rgba(245,158,11,0.10)",
   green: "#2E7D32", greenSoft: "rgba(46,125,50,0.09)",
@@ -100,23 +100,23 @@ function flatten(node, out = []) {
    Two shapes: a DECISION (approve / decline) and an ACTION (own it / resolve). Both carry
    a note back to the rep — a bare "declined" teaches nobody anything. */
 const ACTIONS = [
-  { id: 1, kind: "discount", type: "Needs Discount Approval", Icon: IndianRupee, tone: "#5C5A54",
+  { id: 1, kind: "discount", type: "Needs Discount Approval", Icon: IndianRupee, tone: "#4F5A7D",
     raisedBy: "Arjun Nair", customerId: null, customer: "George Thomas", model: "Creta SX(O)",
     ask: 45000, cap: DISCOUNT_CAP, age: "2h", urgent: true,
     detail: "Corporate fleet — 3 units under discussion. Customer wants the same rate on all three." },
-  { id: 2, kind: "discount", type: "Needs Discount Approval", Icon: IndianRupee, tone: "#5C5A54",
+  { id: 2, kind: "discount", type: "Needs Discount Approval", Icon: IndianRupee, tone: "#4F5A7D",
     raisedBy: "Kiran Bhat", customer: "Deepa Menon", model: "Alcazar Signature",
     ask: 32000, cap: DISCOUNT_CAP, age: "5h", urgent: false,
     detail: "Matching a written quote from another dealer. Customer has shown the quote." },
-  { id: 3, kind: "stuck", type: "Deal Stuck / No Progress", Icon: Clock, tone: "#5C5A54",
+  { id: 3, kind: "stuck", type: "Deal Stuck / No Progress", Icon: Clock, tone: "#4F5A7D",
     raisedBy: "Divya Pillai", customer: "Farhan Khan", model: "Alcazar Signature",
     age: "1d", urgent: true,
     detail: "Booked on the 6th, RC still not issued and delivery has slipped twice. Customer has a family trip booked and is threatening to cancel." },
-  { id: 4, kind: "complaint", type: "Customer Complaint", Icon: MessageSquare, tone: "#5C5A54",
+  { id: 4, kind: "complaint", type: "Customer Complaint", Icon: MessageSquare, tone: "#4F5A7D",
     raisedBy: "Meera Iyer", customer: "Anita Shetty", model: "Venue SX",
     age: "6h", urgent: false,
     detail: "Accessories fitted are not the ones quoted. Customer wants a refund or the correct set." },
-  { id: 5, kind: "pricing", type: "Pricing Exception", Icon: ShieldAlert, tone: "#5C5A54",
+  { id: 5, kind: "pricing", type: "Pricing Exception", Icon: ShieldAlert, tone: "#4F5A7D",
     raisedBy: "Rahul Kumar", customer: "Vikram Rao", model: "Creta SX(O)",
     ask: 55000, cap: 0, age: "3h", urgent: false,
     detail: "Evaluator valued the trade-in at Rs 4.1 L; customer will not go below Rs 4.65 L. Deal is otherwise closed." },
@@ -472,8 +472,8 @@ function DrillScreen({ drill, onBack, onOpenLead, handling }) {
 // Depth is shown by a role-coloured left bar and a background step — NOT by indenting.
 // Four levels of indent would leave no width for the numbers on a phone, and the parent
 // name in the sub-line carries the relationship better than whitespace does.
-const DEPTH_BG = ["rgba(240,90,40,0.07)", "#FFFFFF", "#FAF9F5", "#F4F2EB"];
-const ROLE_TONE = { "Sales Manager": "#0E0E0C", "Team Leader": "#00695C", "Sales Executive": "#AEABA3" };
+const DEPTH_BG = ["rgba(59,75,232,0.07)", "#FFFFFF", "#F8F9FD", "#EEF0F7"];
+const ROLE_TONE = { "Sales Manager": "#0B1946", "Team Leader": "#00695C", "Sales Executive": "#AEB4CB" };
 
 function TargetRow({ node, depth, expanded, onToggle, onPick, parent, onDrill }) {
   const r = roll(node);
@@ -743,7 +743,7 @@ function ModelDashboard() {
               </div>
               {isOpen && m.variants.map(v => (
                 <div key={v.name} style={{ display: "flex", alignItems: "center", padding: "9px 0",
-                  borderBottom: `1px solid ${C.border}`, background: "#FAF9F5" }}>
+                  borderBottom: `1px solid ${C.border}`, background: "#F8F9FD" }}>
                   <span style={{ flex: 1, paddingLeft: 23, fontFamily: F, fontSize: 12,
                     color: C.sub }}>{v.name}</span>
                   {/* No variant-level target exists — a dash is honest, a number would not be. */}
@@ -994,11 +994,11 @@ function printPdf(name, rows) {
   const th = rows[0].map(h => `<th>${h}</th>`).join("");
   const tr = rows.slice(1).map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("");
   w.document.write(`<html><head><title>${name}</title><style>
-    body{font-family:Inter,system-ui,sans-serif;padding:24px;color:#0E0E0C}
-    h1{font-size:18px;margin:0 0 4px} p{font-size:11px;color:#726F68;margin:0 0 16px}
+    body{font-family:Inter,system-ui,sans-serif;padding:24px;color:#0B1946}
+    h1{font-size:18px;margin:0 0 4px} p{font-size:11px;color:#6B7596;margin:0 0 16px}
     table{border-collapse:collapse;width:100%;font-size:11px}
-    th{text-align:left;border-bottom:2px solid #D8D6CF;padding:6px 8px;font-size:10px;text-transform:uppercase}
-    td{border-bottom:1px solid #E3E1DA;padding:6px 8px}
+    th{text-align:left;border-bottom:2px solid #D5DAE8;padding:6px 8px;font-size:10px;text-transform:uppercase}
+    td{border-bottom:1px solid #E7EAF3;padding:6px 8px}
   </style></head><body><h1>${name}</h1><p>Autoprism · generated ${new Date().toLocaleDateString("en-IN")}</p>
   <table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table>
   <script>window.onload=()=>window.print()</script></body></html>`);
@@ -2597,7 +2597,7 @@ function InventoryScreen({ sub }) {
             {mo && m.variants.map(v => {
               const vk = m.model + v.name; const vo = open.has(vk);
               return (
-                <div key={v.name} style={{ borderTop: `1px solid ${C.border}`, background: "#FAF9F5" }}>
+                <div key={v.name} style={{ borderTop: `1px solid ${C.border}`, background: "#F8F9FD" }}>
                   <button onClick={() => toggle(vk)} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%",
                     padding: "10px 13px 10px 34px", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
                     {vo ? <ChevronDown size={12} color={C.faint} /> : <ChevronRight size={12} color={C.faint} />}
@@ -2606,7 +2606,7 @@ function InventoryScreen({ sub }) {
                   </button>
                   {vo && Object.entries(v.colours).map(([c2, n2]) => (
                     <div key={c2} style={{ display: "flex", alignItems: "center", padding: "8px 13px 8px 56px",
-                      borderTop: `1px solid ${C.border}`, background: "#F4F2EB" }}>
+                      borderTop: `1px solid ${C.border}`, background: "#EEF0F7" }}>
                       <span style={{ flex: 1, fontFamily: F, fontSize: 12, color: C.sub }}>{c2}</span>
                       <span style={{ fontFamily: F, fontSize: 12.5, fontWeight: 600, color: n2 ? C.ink : C.ghost }}>{n2 || "—"}</span>
                     </div>
@@ -2668,7 +2668,7 @@ const ADMIN_ROLE_DEFS = [
   { key: "RCP", label: "Receptionist", desc: "Walk-ins and the day's appointment schedule." },
   { key: "EDP", label: "EDP / Data", desc: "Data entry and system upkeep." },
 ];
-const ADMIN_ROLE_TONE = { CEO: "#0E0E0C", SM: "#0E0E0C", TL: "#00695C", SE: "#5C5A54", CRE: "#5C5A54",
+const ADMIN_ROLE_TONE = { CEO: "#0B1946", SM: "#0B1946", TL: "#00695C", SE: "#4F5A7D", CRE: "#4F5A7D",
   FIN: "#6D28D9", EVL: "#6D28D9", INV: "#1565C0", RCP: "#1565C0", EDP: "#1565C0" };
 
 const ADMIN_USERS_SEED = [
@@ -2999,7 +2999,7 @@ function AdminUsersScreen({ showToast }) {
   const UserRow = ({ u, isLast }) => (
     <button onClick={() => setEditing(u)} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%",
       padding: "11px 12px", borderBottom: isLast ? "none" : `1px solid ${C.border}`,
-      background: u.active ? "none" : "#FAF4F0", border: "none", cursor: "pointer", textAlign: "left",
+      background: u.active ? "none" : "#F1F2FE", border: "none", cursor: "pointer", textAlign: "left",
       opacity: u.active ? 1 : 0.6 }}>
       <AdminAvatar n={u} />
       <span style={{ flex: 1, minWidth: 0 }}>
@@ -4057,7 +4057,7 @@ function BoardScreen({ actions, onResolve, onPick, org, onDrill, onOpenLead, han
     .map(id => LEADS.find(l => l.id === id)).filter(Boolean)
     .map(l => ({ id: "fu-" + l.id, kind: "followup", lead: l, type: "Your follow-up",
       customer: l.name, model: l.model, raisedBy: l.owner, age: `${l.days}d in stage`,
-      urgent: l.days >= 10, detail: l.next, Icon: Clock, tone: "#5C5A54" }));
+      urgent: l.days >= 10, detail: l.next, Icon: Clock, tone: "#4F5A7D" }));
   const queue = [...actions, ...followUps];
   const urgent = queue.filter(a => a.urgent).length;
 
@@ -6085,8 +6085,8 @@ export default function ManagerApp() {
           style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
           <Menu size={20} color={C.ink} />
         </button>
-        <span style={{ fontFamily: F, fontWeight: 900, fontSize: 15.5, letterSpacing: -0.3, color: C.ink }}>
-          AUTOPRISM<span style={{ color: C.primary }}>°</span>
+        <span style={{ fontFamily: F, fontWeight: 900, fontSize: 16, letterSpacing: -0.8, color: C.ink }}>
+          AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: C.primary, marginLeft: 1, marginBottom: 8 }} />
         </span>
         <span style={{ flex: 1 }} />
         <span style={{ position: "relative", display: "flex" }}>
@@ -6165,12 +6165,12 @@ export default function ManagerApp() {
       {menuOpen && (
         <div style={{ position: "absolute", inset: 0, zIndex: 150, display: "flex" }}>
           <div onClick={() => setMenuOpen(false)} style={{ position: "absolute", inset: 0,
-            background: "rgba(14,14,12,0.4)" }} />
+            background: "rgba(11,25,70,0.4)" }} />
           <div style={{ position: "relative", width: "78%", maxWidth: 280, height: "100%", background: C.card,
             boxShadow: "8px 0 32px rgba(0,0,0,0.18)", display: "flex", flexDirection: "column" }}>
             <div style={{ padding: "18px 18px 12px" }}>
               <div style={{ fontFamily: F, fontWeight: 900, fontSize: 15.5, color: C.ink, letterSpacing: -0.5 }}>
-                AUTOPRISM<span style={{ color: C.primary }}>°</span>
+                AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: C.primary, marginLeft: 1, marginBottom: 8 }} />
               </div>
               <div style={{ fontFamily: F, fontSize: 11.5, color: C.faint, marginTop: 3 }}>
                 Priya Nambiar · Sales Manager

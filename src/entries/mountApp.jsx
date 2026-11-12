@@ -9,9 +9,6 @@ const FILL_SCREEN = `
     max-width: none !important; max-height: none !important;
     border-radius: 0 !important; box-shadow: none !important;
   }
-  /* Telecaller: let its flex columns shrink to a 390px phone instead of
-     growing to fit their widest row. */
-  .rm-outer, .rm-card, .rm-content { min-width: 0 !important; }
 `;
 
 export function mountApp(App) {
