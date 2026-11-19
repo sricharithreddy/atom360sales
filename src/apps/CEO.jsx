@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   ChevronDown, ChevronLeft, ChevronRight, FileText, IndianRupee, MapPin, Menu, Package, Phone, Plus,
-  Settings, Store, Target, Upload, User,
+  Settings, ShieldCheck, ShoppingBag, Store, Target, Upload, User, Wrench,
 } from "lucide-react";
 import { GROUP, ZONES, LOCATIONS, monthsOpen } from "../data/epicRiverLocations.js";
+import { stockFor, VARIANTS, COLOURS } from "../data/epicRiverInventory.js";
 
 /* ==================================================================================
    AUTOPRISM — CEO (Epic River, Raam Group)
@@ -77,16 +78,14 @@ const PERIOD_LINE = `Nov 2026 · MTD · day ${DAY} of ${MONTH_DAYS}`;
 /* ---------------- Product ---------------- */
 const P750 = 154799, P480 = 150799;   // ex-showroom after PM E-DRIVE subsidy
 const RC_PLUS2 = 5899, RC_PLUS5 = 9912;   // River Care packs
-const VARIANTS = [{ key: "750W", price: P750 }, { key: "480W", price: P480 }];
-const COLOURS = ["Monsoon Blue", "Summer Red", "Spring Yellow", "Winter White", "Storm Grey"];
-const COLOUR_W = [0.26, 0.16, 0.14, 0.2, 0.24];
+// Dealer-sold insurance (River's Maharashtra price sheet): insurance + RSA, plus optional add-ons.
+const INS_BASE = 10889, INS_ZD = 1250, INS_BMP = 850;
 
 /* ---------------- Network: 100 outlets, as-is from the dataset ---------------- */
 const ZONE_LABEL = Object.fromEntries(ZONES.map(z => [z.key, z.label]));
 const STATE_ABBR = { Telangana: "TG", "Andhra Pradesh": "AP", Maharashtra: "MH", "Tamil Nadu": "TN", Karnataka: "KA" };
 const FORMAT_BASE = { Flagship: 140, Store: 68, Express: 28 };   // mature monthly retail target
 const SE_RANGE = { Flagship: [13, 15], Store: [7, 9], Express: [3, 5] };
-const DEMO_UNITS = { Flagship: 3, Store: 2, Express: 1 };
 const ramp = (m) => (m < 0 ? 0 : Math.min(1, 0.6 + (0.4 * (m + 1)) / 12));
 
 const LOCS = LOCATIONS.map(l => {
@@ -113,6 +112,11 @@ const LOC_BY_ID = Object.fromEntries(LOCS.map(l => [l.id, l]));
     l.acc = rr(q, 1000, 2550); l.exch = rr(q, 0.07, 0.22); l.mix = rr(q, 0.6, 0.8);
     l.obRate = rr(q, 0.3, 0.6); l.tdr = rr(q, 0.32, 0.55); l.bkr = rr(q, 0.08, 0.24);
     l.avgPrice = l.mix * P750 + (1 - l.mix) * P480;
+    // Add-ons (own seed, so the numbers above stay as they were): insurance penetration and
+    // add-on take-up, accessory attach and items per attached scooter.
+    const q2 = rngFor("addon:" + l.id);
+    l.insPen = rr(q2, 0.7, 0.95); l.zdR = rr(q2, 0.3, 0.6); l.bmpR = rr(q2, 0.15, 0.4);
+    l.accAtt = rr(q2, 0.45, 0.85); l.accIpa = rr(q2, 1.4, 2.4);
   });
 })();
 // Calibrate so the group's full-month November target is ≈ 5,900 scooters.
@@ -194,6 +198,10 @@ const CEO_NODE = mkNode("CEO", "Arvind Kesavan", null);
         acc: clamp(l.acc * rr(q, 0.85, 1.15), 900, 2800),
         exch: l.exch * rr(q, 0.75, 1.25), mix: clamp(l.mix * rr(q, 0.9, 1.1), 0.4, 0.95),
       };
+      const q2 = rngFor("addon:" + node.id);
+      s.insPen = clamp(l.insPen * rr(q2, 0.94, 1.06), 0.68, 0.97);
+      s.zdR = clamp(l.zdR * rr(q2, 0.85, 1.15), 0.3, 0.6); s.bmpR = clamp(l.bmpR * rr(q2, 0.85, 1.15), 0.15, 0.4);
+      s.accAtt = clamp(l.accAtt * rr(q2, 0.9, 1.1), 0.45, 0.85); s.accIpa = clamp(l.accIpa * rr(q2, 0.85, 1.15), 1.2, 2.8);
       node.seIdx = s.idx;
       SES.push(s);
       l.ses.push(s.idx);
@@ -217,7 +225,8 @@ function nudge(A, T, plan) {
   }
   return Math.max(0, A);
 }
-const KEYS = ["heads", "target", "retail", "book", "value", "acc", "rc", "p2", "p5", "rcVal"];
+const KEYS = ["heads", "target", "retail", "book", "value", "acc", "rc", "p2", "p5", "rcVal",
+  "ins", "zd", "bmp", "insPrem", "accAtt", "accItems"];
 const SE_ROWS = (() => {
   const rows = new Array(SES.length);
   LOCS.forEach(l => {
@@ -231,11 +240,16 @@ const SE_ROWS = (() => {
       const r750 = Math.round(retail * s.mix);
       const plans = Math.round(retail * s.rc);
       const p5 = Math.round(plans * s.p5s), p2 = plans - p5;
+      const acc = Math.round((retail * s.acc) / 10) * 10;
+      const pol = Math.round(retail * s.insPen), zd = Math.round(pol * s.zdR), bmp = Math.round(pol * s.bmpR);
+      const accAtt = Math.min(retail, Math.max(acc > 0 ? 1 : 0, Math.round(retail * s.accAtt)));
       rows[i] = {
         heads: 1, target: tT[k], retail, book: retail + Math.round(retail * s.bkr),
         value: r750 * P750 + (retail - r750) * P480,
-        acc: Math.round((retail * s.acc) / 10) * 10,
+        acc,
         rc: plans, p2, p5, rcVal: p2 * RC_PLUS2 + p5 * RC_PLUS5,
+        ins: pol, zd, bmp, insPrem: pol * INS_BASE + zd * INS_ZD + bmp * INS_BMP,
+        accAtt, accItems: Math.max(accAtt, Math.round(accAtt * s.accIpa)),
       };
     });
   });
@@ -252,36 +266,24 @@ function derive(a) {
     ach: div(a.retail, a.target),
     proj: (a.retail / DAY) * MONTH_DAYS,     // month projection at the current daily pace
     perUnit: div(a.value, a.retail), accPU: div(a.acc, a.retail),
-    rcAtt: div(a.rc, a.retail), rcPU: div(a.rcVal, a.retail),
+    rcAtt: div(a.rc, a.retail), rcPU: div(a.rcVal, a.retail), p5Sh: div(a.p5, a.rc),
+    insPen: div(a.ins, a.retail), premPP: div(a.insPrem, a.ins), insPU: div(a.insPrem, a.retail),
+    zdSh: div(a.zd, a.ins), bmpSh: div(a.bmp, a.ins),
+    accAttR: div(a.accAtt, a.retail), ipa: div(a.accItems, a.accAtt),
+    addPU: div(a.insPrem + a.acc + a.rcVal, a.retail),
   };
 }
 const AGG = new Map();
 const aggOf = (t) => { let a = AGG.get(t.key); if (!a) { a = derive(sumIdx(t.ses)); AGG.set(t.key, a); } return a; };
 const GROUP_AGG = derive(sumIdx(ALL_SE));
 
-/* ---------------- Stock (point in time) ---------------- */
-const STOCK = {};
-LOCS.forEach(l => {
-  const r = rngFor("stk:" + l.id);
-  const total = Math.max(4, Math.round(l.monthTarget * rr(r, 0.6, 1.1)));
-  const ageP = l.plan === "on" ? [0.56, 0.27, 0.11, 0.06] : l.plan === "risk" ? [0.46, 0.29, 0.15, 0.1] : [0.34, 0.29, 0.2, 0.17];
-  const combos = [];
-  VARIANTS.forEach((v, vi) => COLOURS.forEach((c, ci) => combos.push({
-    variant: v.key, price: v.price, colour: c, w: (vi === 0 ? l.mix : 1 - l.mix) * COLOUR_W[ci] * rr(r, 0.5, 1.5),
-    w2: (vi === 0 ? l.mix : 1 - l.mix) * COLOUR_W[ci] * rr(r, 0.3, 1.8),
-  })));
-  const units = splitInt(total, combos.map(c => c.w));
-  combos.forEach((c, k) => { c.b = splitInt(units[k], ageP.map(p => p * rr(r, 0.6, 1.4))); c.units = units[k]; });
-  STOCK[l.id] = { combos, demo: DEMO_UNITS[l.format] };
-});
+/* ---------------- Stock (point in time) — the shared Epic River inventory ---------------- */
 const STOCK_AGG = new Map();
 function stockOf(t) {
   let o = STOCK_AGG.get(t.key);
   if (o) return o;
-  o = { units: 0, value: 0, aged: 0 };
-  t.locIds.forEach(id => STOCK[id].combos.forEach(c => c.b.forEach((n, bi) => {
-    o.units += n; o.value += n * c.price; if (bi === 3) o.aged += n;
-  })));
+  o = { units: 0, value: 0, aged: 0, demo: 0 };
+  t.locIds.forEach(id => { const s = stockFor(id); o.units += s.total; o.value += s.value; o.aged += s.aged90; o.demo += s.demo; });
   STOCK_AGG.set(t.key, o);
   return o;
 }
@@ -449,7 +451,7 @@ function rowSub(t, parent) {
   return `${t.kind === "GROUP" ? "Group" : t.kind === "STATE" ? "State" : "City"} · ${n} outlet${n === 1 ? "" : "s"}`;
 }
 
-function TreeRow({ t, depth, expanded, onToggle, onOutlet, parent, cols, agg }) {
+function TreeRow({ t, depth, expanded, onToggle, onOutlet, parent, cols, agg, cmp, sub }) {
   const a = agg(t);
   const open = expanded.has(t.key);
   const isOutlet = t.kind === "OUTLET" && onOutlet;
@@ -457,7 +459,7 @@ function TreeRow({ t, depth, expanded, onToggle, onOutlet, parent, cols, agg }) 
   const attrs = Object.fromEntries(Object.entries(a).filter(([, v]) => typeof v === "number").map(([k, v]) => [`data-${k.toLowerCase()}`, v]));
   return (
     <>
-      <div data-testid="tree-row" data-key={t.key} data-parent={parent ? parent.key : ""} data-depth={depth} data-kind={t.kind} {...attrs}
+      <div data-testid="tree-row" data-key={t.key} data-parent={parent ? parent.key : ""} data-depth={depth} data-kind={t.kind} data-name={t.name} {...attrs}
         style={{ display: "flex", alignItems: "center", minHeight: 48, borderBottom: `1px solid ${C.border}`,
           background: DEPTH_BG[Math.min(depth, DEPTH_BG.length - 1)], borderLeft: `3px solid ${LEVEL_TONE[t.kind]}` }}>
         <button type="button" data-testid="tree-name" disabled={!clickable}
@@ -478,26 +480,54 @@ function TreeRow({ t, depth, expanded, onToggle, onOutlet, parent, cols, agg }) 
             </span>
             <span style={{ display: "block", fontFamily: F, fontSize: 10, color: C.faint, marginTop: 1,
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {rowSub(t, parent && parent.node ? shortName(parent.name).split(" ")[0] : null)}
+              {(sub ? sub(a) + " · " : "") + rowSub(t, parent && parent.node ? shortName(parent.name).split(" ")[0] : null)}
             </span>
           </span>
         </button>
         {cols.map(c => <span key={c.key} style={{ width: c.w, flexShrink: 0, textAlign: c.align || "center",
           paddingRight: c.align === "right" ? 4 : 0 }}>{c.cell(a, t)}</span>)}
       </div>
-      {open && t.hasKids && t.kids().map(ch => (
+      {open && t.hasKids && (cmp ? [...t.kids()].sort(cmp) : t.kids()).map(ch => (
         <TreeRow key={ch.key} t={ch} depth={depth + 1} expanded={expanded} onToggle={onToggle} onOutlet={onOutlet}
-          parent={t} cols={cols} agg={agg} />
+          parent={t} cols={cols} agg={agg} cmp={cmp} sub={sub} />
       ))}
     </>
   );
 }
-function TreeHead({ cols }) {
+/* Tap-to-sort: a header tap sorts siblings at every level of the tree (numbers high → low first,
+   Name A → Z first; tap again to flip). Rows without a value (no units → no ratio) go last. */
+const nextSort = (s, key) => (s.key === key ? { key, dir: s.dir === "desc" ? "asc" : "desc" } : { key, dir: key === "name" ? "asc" : "desc" });
+function makeCmp(sort, cols, agg) {
+  const sgn = sort.dir === "asc" ? 1 : -1;
+  const byName = (x, y) => x.name.localeCompare(y.name);
+  const col = cols.find(c => c.key === sort.key);
+  if (!col) return (x, y) => sgn * byName(x, y) || (x.key < y.key ? -1 : 1);
+  return (x, y) => {
+    const a = col.sort(agg(x), x), b = col.sort(agg(y), y);
+    const na = !ok(a), nb = !ok(b);
+    if (na || nb) return na === nb ? byName(x, y) : na ? 1 : -1;
+    return sgn * (a - b) || byName(x, y) || (x.key < y.key ? -1 : 1);
+  };
+}
+function useSort(cols, agg, initial) {
+  const [sort, setSort] = useState(initial);
+  const cmp = useMemo(() => makeCmp(sort, cols, agg), [sort, cols, agg]);
+  return [sort, (key) => setSort(s => nextSort(s, key)), cmp];
+}
+function TreeHead({ cols, sort, onSort }) {
   const h = { fontFamily: F, fontSize: 9, fontWeight: 800, color: C.sub, textTransform: "uppercase", letterSpacing: 0.2 };
+  const btn = { background: "none", border: "none", padding: 0, margin: 0, cursor: "pointer", lineHeight: "inherit", WebkitTapHighlightColor: "transparent" };
+  const arrow = (k) => sort && sort.key === k
+    ? <span style={{ position: "absolute", left: 0, right: 0, top: "100%", paddingTop: 1, fontSize: 6.5, lineHeight: 1, color: C.primary,
+        textAlign: "inherit", paddingLeft: "inherit", paddingRight: "inherit" }}>{sort.dir === "desc" ? "▼" : "▲"}</span> : null;
+  const cell = (k, label, style) => onSort
+    ? <button type="button" data-testid={`sort-${k}`} data-sort={sort && sort.key === k ? sort.dir : ""} onClick={() => onSort(k)}
+        style={{ ...h, ...btn, position: "relative", ...style }}>{label}{arrow(k)}</button>
+    : <span style={{ ...h, ...style }}>{label}</span>;
   return (
     <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: 7, borderBottom: `1.5px solid ${C.borderStrong}` }}>
-      <span style={{ ...h, flex: 1, letterSpacing: 0.4, paddingLeft: 5 }}>Name</span>
-      {cols.map(c => <span key={c.key} style={{ ...h, width: c.w, flexShrink: 0, textAlign: c.align || "center", paddingRight: c.align === "right" ? 4 : 0 }}>{c.label}</span>)}
+      {cell("name", "Name", { flex: 1, minWidth: 0, textAlign: "left", letterSpacing: 0.4, paddingLeft: 5 })}
+      {cols.map(c => <React.Fragment key={c.key}>{cell(c.key, c.label, { width: c.w, flexShrink: 0, textAlign: c.align || "center", paddingRight: c.align === "right" ? 4 : 0 })}</React.Fragment>)}
     </div>
   );
 }
@@ -521,60 +551,92 @@ function useExpanded(initial) {
 const TABLE_CARD = { padding: "14px 10px" };
 const MODES = [["people", "People"], ["locations", "Locations"]];
 
-/* ---------------- Column sets ---------------- */
-const num = (v, strong) => (
-  <span style={{ fontFamily: F, fontSize: 12.5, fontWeight: strong ? 700 : 600, color: strong ? C.ink : C.sub }}>{v}</span>
+/* ---------------- Column sets ----------------
+   Each column: key, header label, width, cell renderer, and `sort` — the value a header tap
+   sorts by (for a ratio column, the ratio). */
+const num = (v, strong, size = 12.5) => (
+  <span style={{ fontFamily: F, fontSize: size, fontWeight: strong ? 700 : 600, color: strong ? C.ink : C.sub }}>{v}</span>
 );
 const small = (v, color = C.faint, size = 9) => (
   <span style={{ display: "block", fontFamily: F, fontSize: size, marginTop: 2, color, whiteSpace: "nowrap", lineHeight: 1.15 }}>{v}</span>
 );
+const two = (a, b) => <>{a}<br />{b}</>;
 const BOARD_COLS = [
-  { key: "t", label: "Target", w: 42, cell: (a) => num(nIN(a.target)) },
-  { key: "r", label: "Retail", w: 52, cell: (a) => (
+  { key: "t", label: "Target", w: 42, sort: (a) => a.target, cell: (a) => num(nIN(a.target)) },
+  { key: "r", label: "Retail", w: 52, sort: (a) => a.retail, cell: (a) => (
     <>
       <span style={{ display: "block", fontFamily: F, fontSize: 12.5, fontWeight: 700, lineHeight: 1, color: C.ink }}>{nIN(a.retail)}</span>
       {small(pctS(a.ach))}
       {small(`proj ${nIN(a.proj)}`, C.faint, 8.5)}
     </>
   ) },
-  { key: "b", label: "Book", w: 40, cell: (a) => num(nIN(a.book)) },
-  { key: "v", label: "Value", w: 58, align: "right", cell: (a) => (
+  { key: "b", label: "Book", w: 40, sort: (a) => a.book, cell: (a) => num(nIN(a.book)) },
+  { key: "v", label: "Value", w: 58, align: "right", sort: (a) => a.value, cell: (a) => (
     <span style={{ fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.ink, whiteSpace: "nowrap" }}>{inr(a.value)}</span>
   ) },
 ];
 // Better than the group by more than 5% → green; worse by more than 5% → red; ink otherwise.
 const vsTone = (x, g) => (!ok(x) || !ok(g) ? C.faint : x > g * 1.05 ? C.green : x < g * 0.95 ? C.hot : C.ink);
 const G = GROUP_AGG;
-const FIN_COLS = [
-  { key: "u", label: "Units", w: 38, cell: (a) => num(nIN(a.retail), true) },
-  { key: "s", label: "Sales", w: 58, cell: (a) => (
-    <>
-      <span style={{ display: "block", fontFamily: F, fontSize: 11.5, fontWeight: 700, lineHeight: 1, color: C.ink, whiteSpace: "nowrap" }}>{inr(a.value)}</span>
-      {small(lakh(a.perUnit), vsTone(a.perUnit, G.perUnit) === C.ink ? C.faint : vsTone(a.perUnit, G.perUnit))}
-    </>
-  ) },
-  { key: "a", label: "Acc/unit", w: 48, cell: (a) => (
-    <span style={{ fontFamily: F, fontSize: 11.5, fontWeight: 700, color: vsTone(a.accPU, G.accPU) }}>{rs(a.accPU)}</span>
-  ) },
-  { key: "rc", label: "River Care", w: 50, align: "right", cell: (a) => (
-    <>
-      <span style={{ display: "block", fontFamily: F, fontSize: 12, fontWeight: 700, lineHeight: 1, color: vsTone(a.rcAtt, G.rcAtt) }}>{pctS(a.rcAtt)}</span>
-      {small(rs(a.rcPU))}
-    </>
-  ) },
+// Same tone rule for a grey line under a number: faint unless it is 5%+ off the group.
+const subTone = (x, g) => { const t = vsTone(x, g); return t === C.ink ? C.faint : t; };
+const money = (v, tone = C.ink, size = 10.5) => (
+  <span style={{ fontFamily: F, fontSize: size, fontWeight: 700, color: tone, whiteSpace: "nowrap" }}>{v}</span>
+);
+const top2 = (v, sub, tone = C.ink, size = 12) => (
+  <>
+    <span style={{ display: "block", fontFamily: F, fontSize: size, fontWeight: 700, lineHeight: 1, color: tone, whiteSpace: "nowrap" }}>{v}</span>
+    {sub}
+  </>
+);
+const UNITS_COL = (w) => ({ key: "u", label: "Units", w, sort: (a) => a.retail, cell: (a) => num(nIN(a.retail), true, 12) });
+const pu = (key, label, w, f, align) => ({ key, label, w, align, sort: (a) => a[f], cell: (a) => money(rs(a[f]), vsTone(a[f], G[f])) });
+
+// Finance · Overview — earnings per vehicle. Sales ₹ sits in the grey line under the name.
+const OVERVIEW_COLS = [
+  UNITS_COL(34),
+  { key: "s", label: "₹/unit", w: 46, sort: (a) => a.perUnit, cell: (a) => money(lakh(a.perUnit), vsTone(a.perUnit, G.perUnit)) },
+  pu("i", "Ins", 42, "insPU"),
+  pu("a", "Acc", 38, "accPU"),
+  pu("rc", "RC", 40, "rcPU", "right"),
+];
+const OVERVIEW_SUB = (a) => `${inr(a.value)} sales`;
+// Finance · Insurance — dealer-sold policies.
+const INS_COLS = [
+  UNITS_COL(34),
+  { key: "p", label: "Policies", w: 42, sort: (a) => a.ins, cell: (a) => top2(nIN(a.ins), small(pctS(a.insPen), subTone(a.insPen, G.insPen))) },
+  pu("pp", two("Prem.", "/policy"), 42, "premPP"),
+  pu("pv", two("₹ per", "vehicle"), 42, "insPU"),
+  { key: "t", label: "Total", w: 46, align: "right", sort: (a) => a.insPrem, cell: (a) => money(inr(a.insPrem)) },
+];
+// Finance · Accessories.
+const ACC_COLS = [
+  UNITS_COL(36),
+  { key: "t", label: two("Acc", "total"), w: 58, sort: (a) => a.acc, cell: (a) => money(inr(a.acc)) },
+  pu("pu", "₹/unit", 50, "accPU"),
+  { key: "at", label: "Attach", w: 48, align: "right", sort: (a) => a.accAttR, cell: (a) => top2(pctS(a.accAttR), null, vsTone(a.accAttR, G.accAttR)) },
+];
+// Finance · River Care.
+const RC_COLS = [
+  UNITS_COL(34),
+  { key: "p", label: "Plans", w: 40, sort: (a) => a.rc, cell: (a) => top2(nIN(a.rc), small(pctS(a.rcAtt), subTone(a.rcAtt, G.rcAtt))) },
+  { key: "p5", label: two("Plus", "Five %"), w: 38, sort: (a) => a.p5Sh, cell: (a) => top2(pctS(a.p5Sh), null, vsTone(a.p5Sh, G.p5Sh)) },
+  pu("pu", "₹/unit", 42, "rcPU"),
+  { key: "t", label: "Total", w: 46, align: "right", sort: (a) => a.rcVal, cell: (a) => money(inr(a.rcVal)) },
 ];
 const STOCK_COLS = [
-  { key: "u", label: "Units", w: 46, cell: (s) => num(nIN(s.units), true) },
-  { key: "v", label: "Value", w: 62, cell: (s) => <span style={{ fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.ink, whiteSpace: "nowrap" }}>{inr(s.value)}</span> },
-  { key: "a", label: "90+ days", w: 52, align: "right", cell: (s) => (
+  { key: "u", label: "Units", w: 46, sort: (s) => s.units, cell: (s) => num(nIN(s.units), true) },
+  { key: "v", label: "Value", w: 62, sort: (s) => s.value, cell: (s) => <span style={{ fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.ink, whiteSpace: "nowrap" }}>{inr(s.value)}</span> },
+  { key: "a", label: "90+ days", w: 52, align: "right", sort: (s) => s.aged, cell: (s) => (
     <span style={{ fontFamily: F, fontSize: 12.5, fontWeight: 700, color: s.aged > 0 ? C.hot : C.faint }}>{nIN(s.aged)}</span>
   ) },
 ];
 
 /* ============================ BOARD ============================ */
-function TreeCard({ title, Icon, testid, hintPeople, hintLoc, cols, open, top, mode, setMode }) {
+function TreeCard({ title, Icon, testid, hintPeople, hintLoc, cols, open, top, mode, setMode, defSort, sub }) {
   const [exP, toggleP] = useExpanded([PEOPLE_ROOT.key]);
   const [exL, toggleL] = useExpanded([LOC_ROOT.key]);
+  const [sort, onSort, cmp] = useSort(cols, aggOf, defSort);
   const people = mode === "people";
   return (
     <Card style={TABLE_CARD} data-testid={`${testid}-card`}>
@@ -583,10 +645,10 @@ function TreeCard({ title, Icon, testid, hintPeople, hintLoc, cols, open, top, m
         hint={people ? hintPeople : hintLoc} />
       {top}
       {setMode && <Legend items={LEGEND[mode]} />}
-      <TreeHead cols={cols} />
+      <TreeHead cols={cols} sort={sort} onSort={onSort} />
       {people
-        ? <TreeRow t={PEOPLE_ROOT} depth={0} expanded={exP} onToggle={toggleP} cols={cols} agg={aggOf} />
-        : <TreeRow t={LOC_ROOT} depth={0} expanded={exL} onToggle={toggleL} onOutlet={open} cols={cols} agg={aggOf} />}
+        ? <TreeRow t={PEOPLE_ROOT} depth={0} expanded={exP} onToggle={toggleP} cols={cols} agg={aggOf} cmp={cmp} sub={sub} />
+        : <TreeRow t={LOC_ROOT} depth={0} expanded={exL} onToggle={toggleL} onOutlet={open} cols={cols} agg={aggOf} cmp={cmp} sub={sub} />}
     </Card>
   );
 }
@@ -596,8 +658,9 @@ function BoardScreen({ open }) {
     <div style={{ padding: "14px 14px 90px" }}>
       <PeriodLine />
       <TreeCard title="Target achievement" Icon={Target} testid="board-title" cols={BOARD_COLS} open={open} mode={mode} setMode={setMode}
-        hintPeople="Tap a name to expand. Proj = month at today's pace."
-        hintLoc="Tap a name to expand, an outlet to open it." />
+        defSort={{ key: "r", dir: "desc" }}
+        hintPeople="Tap a name to expand, a header to sort. Proj = month at today's pace."
+        hintLoc="Tap a name to expand, an outlet to open it, a header to sort." />
     </div>
   );
 }
@@ -612,22 +675,62 @@ function Quiet({ k, v, sub }) {
     </div>
   );
 }
-function FinanceScreen({ open }) {
+const cr = (n) => `₹${(n / 1e7).toFixed(1)} Cr`;
+const FIN = {
+  overview: {
+    label: "Overview", title: "Earnings per vehicle", Icon: IndianRupee, cols: OVERVIEW_COLS, sub: OVERVIEW_SUB,
+    hint: "₹ per vehicle sold. Green / red: 5%+ better / worse than group.",
+    summary: [
+      ["Total sales", cr(G.value), `${nIN(G.retail)} units`],
+      ["Realisation", rs(G.perUnit), "per unit"],
+      ["Add-ons", rs(G.addPU), "ins + acc + RC / unit"],
+    ],
+  },
+  insurance: {
+    label: "Insurance", title: "Insurance", Icon: ShieldCheck, cols: INS_COLS,
+    hint: "Dealer-sold policies: insurance + RSA, add-ons extra.",
+    summary: [
+      ["Total premium", inr(G.insPrem), `${nIN(G.ins)} policies`],
+      ["Penetration", pctS(G.insPen), "policies ÷ units"],
+      ["Premium / policy", rs(G.premPP), `zero dep ${pctS(G.zdSh)} · B&M ${pctS(G.bmpSh)}`],
+      ["Per vehicle", rs(G.insPU), "premium ÷ units"],
+    ],
+  },
+  accessories: {
+    label: "Accessories", title: "Accessories", Icon: ShoppingBag, cols: ACC_COLS,
+    hint: "Attach = units sold with at least one accessory.",
+    summary: [
+      ["Accessories", inr(G.acc), `${nIN(G.retail)} units`],
+      ["Per unit", rs(G.accPU), "accessories ÷ units"],
+      ["Attach", pctS(G.accAttR), `${nIN(G.accAtt)} units`],
+      ["Items", ok(G.ipa) ? G.ipa.toFixed(1) : "—", "per attached unit"],
+    ],
+  },
+  rivercare: {
+    label: "River Care", title: "River Care", Icon: Wrench, cols: RC_COLS,
+    hint: `Plus Two ${rs(RC_PLUS2)} · Plus Five ${rs(RC_PLUS5)}. Grey = attach %.`,
+    summary: [
+      ["Plans sold", nIN(G.rc), `${inr(G.rcVal)} total`],
+      ["Attach", pctS(G.rcAtt), "plans ÷ units"],
+      ["Two · Five", `${nIN(G.p2)} · ${nIN(G.p5)}`, `Plus Five ${pctS(G.p5Sh)} of plans`],
+      ["Per unit", rs(G.rcPU), "River Care ÷ units"],
+    ],
+  },
+};
+function FinanceScreen({ which, open }) {
+  const d = FIN[which] || FIN.overview;
   const [mode, setMode] = useState("people");
+  const n = d.summary.length;
   const top = (
-    <div data-testid="fin-summary" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: "10px 12px", padding: "6px 4px 12px" }}>
-      <Quiet k="Total sales" v={`₹${(G.value / 1e7).toFixed(1)} Cr`} sub={`${nIN(G.retail)} units · ex-showroom`} />
-      <Quiet k="Realisation" v={`${rs(G.perUnit)}`} sub="per unit" />
-      <Quiet k="Accessories" v={rs(G.accPU)} sub="per unit" />
-      <Quiet k="River Care" v={`${pctS(G.rcAtt)} attach`} sub={`${rs(G.rcPU)} per unit`} />
+    <div data-testid="fin-summary" style={{ display: "grid", gridTemplateColumns: `repeat(${n === 3 ? 3 : 2}, minmax(0,1fr))`, gap: "10px 12px", padding: "6px 4px 12px" }}>
+      {d.summary.map(([k, v, sub]) => <Quiet key={k} k={k} v={v} sub={sub} />)}
     </div>
   );
   return (
     <div style={{ padding: "14px 14px 90px" }}>
       <PeriodLine />
-      <TreeCard title="Finance" Icon={IndianRupee} testid="fin-title" cols={FIN_COLS} open={open} mode={mode} setMode={setMode} top={top}
-        hintPeople="Green: better than group by 5%+, red: worse. Tap to expand."
-        hintLoc="Green: better than group by 5%+, red: worse. Tap to expand." />
+      <TreeCard title={d.title} Icon={d.Icon} testid={`fin-${which}`} cols={d.cols} open={open} mode={mode} setMode={setMode} top={top}
+        defSort={{ key: "u", dir: "desc" }} hintPeople={d.hint} hintLoc={d.hint} sub={d.sub} />
     </div>
   );
 }
@@ -635,15 +738,63 @@ function FinanceScreen({ open }) {
 /* ============================ STOCK ============================ */
 function StockScreen({ open }) {
   const [ex, toggle] = useExpanded([LOC_ROOT.key]);
+  const [sort, onSort, cmp] = useSort(STOCK_COLS, stockOf, { key: "u", dir: "desc" });
   return (
     <div style={{ padding: "14px 14px 90px" }}>
       <div style={{ fontFamily: F, fontSize: 11, color: C.faint, margin: "0 0 9px 4px" }}>Today · ex-showroom value</div>
       <Card style={TABLE_CARD}>
-        <CardHead Icon={Package} title="Stock" testid="stock-title" hint="Tap a name to expand. 90+ days is aged stock." />
-        <TreeHead cols={STOCK_COLS} />
-        <TreeRow t={LOC_ROOT} depth={0} expanded={ex} onToggle={toggle} onOutlet={open} cols={STOCK_COLS} agg={stockOf} />
+        <CardHead Icon={Package} title="Stock" testid="stock-title" hint="Tap a name to expand, a header to sort. 90+ days is aged stock." />
+        <TreeHead cols={STOCK_COLS} sort={sort} onSort={onSort} />
+        <TreeRow t={LOC_ROOT} depth={0} expanded={ex} onToggle={toggle} onOutlet={open} cols={STOCK_COLS} agg={stockOf} cmp={cmp} />
       </Card>
     </div>
+  );
+}
+
+/* ---------------- Outlet stock card ---------------- */
+const SWATCH = {
+  "Monsoon Blue": ["Blue", "#2F5BA8"], "Summer Red": ["Red", "#C8352E"], "Spring Yellow": ["Yellow", "#E9B800"],
+  "Winter White": ["White", "#F4F4F0"], "Storm Grey": ["Grey", "#6B7280"],
+};
+function StockCard({ id }) {
+  const s = stockFor(id);
+  const units = (v, c) => { const l = s.lines.find(x => x.variant === v && x.colour === c); return l ? l.units : 0; };
+  const age = [0, 1, 2, 3].map(b => s.lines.reduce((x, l) => x + l.buckets[b], 0));
+  const grid = { display: "grid", gridTemplateColumns: "42px repeat(5, minmax(0,1fr)) 40px", alignItems: "center" };
+  const head = { fontFamily: F, fontSize: 9, fontWeight: 800, color: C.sub, textTransform: "uppercase", letterSpacing: 0.2, textAlign: "center" };
+  return (
+    <Card data-testid="outlet-stock">
+      <CardHead Icon={Package} title="Stock" testid="outlet-stock-title" hint={`Today · ${inr(s.value)} ex-showroom`}
+        right={<span data-testid="outlet-stock-total" data-total={s.total} style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink }}>{nIN(s.total)} units</span>} />
+      <div style={{ ...grid, padding: "4px 4px 7px", borderBottom: `1.5px solid ${C.borderStrong}` }}>
+        <span />
+        {COLOURS.map(c => (
+          <span key={c} title={c} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+            <span style={{ width: 10, height: 10, borderRadius: "50%", background: SWATCH[c][1], border: `1px solid ${C.borderStrong}` }} />
+            <span style={{ ...head, fontSize: 8.5 }}>{SWATCH[c][0]}</span>
+          </span>
+        ))}
+        <span style={{ ...head, textAlign: "right" }}>Total</span>
+      </div>
+      {VARIANTS.map(v => {
+        const row = COLOURS.map(c => units(v.key, c));
+        return (
+          <div key={v.key} data-testid="outlet-stock-row" style={{ ...grid, padding: "9px 4px", borderBottom: `1px solid ${C.border}` }}>
+            <span style={{ fontFamily: F, fontSize: 12, fontWeight: 700, color: C.ink }}>{v.key}</span>
+            {row.map((n, i) => <span key={i} style={{ textAlign: "center", fontFamily: F, fontSize: 12.5, fontWeight: 600, color: n ? C.sub : C.ghost }}>{n}</span>)}
+            <span style={{ textAlign: "right", fontFamily: F, fontSize: 12.5, fontWeight: 700, color: C.ink }}>{nIN(row.reduce((a, b) => a + b, 0))}</span>
+          </div>
+        );
+      })}
+      <div data-testid="outlet-stock-age" style={{ fontFamily: F, fontSize: 11.5, color: C.sub, padding: "10px 4px 2px" }}>
+        {["0–30", "31–60", "61–90", "90+"].map((k, i) => (
+          <React.Fragment key={k}>{i > 0 && " · "}
+            <span style={{ color: i === 3 && age[3] > 0 ? C.hot : C.sub, fontWeight: i === 3 && age[3] > 0 ? 700 : 500 }}>{k}: {age[i]}</span>
+          </React.Fragment>
+        ))}
+      </div>
+      <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, padding: "3px 4px 0" }}>Age in days · plus {s.demo} demo scooter{s.demo === 1 ? "" : "s"}</div>
+    </Card>
   );
 }
 
@@ -653,6 +804,7 @@ function OutletScreen({ id, onBack }) {
   const only = useMemo(() => Object.assign(new Set(l.ses), { tag: "o" + l.id }), [l]);
   const root = peopleNode(NODES[l.smId], only);
   const [ex, toggle] = useExpanded([root.key]);
+  const [sort, onSort, cmp] = useSort(BOARD_COLS, aggOf, { key: "r", dir: "desc" });
   const a = derive(sumIdx(l.ses));
   const line = (k, v, tone, gv, sub) => (
     <div key={k} data-testid="outlet-fin-row" style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "9px 4px", borderTop: `1px solid ${C.border}` }}>
@@ -674,16 +826,18 @@ function OutletScreen({ id, onBack }) {
       <Card style={TABLE_CARD}>
         <CardHead Icon={Target} title="Target achievement" testid="outlet-board" hint="Tap a name to expand. Proj = month at today's pace." />
         <Legend items={LEGEND.people.slice(2)} />
-        <TreeHead cols={BOARD_COLS} />
-        <TreeRow t={root} depth={0} expanded={ex} onToggle={toggle} cols={BOARD_COLS} agg={aggOf} />
+        <TreeHead cols={BOARD_COLS} sort={sort} onSort={onSort} />
+        <TreeRow t={root} depth={0} expanded={ex} onToggle={toggle} cols={BOARD_COLS} agg={aggOf} cmp={cmp} />
       </Card>
       <Card>
         <CardHead Icon={IndianRupee} title="Finance" hint="This outlet, with the group in grey. Green / red = 5%+ better / worse." />
         {line("Total sales", inr(a.value), C.ink, inr(G.value), `${nIN(a.retail)} units`)}
         {line("Realisation", rs(a.perUnit), vsTone(a.perUnit, G.perUnit), rs(G.perUnit), "₹ per unit")}
+        {line("Insurance", rs(a.insPU), vsTone(a.insPU, G.insPU), rs(G.insPU), `₹ per vehicle · ${pctS(a.insPen)} penetration`)}
         {line("Accessories", rs(a.accPU), vsTone(a.accPU, G.accPU), rs(G.accPU), "₹ per unit")}
         {line("River Care attach", pctS(a.rcAtt), vsTone(a.rcAtt, G.rcAtt), pctS(G.rcAtt), `${rs(a.rcPU)} per unit · group ${rs(G.rcPU)}`)}
       </Card>
+      <StockCard id={l.id} />
     </div>
   );
 }
@@ -691,7 +845,7 @@ function OutletScreen({ id, onBack }) {
 /* ============================ REPORTS / ACCOUNT ============================ */
 function ReportsScreen({ showToast }) {
   const reps = [["Daily flash", "Retail, bookings and value by outlet — today and MTD"],
-    ["Finance MIS", "Sales, ₹/unit, accessories and River Care by outlet"],
+    ["Finance MIS", "Sales, insurance, accessories and River Care by outlet"],
     ["Stock ageing", "Units and ₹ by age, variant and colour"],
     ["People roster", `${PEOPLE_COUNT} people on the reporting line`]];
   return (
@@ -877,7 +1031,7 @@ function AdminLocationsScreen({ cfs, open }) {
 /* ============================ APP ============================ */
 const NAV = [
   { key: "board", label: "Board", Icon: Target, subs: [] },
-  { key: "finance", label: "Finance", Icon: IndianRupee, subs: [] },
+  { key: "finance", label: "Finance", Icon: IndianRupee, subs: Object.entries(FIN).map(([k, d]) => ({ key: "finance:" + k, label: d.label })) },
   { key: "stock", label: "Stock", Icon: Package, subs: [] },
   { key: "reports", label: "Reports", Icon: FileText, subs: [] },
   { key: "admin", label: "Admin", Icon: Settings, subs: [
@@ -926,7 +1080,7 @@ export default function CEOApp() {
       <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
         <div ref={scrollRef} style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden" }}>
           {base === "board" && <BoardScreen open={open} />}
-          {base === "finance" && <FinanceScreen open={open} />}
+          {base === "finance" && <FinanceScreen key={sub} which={sub} open={open} />}
           {base === "stock" && <StockScreen open={open} />}
           {base === "reports" && <ReportsScreen showToast={showToast} />}
           {base === "account" && <MyAccountScreen showToast={showToast} />}
