@@ -41,3 +41,10 @@ file in `src/apps/` and push.
 
 A GitHub Pages workflow is also included but only runs when started by hand from the
 Actions tab.
+
+### If pushes stop deploying
+
+If Cloudflare shows "This project is disconnected from your Git account", the Cloudflare
+GitHub app has lost access to this repo. In a browser, open
+github.com/settings/installations → Cloudflare Workers and Pages → Configure, give it
+access to `atom360sales`, then push to `main` (or retry the latest deployment).
