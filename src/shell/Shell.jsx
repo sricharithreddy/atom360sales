@@ -120,7 +120,7 @@ export default function Shell() {
         <button className="reset" onClick={reset}>
           <RotateCcw size={13} strokeWidth={2.2} /> Reset {current.short} demo
         </button>
-        <p className="note">Each login keeps its place when you switch. Sample data only.</p>
+        <p className="note">Demo dealer: Autoprism River (River Indie electric scooters), Pune &amp; Navi Mumbai. Each login keeps its place when you switch. Sample data only.</p>
       </aside>
 
       <main className="d-stage">
