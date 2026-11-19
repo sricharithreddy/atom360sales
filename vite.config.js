@@ -15,6 +15,7 @@ export default defineConfig({
         telecaller: resolve(__dirname, "telecaller.html"),
         sales: resolve(__dirname, "sales.html"),
         manager: resolve(__dirname, "manager.html"),
+        ceo: resolve(__dirname, "ceo.html"),
       },
     },
   },

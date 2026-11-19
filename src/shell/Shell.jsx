@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Headphones, Car, LayoutDashboard, RotateCcw, Signal, Wifi, BatteryFull } from "lucide-react";
+import { Headphones, Car, LayoutDashboard, Crown, RotateCcw, Signal, Wifi, BatteryFull } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -7,6 +7,7 @@ const ROLES = [
   { key: "telecaller", label: "Telecaller", short: "Telecaller", sub: "Call queue, follow-ups, qualification", Icon: Headphones, src: `${BASE}telecaller.html` },
   { key: "sales", label: "Sales Executive", short: "Sales Exec", sub: "Leads, test drives, quotes, bookings", Icon: Car, src: `${BASE}sales.html` },
   { key: "manager", label: "Manager + Admin", short: "Manager", sub: "Team board, targets, reports, admin", Icon: LayoutDashboard, src: `${BASE}manager.html` },
+  { key: "ceo", label: "CEO", short: "CEO", sub: "100 outlets, states, cities, money, stock", Icon: Crown, src: `${BASE}ceo.html` },
 ];
 
 // Phone screen size (iPhone 14/15 class) and bezel.
