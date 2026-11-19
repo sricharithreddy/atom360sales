@@ -30,44 +30,47 @@ const inr = (n) =>
   n == null || n === "" ? "—"
   : n >= 10000000 ? `₹${(n / 10000000).toFixed(2)} Cr`
   : n >= 100000 ? `₹${(n / 100000).toFixed(1)} L`
-  : n >= 1000 ? `₹${Math.round(n / 1000)}k` : `₹${n}`;
+  : n >= 10000 ? `₹${Math.round(n / 1000)}k`
+  // Scooter-scale discounts and caps (₹2,500, ₹4,500) need the decimal — "₹3k" for a
+  // ₹2,500 cap would misstate it.
+  : n >= 1000 ? `₹${(n / 1000).toFixed(1).replace(/\.0$/, "")}k` : `₹${n}`;
 
-const DAYS_LEFT = 9, DAY_OF_MONTH = 21, DISCOUNT_CAP = 25000;
+const DAYS_LEFT = 9, DAY_OF_MONTH = 21, DISCOUNT_CAP = 2500;
 
 /* ---------------- Org tree. Leaves carry real numbers; everything above rolls up. ---------------- */
 const ORG = {
   id: 1, name: "Priya Nambiar", role: "Sales Manager", initials: "PN", branch: "All branches",
   reports: [
-    { id: 2, name: "Rajesh Menon", role: "Sales Manager", initials: "RM", branch: "Whitefield", reports: [
-      { id: 3, name: "Anil Kumar", role: "Team Leader", initials: "AK", branch: "Whitefield", reports: [
-        { id: 10, name: "Arjun Nair", role: "Sales Executive", initials: "AN", branch: "Whitefield",
-          target: 10, retailed: 7, booking: 9, leads: 46, opportunity: 24,
-          td: 21, respHrs: 3.8, streak: 2, discountTotal: 268000, prevRetailed: 9 },
-        { id: 11, name: "Meera Iyer", role: "Sales Executive", initials: "MI", branch: "Whitefield",
-          target: 9, retailed: 4, booking: 6, leads: 38, opportunity: 15,
-          td: 8, respHrs: 5.6, streak: 4, discountTotal: 61000, prevRetailed: 2 },
+    { id: 2, name: "Rajesh Menon", role: "Sales Manager", initials: "RM", branch: "Vashi", reports: [
+      { id: 3, name: "Anil Kumar", role: "Team Leader", initials: "AK", branch: "Vashi", reports: [
+        { id: 10, name: "Arjun Nair", role: "Sales Executive", initials: "AN", branch: "Vashi",
+          target: 20, retailed: 14, booking: 18, leads: 92, opportunity: 48,
+          td: 42, respHrs: 3.8, streak: 2, discountTotal: 53600, prevRetailed: 18 },
+        { id: 11, name: "Meera Iyer", role: "Sales Executive", initials: "MI", branch: "Vashi",
+          target: 18, retailed: 8, booking: 12, leads: 76, opportunity: 30,
+          td: 16, respHrs: 5.6, streak: 4, discountTotal: 12200, prevRetailed: 4 },
       ]},
-      { id: 6, name: "Latha Rao", role: "Team Leader", initials: "LR", branch: "Whitefield", reports: [
-        { id: 16, name: "Sameer Khan", role: "Sales Executive", initials: "SK", branch: "Whitefield",
-          target: 9, retailed: 6, booking: 8, leads: 39, opportunity: 20,
-          td: 14, respHrs: 2.9, streak: 6, discountTotal: 133000, prevRetailed: 4 },
+      { id: 6, name: "Latha Rao", role: "Team Leader", initials: "LR", branch: "Vashi", reports: [
+        { id: 16, name: "Sameer Khan", role: "Sales Executive", initials: "SK", branch: "Vashi",
+          target: 18, retailed: 12, booking: 16, leads: 78, opportunity: 40,
+          td: 28, respHrs: 2.9, streak: 6, discountTotal: 26600, prevRetailed: 8 },
       ]},
     ]},
-    { id: 4, name: "Sneha Rao", role: "Team Leader", initials: "SR", branch: "Indiranagar", reports: [
-      { id: 12, name: "Rahul Kumar", role: "Sales Executive", initials: "RK", branch: "Indiranagar",
-        target: 11, retailed: 12, booking: 14, leads: 44, opportunity: 28,
-        td: 17, respHrs: 1.6, streak: 12, discountTotal: 186000, prevRetailed: 7 },
-      { id: 13, name: "Divya Pillai", role: "Sales Executive", initials: "DP", branch: "Indiranagar",
-        target: 10, retailed: 10, booking: 12, leads: 41, opportunity: 25,
-        td: 18, respHrs: 2.1, streak: 9, discountTotal: 142000, prevRetailed: 5 },
+    { id: 4, name: "Sneha Rao", role: "Team Leader", initials: "SR", branch: "Baner", reports: [
+      { id: 12, name: "Rahul Kumar", role: "Sales Executive", initials: "RK", branch: "Baner",
+        target: 22, retailed: 24, booking: 28, leads: 88, opportunity: 56,
+        td: 34, respHrs: 1.6, streak: 12, discountTotal: 37200, prevRetailed: 14 },
+      { id: 13, name: "Divya Pillai", role: "Sales Executive", initials: "DP", branch: "Baner",
+        target: 20, retailed: 20, booking: 24, leads: 82, opportunity: 50,
+        td: 36, respHrs: 2.1, streak: 9, discountTotal: 28400, prevRetailed: 10 },
     ]},
-    { id: 5, name: "Vikas Shetty", role: "Team Leader", initials: "VS", branch: "Indiranagar", reports: [
-      { id: 14, name: "Kiran Bhat", role: "Sales Executive", initials: "KB", branch: "Indiranagar",
-        target: 10, retailed: 8, booking: 10, leads: 40, opportunity: 22,
-        td: 16, respHrs: 2.6, streak: 7, discountTotal: 171000, prevRetailed: 7 },
-      { id: 15, name: "Anjali Reddy", role: "Sales Executive", initials: "AR", branch: "Indiranagar",
-        target: 8, retailed: 2, booking: 3, leads: 33, opportunity: 11,
-        td: 5, respHrs: 7.2, streak: 1, discountTotal: 24000, prevRetailed: 0 },
+    { id: 5, name: "Vikas Shetty", role: "Team Leader", initials: "VS", branch: "Baner", reports: [
+      { id: 14, name: "Kiran Bhat", role: "Sales Executive", initials: "KB", branch: "Baner",
+        target: 20, retailed: 16, booking: 20, leads: 80, opportunity: 44,
+        td: 32, respHrs: 2.6, streak: 7, discountTotal: 34200, prevRetailed: 14 },
+      { id: 15, name: "Anjali Reddy", role: "Sales Executive", initials: "AR", branch: "Baner",
+        target: 16, retailed: 4, booking: 6, leads: 66, opportunity: 22,
+        td: 10, respHrs: 7.2, streak: 1, discountTotal: 4800, prevRetailed: 0 },
     ]},
   ],
 };
@@ -101,25 +104,25 @@ function flatten(node, out = []) {
    a note back to the rep — a bare "declined" teaches nobody anything. */
 const ACTIONS = [
   { id: 1, kind: "discount", type: "Needs Discount Approval", Icon: IndianRupee, tone: "#4F5A7D",
-    raisedBy: "Arjun Nair", customerId: null, customer: "George Thomas", model: "Creta SX(O)",
-    ask: 45000, cap: DISCOUNT_CAP, age: "2h", urgent: true,
-    detail: "Corporate fleet — 3 units under discussion. Customer wants the same rate on all three." },
+    raisedBy: "Arjun Nair", customerId: null, customer: "George Thomas", model: "Indie 750W + Plus Two",
+    ask: 4500, cap: DISCOUNT_CAP, age: "2h", urgent: true,
+    detail: "Delivery-fleet operator — 3 scooters under discussion for last-mile riders. Customer wants the same rate on all three." },
   { id: 2, kind: "discount", type: "Needs Discount Approval", Icon: IndianRupee, tone: "#4F5A7D",
-    raisedBy: "Kiran Bhat", customer: "Deepa Menon", model: "Alcazar Signature",
-    ask: 32000, cap: DISCOUNT_CAP, age: "5h", urgent: false,
+    raisedBy: "Kiran Bhat", customer: "Deepa Menon", model: "Indie 750W + Plus Five",
+    ask: 3200, cap: DISCOUNT_CAP, age: "5h", urgent: false,
     detail: "Matching a written quote from another dealer. Customer has shown the quote." },
   { id: 3, kind: "stuck", type: "Deal Stuck / No Progress", Icon: Clock, tone: "#4F5A7D",
-    raisedBy: "Divya Pillai", customer: "Farhan Khan", model: "Alcazar Signature",
+    raisedBy: "Divya Pillai", customer: "Farhan Khan", model: "Indie 750W + Plus Five",
     age: "1d", urgent: true,
     detail: "Booked on the 6th, RC still not issued and delivery has slipped twice. Customer has a family trip booked and is threatening to cancel." },
   { id: 4, kind: "complaint", type: "Customer Complaint", Icon: MessageSquare, tone: "#4F5A7D",
-    raisedBy: "Meera Iyer", customer: "Anita Shetty", model: "Venue SX",
+    raisedBy: "Meera Iyer", customer: "Anita Shetty", model: "Indie 480W + Plus Two",
     age: "6h", urgent: false,
     detail: "Accessories fitted are not the ones quoted. Customer wants a refund or the correct set." },
   { id: 5, kind: "pricing", type: "Pricing Exception", Icon: ShieldAlert, tone: "#4F5A7D",
-    raisedBy: "Rahul Kumar", customer: "Vikram Rao", model: "Creta SX(O)",
-    ask: 55000, cap: 0, age: "3h", urgent: false,
-    detail: "Evaluator valued the trade-in at Rs 4.1 L; customer will not go below Rs 4.65 L. Deal is otherwise closed." },
+    raisedBy: "Rahul Kumar", customer: "Vikram Rao", model: "Indie 750W",
+    ask: 5500, cap: 0, age: "3h", urgent: false,
+    detail: "Evaluator valued the trade-in (2019 Honda Activa, petrol) at Rs 28,000; customer will not go below Rs 33,500. Deal is otherwise closed." },
 ];
 const isDecision = (a) => ["discount", "pricing"].includes(a.kind);
 
@@ -128,7 +131,9 @@ const isDecision = (a) => ["discount", "pricing"].includes(a.kind);
    filtered to that person's subtree and that stage — a manager asking "which nine?" gets
    the nine, not a summary of them. */
 const STAGES = ["Ready to Book", "Booking", "Retailed", "Delivered"];
-const MODELS = ["Creta SX(O)", "Venue SX", "Exter SX", "Verna Turbo", "Alcazar Signature", "Ioniq 5"];
+// River sells one model (Indie), so the lead mix is "model + variant" strings — the charger
+// (750W / 480W) and the River Care plan. Downstream code splits on the first space for the model.
+const MODELS = ["Indie 750W", "Indie 750W + Plus Two", "Indie 750W", "Indie 480W", "Indie 750W + Plus Five", "Indie 480W + Plus Two"];
 const CUSTOMERS = ["Lakshmi Narayan","Ravi Teja","Neha Verma","Amit Joshi","Sneha Kulkarni",
   "Farhan Khan","Priya Desai","Vikram Rao","Anita Shetty","George Thomas","Meena Rao","Deepa Menon",
   "Sanjay Gupta","Kavya Iyer","Rohit Sharma","Nisha Patel","Arun Das","Pooja Nair"];
@@ -145,17 +150,17 @@ const LEADS = (() => {
           name: CUSTOMERS[Math.floor(rnd() * CUSTOMERS.length)],
           model: MODELS[Math.floor(rnd() * MODELS.length)],
           stage,
-          value: Math.round((900000 + rnd() * 2600000) / 10000) * 10000,
+          value: Math.round((162700 + rnd() * 14000) / 100) * 100,
           days: 1 + Math.floor(rnd() * 21),
           phone: "+91 9" + String(Math.floor(rnd() * 900000000) + 100000000),
-          source: ["Website", "CarDekho", "Walk-in", "Referral", "OLX"][Math.floor(rnd() * 5)],
+          source: ["Website", "BikeDekho", "Walk-in", "Referral", "OLX"][Math.floor(rnd() * 5)],
           commPref: ["phone", "whatsapp", "phone"][Math.floor(rnd() * 3)],
           exchange: rnd() > 0.55, finance: rnd() > 0.4,
-          budget: `\u20b9${10 + Math.floor(rnd() * 14)}\u201314 L`,
+          budget: `\u20b91.${5 + Math.floor(rnd() * 3)}\u20131.8 L`,
           testDrive: stage === "Ready to Book" ? (rnd() > 0.5 ? "Done \u00b7 showroom" : "Not yet") : "Done \u00b7 showroom",
           docs: stage === "Retailed" || stage === "Delivered" ? 6 : stage === "Booking" ? 2 + Math.floor(rnd() * 3) : 0,
           timeline: [
-            { when: `${1 + Math.floor(rnd() * 3)}d ago`, what: stage === "Ready to Book" ? "Test drive completed \u2014 positive, still comparing" : "Booking amount received" },
+            { when: `${1 + Math.floor(rnd() * 3)}d ago`, what: stage === "Ready to Book" ? "Test ride completed \u2014 positive, still comparing" : "Booking amount received" },
             { when: `${4 + Math.floor(rnd() * 5)}d ago`, what: "Quote shared on WhatsApp" },
             { when: `${9 + Math.floor(rnd() * 6)}d ago`, what: "First call \u2014 connected, qualified" },
           ],
@@ -183,16 +188,16 @@ const LEADS = (() => {
     const stage = a.kind === "stuck" ? "Booking" : "Ready to Book";
     LEADS.push({
       id: id++, ownerId: ownerId(a.raisedBy), owner: a.raisedBy, name: a.customer, model: a.model,
-      stage, value: a.ask ? Math.max(1200000, a.ask * 32) : 1650000, days: 6,
+      stage, value: a.ask ? Math.max(166700, a.ask * 32) : 176700, days: 6,
       phone: "+91 98" + String(20000000 + a.id * 137).padStart(8, "0"),
       source: "Referral", commPref: "phone", exchange: a.kind === "pricing", finance: true,
-      budget: "\u20b915\u201318 L", testDrive: "Done \u00b7 showroom",
+      budget: "\u20b91.6\u20131.8 L", testDrive: "Done \u00b7 showroom",
       docs: stage === "Booking" ? 3 : 0,
       next: stage === "Booking" ? "Confirm allocation and documents" : "Collect booking amount",
       timeline: [
         { when: `${a.age} ago`, what: `Escalated: ${a.type}` },
         { when: "3d ago", what: "Quote shared on WhatsApp" },
-        { when: "8d ago", what: "Test drive completed \u2014 positive" },
+        { when: "8d ago", what: "Test ride completed \u2014 positive" },
       ],
     });
   });
@@ -219,13 +224,14 @@ LEADS.forEach(l => {
   l.insurance = (l.id * 65537) % 10 < 6;
   l.warranty = (l.id * 49157) % 10 < 3;
   l.coating = (l.id * 92821) % 10 < 4;
-  l.accessoriesBill = (l.id * 15485863) % 10 < 5 ? 5000 + ((l.id * 7) % 20) * 500 : 0;
-  l.addonBill = (l.id * 32452843) % 10 < 2 ? 3000 + ((l.id * 11) % 10) * 400 : 0;
+  l.accessoriesBill = (l.id * 15485863) % 10 < 5 ? 800 + ((l.id * 7) % 20) * 150 : 0;
+  l.addonBill = (l.id * 32452843) % 10 < 2 ? 400 + ((l.id * 11) % 10) * 60 : 0;
   // Billing value behind each flat-fee add-on too, so a dealer can switch any of them to
   // a percentage-of-billing basis instead and still get a real number, not a placeholder.
-  l.warrantyBill = l.warranty ? 12000 + ((l.id * 13) % 8) * 1000 : 0;
-  l.coatingBill = l.coating ? 6000 + ((l.id * 17) % 6) * 500 : 0;
-  l.insuranceBill = l.insurance ? 22000 + ((l.id * 19) % 10) * 1500 : 0;
+  // River Care: Plus Two (₹5,899) or Plus Five (₹9,912).
+  l.warrantyBill = l.warranty ? ((l.id * 13) % 8 < 5 ? 5899 : 9912) : 0;
+  l.coatingBill = l.coating ? 900 + ((l.id * 17) % 6) * 150 : 0;
+  l.insuranceBill = l.insurance ? 9800 + ((l.id * 19) % 10) * 250 : 0;
   l.financeBill = l.finance ? Math.round(l.value * 0.7) : 0;
 });
 
@@ -364,7 +370,7 @@ function LeadScreen({ lead, onBack, showToast, handling, onTakeOver, onReassign 
         <InfoRow k="Next action" v={lead.next} />
         <InfoRow k="Days in stage" v={`${lead.days} days`} />
         <InfoRow k="Deal value" v={inr(lead.value)} />
-        <InfoRow k="Test drive" v={lead.testDrive} />
+        <InfoRow k="Test ride" v={lead.testDrive} />
         <InfoRow k="Documents" v={`${lead.docs} / 6`} />
       </InfoCard>
 
@@ -654,34 +660,24 @@ function ActionCard({ item, onResolve, onOpenLead, onLogFollowUp }) {
 
 
 /* ---------------- Model-wise performance ----------------
-   Targets exist at model level only — the OEM does not set variant targets — so the
-   variant rows deliberately show a dash rather than inventing one. */
+   River sells one model, the Indie, so the rows are its charger variants (750W / 480W) and
+   the sub-rows are the River Care plan sold with it. Targets exist at charger level only —
+   the OEM does not set plan targets — so the plan rows deliberately show a dash rather
+   than inventing one. */
 const MODEL_PERF = [
-  { model: "Creta", target: 12, variants: [
-    { name: "E / EX", retailed: 2, booking: 3 },
-    { name: "S / S(O)", retailed: 3, booking: 4 },
-    { name: "SX / SX(O)", retailed: 4, booking: 5 },
+  { model: "Indie 750W", target: 70, variants: [
+    { name: "Standard warranty", retailed: 22, booking: 26 },
+    { name: "+ Plus Two (5 yr)", retailed: 18, booking: 22 },
+    { name: "+ Plus Five (8 yr)", retailed: 10, booking: 13 },
   ]},
-  { model: "Venue", target: 9, variants: [
-    { name: "E / S", retailed: 3, booking: 3 },
-    { name: "SX / SX(O)", retailed: 6, booking: 7 },
+  { model: "Indie 480W", target: 34, variants: [
+    { name: "Standard warranty", retailed: 12, booking: 15 },
+    { name: "+ Plus Two (5 yr)", retailed: 6, booking: 8 },
+    { name: "+ Plus Five (8 yr)", retailed: 2, booking: 3 },
   ]},
-  { model: "Exter", target: 8, variants: [
-    { name: "EX / S", retailed: 4, booking: 5 },
-    { name: "SX / SX(O)", retailed: 2, booking: 3 },
-  ]},
-  { model: "Verna", target: 5, variants: [
-    { name: "EX / S", retailed: 1, booking: 2 },
-    { name: "SX / SX(O) Turbo", retailed: 3, booking: 3 },
-  ]},
-  { model: "Alcazar", target: 5, variants: [
-    { name: "Prestige", retailed: 1, booking: 2 },
-    { name: "Platinum / Signature", retailed: 2, booking: 4 },
-  ]},
-  { model: "Ioniq 5", target: 4, variants: [{ name: "AWD", retailed: 5, booking: 6 }] },
 ];
-const AVG_UNIT = { Creta: 1720000, Venue: 1180000, Exter: 890000, Verna: 1490000,
-  Alcazar: 2080000, "Ioniq 5": 4630000 };
+// Average on-road realisation per unit, across River Care plans.
+const AVG_UNIT = { "Indie 750W": 170600, "Indie 480W": 166300 };
 
 
 const ModelHead = () => (
@@ -712,7 +708,7 @@ function ModelDashboard() {
     <div style={{ padding: "14px 14px 90px" }}>
       <div style={{ fontFamily: F, fontWeight: 800, fontSize: 15.5, color: C.ink }}>Model performance</div>
       <div style={{ fontFamily: F, fontSize: 11.5, color: C.sub, marginTop: 1, marginBottom: 13 }}>
-        Tap a model to see its variants.
+        Tap a charger variant to see its River Care split.
       </div>
       <div style={{ background: C.card, borderRadius: 16, padding: "14px 10px", boxShadow: shadow }}>
         <ModelHead />
@@ -966,7 +962,7 @@ function reportRows(key) {
     return out;
   }
   if (key === "calllogse") {
-    const out = [["Date", "Time", "Sales Executive", "Customer", "Phone", "Model", "Stage", "Outcome", "Duration", "Test Drive Discussed", "Notes", "Next Follow-up"]];
+    const out = [["Date", "Time", "Sales Executive", "Customer", "Phone", "Model", "Stage", "Outcome", "Duration", "Test Ride Discussed", "Notes", "Next Follow-up"]];
     ADMIN_SE_CALL_LOG.forEach(c => out.push([c.dateLabel, c.time, c.se, c.customer, c.phone, c.model, c.stage, c.outcome, c.duration, c.testDrive, c.notes, c.nextFollowUp]));
     return out;
   }
@@ -1009,13 +1005,13 @@ function printPdf(name, rows) {
 function ReportsScreen({ showToast }) {
   const REPORTS = [
     { key: "target", name: "Target achievement", note: "SM / TL / SE rollup with value" },
-    { key: "model", name: "Model performance", note: "Model and variant split against OEM target" },
+    { key: "model", name: "Model performance", note: "Indie variant and River Care split against OEM target" },
     { key: "funnel", name: "Funnel by person", note: "Leads through delivered, plus losses" },
     { key: "escal", name: "Escalations and approvals", note: "Decisions taken, with notes" },
     { key: "walletbill", name: "Wallet billing", note: "Per-customer SMS, WhatsApp and call cost — cross-check against the Wallet invoice" },
     { key: "calllogcre", name: "Telecaller call log", note: "Every qualification call, by telecaller" },
     { key: "calllogse", name: "Sales Executive call log", note: "Every call after handoff, by SE" },
-    { key: "testdrive", name: "Test drives", note: "Scheduled, completed and no-shows, with feedback" },
+    { key: "testdrive", name: "Test rides", note: "Scheduled, completed and no-shows, with feedback" },
   ];
   return (
     <div style={{ padding: "14px 14px 90px" }}>
@@ -1051,82 +1047,47 @@ function ReportsScreen({ showToast }) {
 /* ===== Learning — lifted from the Sales Executive app, unchanged ===== */
 const PRODUCT_REF = [
   {
-    model: "Creta", segment: "Mid-size SUV", price: "₹11.2 – 19.8 L",
-    specs: ["1.5 petrol / diesel / 1.5 turbo", "6 airbags standard", "Level-2 ADAS on SX(O)", "Panoramic sunroof"],
-    pitch: "The safe default in the segment — best service reach and the strongest resale.",
+    model: "Indie 750W", segment: "Utility e-scooter · Gen 3", price: "₹1.67 – 1.77 L",
+    specs: ["4 kWh · 161 km IDC (~110–120 km real)", "750W charger — 0–80% in ~5 h", "43 L under-seat + 12 L glovebox", "14-inch wheels · 165 mm clearance"],
+    pitch: "The SUV of scooters. Put a full-face helmet under the seat in front of them — storage closes this sale.",
     rivals: [
-      { name: "Kia Seltos",
-        headline: "Same platform and engines. The difference is what happens after the sale.",
-        wins: ["Widest service network in the segment", "Strongest 5-year resale", "Diesel-automatic on more trims"],
-        edge: "Seltos has a sharper interior. If they've seen it, agree — then move to ownership cost." },
-      { name: "Maruti Grand Vitara",
-        headline: "They'll win on fuel economy. Win on everything you can feel.",
-        wins: ["Far stronger performance, petrol and diesel", "Better ride quality on bad roads", "Higher feature count at the same price"],
-        edge: "Strong-hybrid economy is genuinely better. Don't argue the number — reframe on drive quality." },
+      { name: "Ather Rizta",
+        headline: "Rizta is the family-scooter benchmark. Indie wins on what you can carry and how it rides.",
+        wins: ["43 L under-seat + 12 L lockable glovebox — more than Rizta", "14-inch wheels front and rear — steadier on broken roads", "165 mm ground clearance and twin pannier mounts"],
+        edge: "Ather's brand recognition and service network are bigger. Agree, then show our nearest service point and River Care." },
+      { name: "TVS iQube",
+        headline: "iQube sells on the TVS badge. Indie sells on utility you can see.",
+        wins: ["Far more storage, plus integrated pannier mounts", "0–40 km/h in 3.9 s — quicker off the signal", "Twin-beam LED and 6-inch display as standard"],
+        edge: "TVS has a dealer in every town and a familiar name. Don't fight the trust — compete on the scooter itself." },
+      { name: "Ather 450X",
+        headline: "450X is the enthusiast's pick. Indie is the one you load up and ride every day.",
+        wins: ["Much bigger storage and a flat, usable floorboard", "Wider tyres and 14-inch wheels for stability", "Front and rear footpegs — the pillion is comfortable"],
+        edge: "450X is sportier and its fast-charging grid is wider. If they want a sporty scooter, don't pretend Indie is one." },
     ],
     articles: [
-      { title: "Creta variant ladder — which trim to pitch", mins: 6 },
-      { title: "Handling the \"waiting period\" objection", mins: 4 },
+      { title: "Indie variant ladder — charger and River Care plan", mins: 6 },
+      { title: "Handling the \"range anxiety\" objection", mins: 4 },
     ],
   },
   {
-    model: "Venue", segment: "Compact SUV", price: "₹7.9 – 12.9 L",
-    specs: ["1.0 turbo petrol", "DCT and iMT options", "Dual-tone roof", "6 airbags"],
-    pitch: "Refinement and running cost, not crash rating. Compete where you win.",
+    model: "Indie 480W", segment: "Utility e-scooter · overnight charger", price: "₹1.63 – 1.73 L",
+    specs: ["Same 4 kWh battery · 6.7 kW motor", "480W charger — ~8 h, overnight", "Eco / Ride / Rush + reverse", "5-yr battery warranty standard"],
+    pitch: "Same scooter, slower charger, ₹4,000 less. Right for anyone who charges overnight at home.",
     rivals: [
-      { name: "Tata Nexon",
-        headline: "Nexon leads on safety rating — don't fight that. Compete on refinement.",
-        wins: ["Smoother turbo and gearbox", "Better cabin fit and finish", "Lower routine service cost"],
-        edge: "Nexon rates higher on crash safety. Be honest, then pivot to total ownership." },
-      { name: "Kia Sonet",
-        headline: "Closest rival on paper. Decided on delivery and service, not features.",
-        wins: ["Shorter waiting period on most variants", "Wider service footprint", "Better resale"],
-        edge: "Sonet's diesel-automatic is a genuine draw. Check stock before promising." },
+      { name: "Ola S1 Pro",
+        headline: "Ola wins the spec sheet and the sticker. Win on build, storage and after-sales.",
+        wins: ["Sturdier build with 14-inch wheels and 165 mm clearance", "43 L + 12 L storage you can actually use daily", "A real showroom and service bay you can walk into"],
+        edge: "Ola's headline price and feature list are genuinely stronger. Don't argue the number — move to ownership." },
+      { name: "Bajaj Chetak",
+        headline: "Chetak sells on its metal body and the Bajaj name. Indie sells on utility.",
+        wins: ["More storage and a usable glovebox with USB charging", "Quicker 0–40 km/h and a 90 km/h top speed", "Wider wheels and tyres — more planted with a pillion"],
+        edge: "The metal body and Bajaj's reach are real draws. Acknowledge them, then put them on the Indie for a ride." },
+      { name: "Hero Vida V2",
+        headline: "Vida competes on price and removable batteries. Compete on everything you can feel.",
+        wins: ["Bigger, IP67 4 kWh battery and longer real-world range", "Far more storage and pannier mounts", "Stability from 14-inch wheels on bad roads"],
+        edge: "Vida's removable battery suits flat-dwellers without parking power. Ask where they'll charge before you pitch." },
     ],
-    articles: [{ title: "Venue vs the sub-4m field — one-page summary", mins: 5 }],
-  },
-  {
-    model: "Alcazar", segment: "7-seater SUV", price: "₹19.9 – 25.8 L",
-    specs: ["6 and 7 seat layouts", "1.5 turbo / diesel", "Captain seats on Signature", "Level-2 ADAS"],
-    pitch: "Ask who sits in the third row. That question decides this segment.",
-    rivals: [
-      { name: "Mahindra XUV700",
-        headline: "XUV700 wins on power and price. Alcazar wins on the third row being usable.",
-        wins: ["Genuinely usable third row for adults", "Quieter at highway speed", "Shorter, more predictable wait"],
-        edge: "Don't compete on straight-line performance — you'll lose. Move to who's travelling." },
-    ],
-    articles: [{ title: "Selling the 6-seat vs 7-seat decision", mins: 5 }],
-  },
-  {
-    model: "Ioniq 5", segment: "Electric SUV", price: "₹44.6 – 48.2 L",
-    specs: ["72.6 kWh · 631 km certified", "800V — 10–80% in ~18 min", "V2L power output", "8 yr / 1.6 L km battery warranty"],
-    pitch: "Charging speed and service network. That's the whole argument.",
-    rivals: [
-      { name: "BYD Atto 3",
-        headline: "Charging speed and service access decide this, not sticker price.",
-        wins: ["800V — roughly half the charging time", "Established service network in India", "Higher certified range"],
-        edge: "Atto 3 is materially cheaper. If budget is the constraint, steer to a petrol SUV instead of losing them." },
-    ],
-    articles: [
-      { title: "The four EV objections and how to answer them", mins: 8 },
-      { title: "Home charger installation — what to promise", mins: 5 },
-    ],
-  },
-  {
-    model: "Verna", segment: "Mid-size sedan", price: "₹10.9 – 17.9 L",
-    specs: ["1.5 NA / 1.5 turbo", "Level-2 ADAS", "Ventilated front seats", "5-star Global NCAP"],
-    pitch: "The turbo is the car. Get them to drive that variant, not the base.",
-    rivals: [
-      { name: "Honda City",
-        headline: "City sells on badge and refinement. Verna sells on everything measurable.",
-        wins: ["Turbo option City has no answer to", "More features at every price point", "5-star crash rating"],
-        edge: "City's resale and brand trust are real. Acknowledge, then get them into the turbo." },
-      { name: "VW Virtus",
-        headline: "Closest on performance. Wins and losses are on ownership, not the drive.",
-        wins: ["Far better service reach", "Lower maintenance cost", "More equipment as standard"],
-        edge: "Virtus feels more solid on the highway. Don't dispute it — compete on running cost." },
-    ],
-    articles: [{ title: "Why the turbo variant sells itself on a drive", mins: 4 }],
+    articles: [{ title: "750W or 480W — which charger to pitch", mins: 5 }],
   },
 ];
 
@@ -1295,8 +1256,8 @@ const LEARN_LIBRARY = [
     title: "Explaining finance without jargon", by: "Autoprism Sales Lab",
     blurb: "Said in language a customer repeats correctly to their spouse that evening." },
   { id: "ev-basics", cat: "video", mins: 16, topic: "Product",
-    title: "Selling an EV to a petrol buyer", by: "Autoprism Sales Lab",
-    blurb: "The four objections that come up every time on the Ioniq 5." },
+    title: "Selling an EV to a petrol two-wheeler rider", by: "Autoprism Sales Lab",
+    blurb: "The four objections that come up every time on the Indie — range, charging, resale, service." },
 
   // ---- Podcasts ----
   { id: "qualify-call", cat: "podcast", mins: 22, topic: "Sales",
@@ -1315,7 +1276,7 @@ const LEARN_LIBRARY = [
   // ---- Articles ----
   { id: "battlecards", cat: "article", mins: 9, topic: "Product",
     title: "Comparison battlecards", by: "Autoprism",
-    blurb: "Creta vs Seltos, Venue vs Nexon, Alcazar vs XUV700 — including where each rival honestly beats us.", tag: "Updated" },
+    blurb: "Indie vs Ather Rizta, Indie vs TVS iQube, Indie vs Ola S1 Pro — including where each rival honestly beats us.", tag: "Updated" },
   { id: "whatsapp", cat: "article", mins: 6, topic: "Communication",
     title: "WhatsApp that gets replied to", by: "Autoprism",
     blurb: "Openers, follow-ups, and the three habits that get you blocked." },
@@ -1324,18 +1285,18 @@ const LEARN_LIBRARY = [
     blurb: "Why notes written from memory cost you the next call." },
   { id: "exchange", cat: "article", mins: 7, topic: "Product",
     title: "Talking about exchange valuation", by: "Autoprism",
-    blurb: "The customer's car is always worth more to them than to the market." },
+    blurb: "The customer's old scooter is always worth more to them than to the market." },
 
   // ---- Internal (your own floor) ----
   { id: "closing-td", cat: "internal", mins: 8, topic: "Sales",
-    title: "Closing after the test drive", by: "Ravi Menon · 14 yrs, Indiranagar",
-    blurb: "The drive is over and the customer is standing by the car. The next ninety seconds decide it.", tag: "Most watched" },
+    title: "Closing after the test ride", by: "Ravi Menon · 14 yrs, Baner",
+    blurb: "The ride is over and the customer is standing by the scooter. The next ninety seconds decide it.", tag: "Most watched" },
   { id: "home-td", cat: "internal", mins: 7, topic: "Sales",
-    title: "Home test drives that convert", by: "Divya Pillai · top converter",
+    title: "Home test rides that convert", by: "Divya Pillai · top converter",
     blurb: "Takes an hour longer, closes far better. How to offer it and to whom." },
   { id: "walkaround", cat: "internal", mins: 13, topic: "Product",
     title: "The six-point walkaround", by: "Ravi Menon",
-    blurb: "A repeatable route around the car, in the order that builds interest." },
+    blurb: "A repeatable route around the scooter, in the order that builds interest." },
 ];
 
 // Minutes logged this month, by category. In production this comes from playback events.
@@ -1596,7 +1557,8 @@ function TransferScreen({ showToast, onTransferred, transfers }) {
   const selected = picked.size ? pool.filter(l => picked.has(l.id)) : pool;
   const targets = ses.filter(s2 => to.has(s2.id) && !from.has(s2.id));
   const stages = ["all", ...STAGES];
-  const models = ["all", ...Array.from(new Set(LEADS.map(l => l.model.split(" ")[0])))];
+  // One model (Indie), so the useful slice is the charger variant: "Indie 750W" / "Indie 480W".
+  const models = ["all", ...Array.from(new Set(LEADS.map(l => l.model.split(" ").slice(0, 2).join(" "))))];
 
   // Preview of who gets what, before anything moves.
   const plan = (() => {
@@ -1757,15 +1719,15 @@ function TransferScreen({ showToast, onTransferred, transfers }) {
 /* ============================ TEAM MEMBERS ============================ */
 function TeamMembersScreen({ showToast }) {
   const [editing, setEditing] = useState(null);   // null · "new" · a node
-  const [form, setForm] = useState({ name: "", role: "Sales Executive", reportsTo: "", branch: "Indiranagar", target: 8 });
+  const [form, setForm] = useState({ name: "", role: "Sales Executive", reportsTo: "", branch: "Baner", target: 16 });
   const all = [];
   const walk = (n, parent) => { all.push({ ...n, parentName: parent }); (n.reports || []).forEach(c => walk(c, n.name)); };
   walk(ORG, null);
   const leaders = all.filter(n => n.role !== "Sales Executive");
   const roleTone = { "Sales Manager": C.ink, "Team Leader": C.teal, "Sales Executive": C.sub };
   const open = (n) => {
-    if (n === "new") { setForm({ name: "", role: "Sales Executive", reportsTo: leaders[0]?.name || "", branch: "Indiranagar", target: 8 }); }
-    else setForm({ name: n.name, role: n.role, reportsTo: n.parentName || "", branch: "Indiranagar", target: n.target || roll(n).target });
+    if (n === "new") { setForm({ name: "", role: "Sales Executive", reportsTo: leaders[0]?.name || "", branch: "Baner", target: 16 }); }
+    else setForm({ name: n.name, role: n.role, reportsTo: n.parentName || "", branch: "Baner", target: n.target || roll(n).target });
     setEditing(n);
   };
   const save = () => {
@@ -1800,10 +1762,10 @@ function TeamMembersScreen({ showToast }) {
           </select>
           <span style={label}>Branch</span>
           <select value={form.branch} onChange={e => setForm({ ...form, branch: e.target.value })} style={field}>
-            {["Indiranagar", "Whitefield"].map(b2 => <option key={b2}>{b2}</option>)}
+            {["Baner", "Vashi"].map(b2 => <option key={b2}>{b2}</option>)}
           </select>
-          <span style={label}>Monthly target (cars)</span>
-          <input type="number" min={1} max={15} value={form.target}
+          <span style={label}>Monthly target (scooters)</span>
+          <input type="number" min={1} max={30} value={form.target}
             onChange={e => setForm({ ...form, target: +e.target.value })} style={field} />
           <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
             {editing !== "new" && (
@@ -1857,7 +1819,7 @@ function TeamMembersScreen({ showToast }) {
 /* ============================ LEADERBOARD ============================ */
 function LeaderboardScreen({ onPick }) {
   const rows = flatten(ORG).map(se => ({ se, r: roll(se) })).sort((a, b2) => b2.r.retailed - a.r.retailed);
-  const COLS = [["opportunity", "Opp"], ["td", "TD"], ["booking", "Book"], ["retailed", "Retail"]];
+  const COLS = [["opportunity", "Opp"], ["td", "TR"], ["booking", "Book"], ["retailed", "Retail"]];
   return (
     <div style={{ padding: "14px 14px 90px" }}>
       <div style={{ fontFamily: F, fontWeight: 800, fontSize: 15.5, color: C.ink }}>Leaderboard</div>
@@ -2428,40 +2390,34 @@ function OrgLeadsScreen({ sub, handling, transfers, onOpen, managerActivity = []
 
 /* ============================ INVENTORY ============================ */
 /* ============================ INVENTORY ============================ */
+// New stock is held per charger variant — the River Care plan is sold on paper, not stocked.
 const STOCK = [
-  { model: "Creta", variants: [
-    { name: "E", colours: { "Polar White": 2, "Titan Grey": 1 } },
-    { name: "SX(O)", colours: { "Polar White": 3, "Abyss Black": 2, "Fiery Red": 1, "Titan Grey": 0 } } ]},
-  { model: "Venue", variants: [
-    { name: "S", colours: { "Polar White": 2, "Denim Blue": 1 } },
-    { name: "SX", colours: { "Polar White": 1, "Abyss Black": 3, "Fiery Red": 2 } } ]},
-  { model: "Exter", variants: [{ name: "SX", colours: { "Cosmic Blue": 2, "Ranger Khaki": 1, "Polar White": 2 } }] },
-  { model: "Verna", variants: [{ name: "SX(O) Turbo", colours: { "Abyss Black": 1, "Atlas White": 2 } }] },
-  { model: "Alcazar", variants: [{ name: "Signature 7-str", colours: { "Robust Emerald": 1, "Abyss Black": 1 } }] },
-  { model: "Ioniq 5", variants: [{ name: "AWD", colours: { "Gravity Gold": 1, "Optic White": 2 } }] },
+  { model: "Indie", variants: [
+    { name: "750W", colours: { "Monsoon Blue": 6, "Summer Red": 4, "Spring Yellow": 3, "Winter White": 5, "Storm Grey": 2 } },
+    { name: "480W", colours: { "Monsoon Blue": 2, "Summer Red": 1, "Spring Yellow": 0, "Winter White": 3, "Storm Grey": 2 } } ]},
 ];
 const PREOWNED = [
-  { kind: "demo", model: "Creta SX(O)", reg: "KA01 MJ 4421", year: 2024, km: 3200, ask: 1520000, days: 41, branch: "Indiranagar" },
-  { kind: "demo", model: "Ioniq 5 AWD", reg: "KA03 NA 0918", year: 2024, km: 1900, ask: 4180000, days: 22, branch: "Whitefield" },
-  { kind: "demo", model: "Venue SX", reg: "KA01 MK 7730", year: 2025, km: 1100, ask: 1090000, days: 9, branch: "Indiranagar" },
-  { kind: "used", model: "Creta SX", reg: "KA05 MB 2210", year: 2021, km: 38000, ask: 1140000, days: 62, branch: "Indiranagar" },
-  { kind: "used", model: "Verna SX", reg: "KA03 MP 5561", year: 2022, km: 26500, ask: 1020000, days: 18, branch: "Whitefield" },
-  { kind: "used", model: "Maruti Baleno", reg: "KA02 MG 8823", year: 2020, km: 44000, ask: 610000, days: 55, branch: "Indiranagar" },
+  { kind: "demo", model: "Indie 750W", reg: "MH12 RV 4421", year: 2025, km: 2400, ask: 132000, days: 41, branch: "Baner" },
+  { kind: "demo", model: "Indie 750W", reg: "MH43 RV 0918", year: 2026, km: 900, ask: 145000, days: 22, branch: "Vashi" },
+  { kind: "demo", model: "Indie 480W", reg: "MH12 RV 7730", year: 2026, km: 600, ask: 142000, days: 9, branch: "Baner" },
+  { kind: "used", model: "Honda Activa 6G", reg: "MH12 PK 2210", year: 2021, km: 21000, ask: 48000, days: 62, branch: "Baner" },
+  { kind: "used", model: "TVS Jupiter 125", reg: "MH43 AX 5561", year: 2022, km: 16500, ask: 52000, days: 18, branch: "Vashi" },
+  { kind: "used", model: "Suzuki Access 125", reg: "MH12 MG 8823", year: 2020, km: 29000, ask: 38000, days: 55, branch: "Baner" },
 ];
 const HELD = [
-  { model: "Creta", variant: "SX(O)", colour: "Polar White", by: "Rahul Kumar", customer: "Lakshmi Narayan", since: "2d" },
-  { model: "Venue", variant: "SX", colour: "Abyss Black", by: "Divya Pillai", customer: "Farhan Khan", since: "5d" },
-  { model: "Ioniq 5", variant: "AWD", colour: "Optic White", by: "Arjun Nair", customer: "George Thomas", since: "1d" },
+  { model: "Indie", variant: "750W", colour: "Monsoon Blue", by: "Rahul Kumar", customer: "Lakshmi Narayan", since: "2d" },
+  { model: "Indie", variant: "480W", colour: "Winter White", by: "Divya Pillai", customer: "Farhan Khan", since: "5d" },
+  { model: "Indie", variant: "750W", colour: "Storm Grey", by: "Arjun Nair", customer: "George Thomas", since: "1d" },
 ];
 function InventoryAddCarScreen({ kind, onSave, onCancel }) {
   // Demo units are always the dealership's own current lineup, so Model/Variant are
-  // picked from what's actually sold here. A used car is whatever a customer traded in or
-  // it was bought as — any make at all (the existing stock already has a Maruti Baleno on
-  // the lot) — so it's free text instead of a picker tied to Hyundai's own range.
+  // picked from what's actually sold here. A used two-wheeler is whatever a customer traded
+  // in — any make at all (the existing stock already has a Honda Activa on the lot) — so
+  // it's free text instead of a picker tied to River's own range.
   const isDemo = kind === "demo";
   const [f, setF] = useState({ kind, model: ADMIN_MODELS[0], variant: "", make: "", freeModel: "",
     reg: "", year: String(new Date().getFullYear()),
-    km: "", fuel: "ICE", chassis: "", engineMotor: "", colour: "", ask: "", branch: ADMIN_SHOWROOMS[0], photos: 0 });
+    km: "", fuel: isDemo ? "EV" : "ICE", chassis: "", engineMotor: "", colour: "", ask: "", branch: ADMIN_SHOWROOMS[0], photos: 0 });
   const num = (v) => v.replace(/[^0-9]/g, "");
   const canSave = (isDemo ? f.variant : (f.make.trim() && f.freeModel.trim()))
     && f.reg.trim() && f.km !== "" && f.chassis.trim() && f.engineMotor.trim() && f.ask !== "";
@@ -2473,7 +2429,7 @@ function InventoryAddCarScreen({ kind, onSave, onCancel }) {
         border: "none", cursor: "pointer", padding: "0 0 12px", fontFamily: F, fontSize: 12.5, fontWeight: 700,
         color: C.primary }}><ChevronLeft size={14} />Back</button>
       <div style={{ fontFamily: F, fontWeight: 800, fontSize: 15.5, color: C.ink, marginBottom: 13 }}>
-        Add a {kind === "demo" ? "demo" : "used"} car
+        Add a {kind === "demo" ? "demo" : "used"} scooter
       </div>
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14 }}>
         {isDemo ? (
@@ -2491,13 +2447,13 @@ function InventoryAddCarScreen({ kind, onSave, onCancel }) {
               <AdminInput value={f.make} onChange={e => setF({ ...f, make: e.target.value })} placeholder="Any make" />
             </AdminField></div>
             <div style={{ flex: 1 }}><AdminField label="Model">
-              <AdminInput value={f.freeModel} onChange={e => setF({ ...f, freeModel: e.target.value })} placeholder="e.g. Baleno SX(O)" />
+              <AdminInput value={f.freeModel} onChange={e => setF({ ...f, freeModel: e.target.value })} placeholder="e.g. Activa 6G" />
             </AdminField></div>
           </div>
         )}
         <div style={{ display: "flex", gap: 8 }}>
           <div style={{ flex: 1 }}><AdminField label="Registration no.">
-            <AdminInput value={f.reg} onChange={e => setF({ ...f, reg: e.target.value })} placeholder="KA01 AB 1234" /></AdminField></div>
+            <AdminInput value={f.reg} onChange={e => setF({ ...f, reg: e.target.value })} placeholder="MH12 AB 1234" /></AdminField></div>
           <div style={{ flex: 1 }}><AdminField label="Year">
             <AdminInput inputMode="numeric" value={f.year} onChange={e => setF({ ...f, year: num(e.target.value) })} /></AdminField></div>
         </div>
@@ -2519,7 +2475,7 @@ function InventoryAddCarScreen({ kind, onSave, onCancel }) {
           </div>
         </AdminField>
         <AdminField label="Chassis no. (VIN)">
-          <AdminInput value={f.chassis} onChange={e => setF({ ...f, chassis: e.target.value.toUpperCase() })} placeholder="17-character VIN" />
+          <AdminInput value={f.chassis} onChange={e => setF({ ...f, chassis: e.target.value.toUpperCase() })} placeholder="17-character VIN, e.g. MD9RIV…" />
         </AdminField>
         <AdminField label={f.fuel === "EV" ? "Motor no." : "Engine no."}>
           <AdminInput value={f.engineMotor} onChange={e => setF({ ...f, engineMotor: e.target.value.toUpperCase() })} />
@@ -2546,7 +2502,7 @@ function InventoryAddCarScreen({ kind, onSave, onCancel }) {
           reg: f.reg.trim(), year: +f.year, km: +f.km, ask: +f.ask,
           days: 0, branch: f.branch, fuel: f.fuel, chassis: f.chassis.trim(), engineMotor: f.engineMotor.trim(),
           colour: f.colour.trim(), photos: f.photos,
-        })}>Add car</AdminPrimaryButton>
+        })}>Add scooter</AdminPrimaryButton>
       </div>
     </div>
   );
@@ -2554,17 +2510,17 @@ function InventoryAddCarScreen({ kind, onSave, onCancel }) {
 
 function InventoryScreen({ sub }) {
   const [open, setOpen] = useState(new Set());
-  const [cars, setCars] = useState(PREOWNED);
+  const [units, setUnits] = useState(PREOWNED);
   const [adding, setAdding] = useState(false);
   const toggle = (k) => setOpen(s2 => { const n = new Set(s2); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   const count = (v) => Object.values(v.colours).reduce((a, b2) => a + b2, 0);
   const view = sub || "new";
-  const title = { new: "New Cars", preowned: "Pre-Owned", demo: "Demo Cars", block: "Block/Allocate a car" }[view];
+  const title = { new: "New Scooters", preowned: "Pre-Owned", demo: "Demo Scooters", block: "Block/Allocate a scooter" }[view];
   const total = STOCK.reduce((n, m) => n + m.variants.reduce((a, v) => a + count(v), 0), 0);
-  const pre = cars.filter(p2 => view === "demo" ? p2.kind === "demo" : p2.kind === "used");
+  const pre = units.filter(p2 => view === "demo" ? p2.kind === "demo" : p2.kind === "used");
 
   if (adding) return <InventoryAddCarScreen kind={view === "demo" ? "demo" : "used"}
-    onSave={(car) => { setCars(cs => [car, ...cs]); setAdding(false); }} onCancel={() => setAdding(false)} />;
+    onSave={(unit) => { setUnits(us => [unit, ...us]); setAdding(false); }} onCancel={() => setAdding(false)} />;
 
   return (
     <div style={{ padding: "14px 14px 90px" }}>
@@ -2573,14 +2529,14 @@ function InventoryScreen({ sub }) {
           <span style={{ display: "block", fontFamily: F, fontWeight: 800, fontSize: 15.5, color: C.ink }}>{title}</span>
           <span style={{ display: "block", fontFamily: F, fontSize: 11.5, color: C.sub, marginTop: 1, marginBottom: 13 }}>
             {view === "new" ? `${total} units. Tap a model to expand.`
-            : view === "block" ? "Held for a customer — SEs block cars from the lead."
-            : `${pre.length} cars. Ageing past 45 days is flagged.`}
+            : view === "block" ? "Held for a customer — SEs block scooters from the lead."
+            : `${pre.length} scooters. Ageing past 45 days is flagged.`}
           </span>
         </span>
         {(view === "preowned" || view === "demo") && (
           <button onClick={() => setAdding(true)} style={{ padding: "8px 12px", borderRadius: 9, border: "none",
             background: C.primary, color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 12, cursor: "pointer",
-            whiteSpace: "nowrap", flexShrink: 0 }}>+ Add a car</button>
+            whiteSpace: "nowrap", flexShrink: 0 }}>+ Add a scooter</button>
         )}
       </div>
       {view === "new" && STOCK.map(m => {
@@ -2663,7 +2619,7 @@ const ADMIN_ROLE_DEFS = [
   { key: "SE", label: "Sales Executive", desc: "Owns leads end to end — qualification through delivery." },
   { key: "CRE", label: "Telecaller", desc: "First contact and qualification before handoff to an SE." },
   { key: "FIN", label: "Finance Desk", desc: "Loan files, document collection, sanction or rejection." },
-  { key: "EVL", label: "Evaluator", desc: "Trade-in appraisal. Sees no new-car pricing." },
+  { key: "EVL", label: "Evaluator", desc: "Trade-in appraisal. Sees no new-vehicle pricing." },
   { key: "INV", label: "Inventory", desc: "Stock, arrivals, and unit condition across branches." },
   { key: "RCP", label: "Receptionist", desc: "Walk-ins and the day's appointment schedule." },
   { key: "EDP", label: "EDP / Data", desc: "Data entry and system upkeep." },
@@ -2673,21 +2629,21 @@ const ADMIN_ROLE_TONE = { CEO: "#0B1946", SM: "#0B1946", TL: "#00695C", SE: "#4F
 
 const ADMIN_USERS_SEED = [
   { id: 1, name: "Priya Nambiar", phone: "+91 90080 11223", email: "priya.nambiar@autoprism.in", role: "SM", branch: "All branches", reportsTo: null, active: true, adminPrivilege: true },
-  { id: 2, name: "Rajesh Menon", phone: "+91 90080 22334", email: "rajesh.menon@autoprism.in", role: "SM", branch: "Whitefield", reportsTo: "Priya Nambiar", active: true, adminPrivilege: false },
-  { id: 3, name: "Anil Kumar", phone: "+91 90080 33445", email: "anil.kumar@autoprism.in", role: "TL", branch: "Whitefield", reportsTo: "Rajesh Menon", active: true, adminPrivilege: false },
-  { id: 4, name: "Sneha Rao", phone: "+91 90080 44556", email: "sneha.rao@autoprism.in", role: "TL", branch: "Indiranagar", reportsTo: "Priya Nambiar", active: true, adminPrivilege: false },
-  { id: 5, name: "Arjun Nair", phone: "+91 90080 55667", email: "arjun.nair@autoprism.in", role: "SE", branch: "Whitefield", reportsTo: "Anil Kumar", active: true, adminPrivilege: false },
-  { id: 6, name: "Rahul Kumar", phone: "+91 90080 66778", email: "rahul.kumar@autoprism.in", role: "SE", branch: "Indiranagar", reportsTo: "Sneha Rao", active: true, adminPrivilege: false },
-  { id: 7, name: "Divya Pillai", phone: "+91 90080 77889", email: "divya.pillai@autoprism.in", role: "SE", branch: "Indiranagar", reportsTo: "Sneha Rao", active: true, adminPrivilege: false },
-  { id: 8, name: "Meera Iyer", phone: "+91 90080 88990", email: "meera.iyer@autoprism.in", role: "CRE", branch: "Whitefield", reportsTo: "Anil Kumar", active: true, adminPrivilege: false },
-  { id: 9, name: "Kavya Suresh", phone: "+91 90080 99001", email: "kavya.suresh@autoprism.in", role: "CRE", branch: "Indiranagar", reportsTo: "Sneha Rao", active: true, adminPrivilege: false },
+  { id: 2, name: "Rajesh Menon", phone: "+91 90080 22334", email: "rajesh.menon@autoprism.in", role: "SM", branch: "Vashi", reportsTo: "Priya Nambiar", active: true, adminPrivilege: false },
+  { id: 3, name: "Anil Kumar", phone: "+91 90080 33445", email: "anil.kumar@autoprism.in", role: "TL", branch: "Vashi", reportsTo: "Rajesh Menon", active: true, adminPrivilege: false },
+  { id: 4, name: "Sneha Rao", phone: "+91 90080 44556", email: "sneha.rao@autoprism.in", role: "TL", branch: "Baner", reportsTo: "Priya Nambiar", active: true, adminPrivilege: false },
+  { id: 5, name: "Arjun Nair", phone: "+91 90080 55667", email: "arjun.nair@autoprism.in", role: "SE", branch: "Vashi", reportsTo: "Anil Kumar", active: true, adminPrivilege: false },
+  { id: 6, name: "Rahul Kumar", phone: "+91 90080 66778", email: "rahul.kumar@autoprism.in", role: "SE", branch: "Baner", reportsTo: "Sneha Rao", active: true, adminPrivilege: false },
+  { id: 7, name: "Divya Pillai", phone: "+91 90080 77889", email: "divya.pillai@autoprism.in", role: "SE", branch: "Baner", reportsTo: "Sneha Rao", active: true, adminPrivilege: false },
+  { id: 8, name: "Meera Iyer", phone: "+91 90080 88990", email: "meera.iyer@autoprism.in", role: "CRE", branch: "Vashi", reportsTo: "Anil Kumar", active: true, adminPrivilege: false },
+  { id: 9, name: "Kavya Suresh", phone: "+91 90080 99001", email: "kavya.suresh@autoprism.in", role: "CRE", branch: "Baner", reportsTo: "Sneha Rao", active: true, adminPrivilege: false },
   { id: 10, name: "Farouk Ahmed", phone: "+91 90080 10112", email: "farouk.ahmed@autoprism.in", role: "FIN", branch: "All branches", reportsTo: "Priya Nambiar", active: true, adminPrivilege: false },
   { id: 11, name: "Deepak Shetty", phone: "+91 90080 21223", email: "deepak.shetty@autoprism.in", role: "EVL", branch: "All branches", reportsTo: "Priya Nambiar", active: true, adminPrivilege: false },
   { id: 12, name: "Lakshmi Bhat", phone: "+91 90080 32334", email: "lakshmi.bhat@autoprism.in", role: "INV", branch: "All branches", reportsTo: "Priya Nambiar", active: true, adminPrivilege: false },
-  { id: 13, name: "Anjali Reddy", phone: "+91 90080 43445", email: "anjali.reddy@autoprism.in", role: "SE", branch: "Indiranagar", reportsTo: "Vikas Shetty", active: false, adminPrivilege: false },
+  { id: 13, name: "Anjali Reddy", phone: "+91 90080 43445", email: "anjali.reddy@autoprism.in", role: "SE", branch: "Baner", reportsTo: "Vikas Shetty", active: false, adminPrivilege: false },
 ];
 
-/* ============================ CALL LOG / BILLING / TEST DRIVE REPORT DATA ============================
+/* ============================ CALL LOG / BILLING / TEST RIDE REPORT DATA ============================
    Modelled on the interaction records the Telecaller and Sales Executive apps actually
    keep (a call history entry per lead: date, disposition, duration, notes) — reproduced
    here as report rows since the Manager app doesn't share live state with those apps.
@@ -2698,8 +2654,8 @@ const ADMIN_CALL_TIMES = ["9:14 AM", "10:32 AM", "11:05 AM", "12:40 PM", "2:15 P
 const ADMIN_CALL_DURATIONS = ["1:12", "2:04", "0:48", "3:21", "1:55", "4:10", "0:32"];
 const ADMIN_OUTCOMES = ["Connected", "No Answer", "Busy", "Switched Off", "Wrong Number"];
 const ADMIN_CRE_NOTES = ["Confirmed interest, shared brochure over WhatsApp.", "Asked for a callback in 2 days.",
-  "Discussed exchange value for the old car.", "Requested on-road price breakdown.", "Comparing with a rival model before deciding."];
-const ADMIN_SE_NOTES = ["Test drive discussed for the weekend.", "Negotiated discount, awaiting manager approval.",
+  "Discussed exchange value for the old petrol scooter.", "Requested on-road price breakdown.", "Comparing with a rival model before deciding."];
+const ADMIN_SE_NOTES = ["Test ride discussed for the weekend.", "Negotiated discount, awaiting manager approval.",
   "Customer wants extended warranty details.", "Finance documentation discussed.", "Delivery timeline confirmed."];
 
 function adminPad(n) { return n < 10 ? `0${n}` : `${n}`; }
@@ -2711,7 +2667,7 @@ const ADMIN_TEST_DRIVES = [];
 
 LEADS.forEach(l => {
   const owner = ADMIN_USERS_SEED.find(u => u.id === l.ownerId);
-  const branch = owner ? owner.branch : "Indiranagar";
+  const branch = owner ? owner.branch : "Baner";
   const cre = ADMIN_USERS_SEED.find(u => u.role === "CRE" && u.branch === branch);
 
   // Pre-handoff qualification calls, attributed to the branch's telecaller.
@@ -2744,7 +2700,7 @@ LEADS.forEach(l => {
       });
     }
 
-    // A subset of SE-owned leads get an actual test drive record.
+    // A subset of SE-owned leads get an actual test ride record.
     const tdSeed = l.id * 17;
     if (tdSeed % 10 < 4) {
       const [model, ...variantParts] = l.model.split(" ");
@@ -2776,45 +2732,41 @@ const ADMIN_WALLET_BILLING = LEADS.map(l => {
   };
 });
 
-const ADMIN_BRANCHES = ["All branches", "Indiranagar", "Whitefield"];
-const ADMIN_MODELS = ["Alcazar", "Creta", "Exter", "Ioniq 5", "Venue", "Verna"];
-const ADMIN_SOURCES = ["CarDekho", "Justdial", "OLX", "Referral", "Walk-in", "Website"];
+const ADMIN_BRANCHES = ["All branches", "Baner", "Vashi"];
+const ADMIN_MODELS = ["Indie"];
+const ADMIN_SOURCES = ["BikeDekho", "Justdial", "OLX", "Referral", "Walk-in", "Website"];
 const ADMIN_SHOWROOMS = ADMIN_BRANCHES.filter(b => b !== "All branches");
 
 const ADMIN_LOCATIONS_SEED = [
-  { id: 1, name: "Autoprism Hyundai — Indiranagar", address: "100 Feet Road, Indiranagar, Bengaluru, Karnataka 560038",
-    mapsLink: "https://maps.google.com/?q=Autoprism+Hyundai+Indiranagar", c1: "+91 80 4012 3456", c2: "+91 80 4012 3457",
-    w1: "+91 90080 11111", w2: "", email: "indiranagar@autoprism.in" },
-  { id: 2, name: "Autoprism Hyundai — Whitefield", address: "ITPL Main Road, Whitefield, Bengaluru, Karnataka 560066",
-    mapsLink: "https://maps.google.com/?q=Autoprism+Hyundai+Whitefield", c1: "+91 80 4012 9876", c2: "",
-    w1: "+91 90080 22222", w2: "+91 90080 22223", email: "whitefield@autoprism.in" },
+  { id: 1, name: "Autoprism River — Baner", address: "Baner Road, Baner, Pune, Maharashtra 411045",
+    mapsLink: "https://maps.google.com/?q=Autoprism+River+Baner+Pune", c1: "+91 20 4012 3456", c2: "+91 20 4012 3457",
+    w1: "+91 90080 11111", w2: "", email: "baner@autoprism.in" },
+  { id: 2, name: "Autoprism River — Vashi", address: "Palm Beach Road, Sector 17, Vashi, Navi Mumbai, Maharashtra 400703",
+    mapsLink: "https://maps.google.com/?q=Autoprism+River+Vashi+Navi+Mumbai", c1: "+91 22 4012 9876", c2: "",
+    w1: "+91 90080 22222", w2: "+91 90080 22223", email: "vashi@autoprism.in" },
 ];
 
+// River Maharashtra price sheet, Sep 2026. Ex-showroom is after the ₹5,000 PM E-DRIVE
+// subsidy; `insurance` includes RSA, `rto` includes road tax, and `handling` carries the
+// River Care extended-warranty plan (Plus Two = 5 yr, Plus Five = 8 yr). The 480W
+// "+ Plus" rows arrive via the price-list upload mock below.
 const ADMIN_VEHICLES_SEED = [
-  { model: "Creta", variants: [
-    { name: "E", exShowroom: 1109900, rto: 99891, insurance: 45000, handling: 12000, updated: "2 Aug 2026" },
-    { name: "SX", exShowroom: 1439900, rto: 129591, insurance: 54000, handling: 12000, updated: "2 Aug 2026" },
-    { name: "SX(O)", exShowroom: 1699900, rto: 152991, insurance: 61000, handling: 12000, updated: "2 Aug 2026" },
-  ]},
-  { model: "Venue", variants: [
-    { name: "S", exShowroom: 799900, rto: 71991, insurance: 34000, handling: 10000, updated: "28 Jul 2026" },
-    { name: "SX", exShowroom: 999900, rto: 89991, insurance: 40000, handling: 10000, updated: "28 Jul 2026" },
-  ]},
-  { model: "Exter", variants: [
-    { name: "EX", exShowroom: 679900, rto: 61191, insurance: 30000, handling: 9000, updated: "15 Jul 2026" },
-    { name: "SX(O)", exShowroom: 949900, rto: 85491, insurance: 38000, handling: 9000, updated: "15 Jul 2026" },
+  { model: "Indie", variants: [
+    { name: "750W", exShowroom: 154799, rto: 1060, insurance: 10889, handling: 0, updated: "2 Sep 2026" },
+    { name: "750W + Plus Two", exShowroom: 154799, rto: 1060, insurance: 10889, handling: 5899, updated: "2 Sep 2026" },
+    { name: "750W + Plus Five", exShowroom: 154799, rto: 1060, insurance: 10889, handling: 9912, updated: "2 Sep 2026" },
+    { name: "480W", exShowroom: 150799, rto: 1060, insurance: 10889, handling: 0, updated: "2 Sep 2026" },
   ]},
 ];
 
 const ADMIN_ACCESSORIES_SEED = [
-  { model: "Creta", items: [
-    { name: "Seat Covers (Leatherette)", price: 8500, updated: "2 Aug 2026" },
-    { name: 'Alloy Wheel Upgrade 17"', price: 32000, updated: "2 Aug 2026" },
-    { name: "Sunroof Wind Visor", price: 2200, updated: "2 Aug 2026" },
-  ]},
-  { model: "Venue", items: [
-    { name: "Seat Covers (Fabric)", price: 5000, updated: "28 Jul 2026" },
-    { name: "Body Graphics Kit", price: 6500, updated: "28 Jul 2026" },
+  { model: "Indie", items: [
+    { name: "Side Step", price: 1499, updated: "2 Sep 2026" },
+    { name: "Tubular Grab Rail", price: 849, updated: "2 Sep 2026" },
+    { name: "Pannier Slot Cover", price: 799, updated: "2 Sep 2026" },
+    { name: "Back Rest", price: 2199, updated: "2 Sep 2026" },
+    { name: "Tinted Visor", price: 1600, updated: "2 Sep 2026" },
+    { name: "Accessory fitment", price: 118, updated: "2 Sep 2026" },
   ]},
 ];
 
@@ -2908,7 +2860,7 @@ function AdminPrivilegeToggle({ icon: Icon, label, sub, on, onClick }) {
 /* ---------------- Users & Roles ---------------- */
 function AdminUserForm({ user, onSave, onCancel }) {
   const isNew = !user;
-  const [f, setF] = useState(user || { name: "", phone: "", email: "", role: "SE", branch: "Indiranagar",
+  const [f, setF] = useState(user || { name: "", phone: "", email: "", role: "SE", branch: "Baner",
     reportsTo: "", active: true, adminPrivilege: false, reportsPrivilege: false });
   const possibleParents = ADMIN_USERS_SEED.filter(u => {
     if (f.role === "SE" || f.role === "CRE") return u.role === "TL";
@@ -3345,8 +3297,9 @@ function AdminRuleBuilder({ existing, blockedBy, onSave, onCancel }) {
 function AdminLeadRulesScreen({ showToast }) {
   const [method, setMethod] = useState("load");
   const [rules, setRules] = useState([
-    // Model-only rule (sources left at ALL) — proves the two dimensions are independent.
-    { id: 1, showroom: "Whitefield", models: ["Alcazar"], sources: ["ALL"], levels: ["TL"], people: [3], mode: "exclusive" }, // Anil Kumar
+    // Source-only rule (models left at ALL) — proves the two dimensions are independent.
+    // River sells one model, so a model-only rule would just mean "everything".
+    { id: 1, showroom: "Vashi", models: ["ALL"], sources: ["BikeDekho"], levels: ["TL"], people: [3], mode: "exclusive" }, // Anil Kumar
   ]);
   const [building, setBuilding] = useState(null);
 
@@ -3508,7 +3461,7 @@ function AdminLocationForm({ loc, onSave, onCancel }) {
         color: C.primary }}><ChevronLeft size={14} />Back</button>
       <AdminScreenHeader title={isNew ? "Add location" : `Edit ${f.name || "location"}`} />
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14 }}>
-        <AdminField label="Name"><AdminInput value={f.name} onChange={e => setF({ ...f, name: e.target.value })} placeholder="Autoprism Hyundai — Branch" /></AdminField>
+        <AdminField label="Name"><AdminInput value={f.name} onChange={e => setF({ ...f, name: e.target.value })} placeholder="Autoprism River — Branch" /></AdminField>
         <AdminField label="Address"><AdminTextArea rows={2} value={f.address} onChange={e => setF({ ...f, address: e.target.value })} placeholder="Full postal address" /></AdminField>
         <AdminField label="Google Maps link"><AdminInput value={f.mapsLink} onChange={e => setF({ ...f, mapsLink: e.target.value })} placeholder="https://maps.google.com/…" /></AdminField>
         <div style={{ display: "flex", gap: 8 }}>
@@ -3594,12 +3547,12 @@ function AdminVariantForm({ model, variant, onSave, onCancel }) {
         color: C.primary }}><ChevronLeft size={14} />Back</button>
       <AdminScreenHeader title={isNew ? `Add variant · ${model}` : `${model} ${f.name}`} />
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14 }}>
-        <AdminField label="Variant name"><AdminInput value={f.name} onChange={e => setF({ ...f, name: e.target.value })} placeholder="e.g. SX(O)" /></AdminField>
+        <AdminField label="Variant name"><AdminInput value={f.name} onChange={e => setF({ ...f, name: e.target.value })} placeholder="e.g. 750W + Plus Two" /></AdminField>
         <AdminField label="Ex-showroom price"><AdminInput inputMode="numeric" value={f.exShowroom}
           onChange={e => setF({ ...f, exShowroom: num(e.target.value) })} placeholder="₹" /></AdminField>
-        <AdminField label="RTO"><AdminInput inputMode="numeric" value={f.rto} onChange={e => setF({ ...f, rto: num(e.target.value) })} placeholder="₹" /></AdminField>
-        <AdminField label="Insurance"><AdminInput inputMode="numeric" value={f.insurance} onChange={e => setF({ ...f, insurance: num(e.target.value) })} placeholder="₹" /></AdminField>
-        <AdminField label="Handling / logistics"><AdminInput inputMode="numeric" value={f.handling} onChange={e => setF({ ...f, handling: num(e.target.value) })} placeholder="₹" /></AdminField>
+        <AdminField label="RTO + road tax"><AdminInput inputMode="numeric" value={f.rto} onChange={e => setF({ ...f, rto: num(e.target.value) })} placeholder="₹" /></AdminField>
+        <AdminField label="Insurance + RSA"><AdminInput inputMode="numeric" value={f.insurance} onChange={e => setF({ ...f, insurance: num(e.target.value) })} placeholder="₹" /></AdminField>
+        <AdminField label="River Care plan / handling"><AdminInput inputMode="numeric" value={f.handling} onChange={e => setF({ ...f, handling: num(e.target.value) })} placeholder="₹" /></AdminField>
         <div style={{ background: C.bg, borderRadius: 9, padding: "10px 11px", marginBottom: 14, display: "flex", justifyContent: "space-between" }}>
           <span style={{ fontFamily: F, fontSize: 12, fontWeight: 700, color: C.sub }}>On-road total</span>
           <span style={{ fontFamily: F, fontSize: 13.5, fontWeight: 900, color: C.ink }}>
@@ -3617,14 +3570,13 @@ function AdminVariantForm({ model, variant, onSave, onCancel }) {
 // are editable and nothing saves until confirmed.
 const ADMIN_EXTRACT_MOCKS = {
   pricing: [
-    { model: "Alcazar", name: "Prestige", exShowroom: 1549900, rto: 139491, insurance: 58000, handling: 12000 },
-    { model: "Alcazar", name: "Platinum", exShowroom: 1729900, rto: 155691, insurance: 63000, handling: 12000 },
-    { model: "Alcazar", name: "Signature 7-str", exShowroom: 1929900, rto: 173691, insurance: 69000, handling: 12000 },
+    { model: "Indie", name: "480W + Plus Two", exShowroom: 150799, rto: 1060, insurance: 10889, handling: 5899 },
+    { model: "Indie", name: "480W + Plus Five", exShowroom: 150799, rto: 1060, insurance: 10889, handling: 9912 },
   ],
   accessories: [
-    { model: "Alcazar", name: "Roof Rails", price: 7500 },
-    { model: "Alcazar", name: "Ambient Lighting Kit", price: 4200 },
-    { model: "Alcazar", name: "Boot Organiser", price: 1800 },
+    { model: "Indie", name: "Plain Visor", price: 699 },
+    { model: "Indie", name: "Half-face Helmet", price: 1499 },
+    { model: "Indie", name: "Full-face Helmet", price: 1999 },
   ],
 };
 
@@ -3699,7 +3651,7 @@ function AdminExtractReview({ sourceName, rows, onDiscard, onConfirm }) {
             ))}
           </div>
           <div style={{ fontFamily: F, fontSize: 10, color: C.faint, marginTop: 4 }}>
-            Model · Variant · Ex-showroom · RTO · Insurance · Handling — on-road {inr(adminOnRoad(r))}
+            Model · Variant · Ex-showroom · RTO · Insurance + RSA · River Care — on-road {inr(adminOnRoad(r))}
           </div>
         </div>
       ))}
@@ -3723,7 +3675,7 @@ function AdminAccessoryForm({ model, item, onSave, onCancel }) {
         color: C.primary }}><ChevronLeft size={14} />Back</button>
       <AdminScreenHeader title={isNew ? `Add accessory · ${model}` : `${model} — ${f.name}`} />
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14 }}>
-        <AdminField label="Accessory name"><AdminInput value={f.name} onChange={e => setF({ ...f, name: e.target.value })} placeholder="e.g. Roof Rails" /></AdminField>
+        <AdminField label="Accessory name"><AdminInput value={f.name} onChange={e => setF({ ...f, name: e.target.value })} placeholder="e.g. Side Step" /></AdminField>
         <AdminField label="Price"><AdminInput inputMode="numeric" value={f.price} onChange={e => setF({ ...f, price: num(e.target.value) })} placeholder="₹" /></AdminField>
         <AdminPrimaryButton full disabled={!canSave} onClick={() => onSave(f)}>{isNew ? "Add accessory" : "Save changes"}</AdminPrimaryButton>
       </div>
@@ -3758,7 +3710,7 @@ function AdminAccessoryExtractReview({ sourceName, rows, onDiscard, onConfirm })
 
 function AdminAccessoriesScreen({ showToast }) {
   const [data, setData] = useState(ADMIN_ACCESSORIES_SEED);
-  const [open, setOpen] = useState(new Set(["Creta"]));
+  const [open, setOpen] = useState(new Set(["Indie"]));
   const [editing, setEditing] = useState(null);
   const [extracted, setExtracted] = useState(null);
   const toggle = (m) => setOpen(s => { const n = new Set(s); if (n.has(m)) n.delete(m); else n.add(m); return n; });
@@ -3846,7 +3798,7 @@ function AdminAccessoriesScreen({ showToast }) {
 function AdminVehiclesScreen({ showToast }) {
   const [tab, setTab] = useState("pricing");
   const [data, setData] = useState(ADMIN_VEHICLES_SEED);
-  const [open, setOpen] = useState(new Set(["Creta"]));
+  const [open, setOpen] = useState(new Set(["Indie"]));
   const [editing, setEditing] = useState(null);
   const [extracted, setExtracted] = useState(null);
   const toggle = (m) => setOpen(s => { const n = new Set(s); if (n.has(m)) n.delete(m); else n.add(m); return n; });
@@ -4015,7 +3967,7 @@ function AdminCancellationCard({ lead, onOpen, onLogCall, showToast }) {
         </span>
         <span style={{ textAlign: "right", flexShrink: 0 }}>
           <span style={{ display: "block", fontFamily: F, fontSize: 12, fontWeight: 800, color: C.ink }}>{inr(lead.value)}</span>
-          <span style={{ display: "block", fontFamily: F, fontSize: 10, color: C.faint, marginTop: 2 }}>car value</span>
+          <span style={{ display: "block", fontFamily: F, fontSize: 10, color: C.faint, marginTop: 2 }}>scooter value</span>
         </span>
       </div>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 5, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}` }}>
@@ -4256,13 +4208,13 @@ const ADMIN_STATUS_TONE = { Approved: C.green, Pending: C.warm, Rejected: C.hot 
 const ADMIN_TEMPLATES_SEED = [
   { id: 1, name: "Welcome", channel: "SMS", type: "Transactional", status: "Approved",
     ref: "DLT 1707168312450001",
-    content: "Hi {#var#}, thank you for your interest in Autoprism Hyundai. Our team will reach out shortly. - AUTOPR" },
-  { id: 2, name: "Test Drive Scheduled", channel: "SMS", type: "Transactional", status: "Approved",
+    content: "Hi {#var#}, thank you for your interest in Autoprism River. Our team will reach out shortly. - AUTOPR" },
+  { id: 2, name: "Test Ride Scheduled", channel: "SMS", type: "Transactional", status: "Approved",
     ref: "DLT 1707168312450002",
-    content: "Hi {#var#}, your test drive for {#var#} is confirmed on {#var#} at {#var#}. - AUTOPR" },
-  { id: 3, name: "Test Drive Completed & Feedback", channel: "WhatsApp", type: "Transactional", status: "Approved",
+    content: "Hi {#var#}, your test ride for {#var#} is confirmed on {#var#} at {#var#}. - AUTOPR" },
+  { id: 3, name: "Test Ride Completed & Feedback", channel: "WhatsApp", type: "Transactional", status: "Approved",
     ref: "td_feedback_v2",
-    content: "Hi {{1}}, thanks for test driving the {{2}} today! We'd love your feedback: {{3}}" },
+    content: "Hi {{1}}, thanks for test riding the {{2}} today! We'd love your feedback: {{3}}" },
   { id: 4, name: "Booking Confirmation", channel: "SMS", type: "Transactional", status: "Approved",
     ref: "DLT 1707168312450003",
     content: "Hi {#var#}, your booking for {#var#} is confirmed. Booking ID: {#var#}. - AUTOPR" },
@@ -4274,10 +4226,10 @@ const ADMIN_TEMPLATES_SEED = [
     content: "Hi {#var#}, your {#var#} is due for service. Book a slot: {#var#} - AUTOPR" },
   { id: 7, name: "Festive Offer", channel: "SMS", type: "Marketing", status: "Approved",
     ref: "DLT 1707168312450004",
-    content: "Hi {#var#}, festive offers on Creta & Venue this week only! Visit Autoprism today. - AUTOPR" },
+    content: "Hi {#var#}, festive offers on the River Indie this week only - free helmet + River Care discount! Visit Autoprism today. - AUTOPR" },
   { id: 8, name: "New Model Launch", channel: "WhatsApp", type: "Marketing", status: "Rejected",
     ref: "new_launch_promo",
-    content: "Hi {{1}}, the all-new {{2}} has arrived! Book a test drive today." },
+    content: "Hi {{1}}, the new {{2}} has arrived! Book a test ride today." },
 ];
 
 function AdminTemplateForm({ channel, template, onSave, onCancel }) {
@@ -4620,17 +4572,17 @@ function AdminMessagingScreen({ showToast }) {
 /* ============================ SECURITY ============================
    Data retention and Data Principal requests live here — DPDP Act, 2023. */
 const ADMIN_SESSIONS_SEED = [
-  { id: 1, user: "Arjun Nair", device: "iPhone 14 · Autoprism app", location: "Whitefield", last: "2m ago", current: false },
-  { id: 2, user: "Sneha Rao", device: "Samsung A54 · Autoprism app", location: "Indiranagar", last: "18m ago", current: false },
-  { id: 3, user: "Priya Nambiar", device: "iPhone 15 Pro · Autoprism app", location: "Indiranagar", last: "Just now", current: true },
-  { id: 4, user: "Rahul Kumar", device: "Redmi Note 13 · Autoprism app", location: "Indiranagar", last: "3h ago", current: false },
+  { id: 1, user: "Arjun Nair", device: "iPhone 14 · Autoprism app", location: "Vashi", last: "2m ago", current: false },
+  { id: 2, user: "Sneha Rao", device: "Samsung A54 · Autoprism app", location: "Baner", last: "18m ago", current: false },
+  { id: 3, user: "Priya Nambiar", device: "iPhone 15 Pro · Autoprism app", location: "Baner", last: "Just now", current: true },
+  { id: 4, user: "Rahul Kumar", device: "Redmi Note 13 · Autoprism app", location: "Baner", last: "3h ago", current: false },
 ];
 const ADMIN_AUDIT_SEED = [
   { who: "Priya Nambiar", what: "Changed the volume incentive tiers", when: "Today, 10:12 AM" },
   { who: "Rajesh Menon", what: "Added Anjali Reddy as a Sales Executive", when: "Yesterday, 4:40 PM" },
-  { who: "Priya Nambiar", what: "Added a lead rule — Alcazar in Whitefield", when: "Yesterday, 11:05 AM" },
-  { who: "Priya Nambiar", what: "Deactivated a Whitefield user login", when: "3 days ago" },
-  { who: "Rajesh Menon", what: "Edited a Vehicles price list — Creta", when: "4 days ago" },
+  { who: "Priya Nambiar", what: "Added a lead rule — BikeDekho leads in Vashi", when: "Yesterday, 11:05 AM" },
+  { who: "Priya Nambiar", what: "Deactivated a Vashi user login", when: "3 days ago" },
+  { who: "Rajesh Menon", what: "Edited a Vehicles price list — Indie", when: "4 days ago" },
   { who: "Priya Nambiar", what: "Moved Arjun Nair to Sneha Rao's team", when: "5 days ago" },
   { who: "Priya Nambiar", what: "Changed the Messaging opt-in template", when: "6 days ago" },
 ];
@@ -4683,10 +4635,10 @@ function AdminSecurityScreen({ showToast }) {
     setRpq(""); setRpqResult(null);
   };
   const ADMIN_LEAD_UPLOAD_MOCK = [
-    { name: "Kiran Malhotra", phone: "+91 98450 11223", model: "Creta SX(O)", source: "Website" },
-    { name: "Sanya Kapoor", phone: "+91 98450 33445", model: "Venue SX", source: "CarDekho" },
-    { name: "Vivek Rao", phone: "+91 98450 55667", model: "Alcazar Platinum", source: "Walk-in" },
-    { name: "Meghna Iyer", phone: "+91 98450 77889", model: "Verna SX", source: "Referral" },
+    { name: "Kiran Malhotra", phone: "+91 98450 11223", model: "Indie 750W", source: "Website" },
+    { name: "Sanya Kapoor", phone: "+91 98450 33445", model: "Indie 480W", source: "BikeDekho" },
+    { name: "Vivek Rao", phone: "+91 98450 55667", model: "Indie 750W + Plus Two", source: "Walk-in" },
+    { name: "Meghna Iyer", phone: "+91 98450 77889", model: "Indie 750W + Plus Five", source: "Referral" },
   ];
   const pickLeadFile = (f) => {
     if (!f) return;
@@ -4979,7 +4931,7 @@ function AdminSecurityScreen({ showToast }) {
 /* ============================ TARGETS & INCENTIVES ============================
    Real Indian dealership practice, not an invented scheme:
      - Volume slabs, applied RETROACTIVELY to every unit once crossed. This is exactly how
-       OEM mid-month schemes work ("cross 240 from 200, get +Rs 8,000 on all 240") — it's
+       OEM mid-month schemes work ("cross 240 from 200, get +Rs 800 on all 240") — it's
        what makes closing the next slab worth chasing rather than just the marginal unit.
      - Finance and Insurance attach earn a flat amount per unit, mirroring the real payout
        dealers get from lenders and insurers and pass a slice of downstream.
@@ -4988,12 +4940,12 @@ function AdminSecurityScreen({ showToast }) {
    already in the app, so the preview below is a real number, not a mocked one. */
 
 /* ============================ TARGETS & INCENTIVES ============================
-   Selling an Exter and selling an Ioniq 5 are not the same event — the whole point of an
-   incentive is to push what doesn't sell itself, so the rate has to vary by model, not
-   just by how many units crossed the line. What stays true from the research (Indian OEM
-   mid-month schemes: "cross 240 from 200, get +Rs 8,000 on ALL 240") is the volume TIER —
-   total units retailed still decides which pay level an SE is on. What changes is that
-   the rate AT that level now depends on which car was sold, not one flat number.
+   Selling a base Indie 480W and selling an Indie 750W with a Plus Five plan are not the
+   same event — the whole point of an incentive is to push what doesn't sell itself, so the
+   rate has to vary by model and variant, not just by how many units crossed the line. What
+   stays true from the research (OEM mid-month schemes: "cross 240 from 200, get +Rs 800 on
+   ALL 240") is the volume TIER — total units retailed still decides which pay level an SE
+   is on. What changes is that the rate AT that level depends on which scooter was sold.
 
    The old retroactive/incremental toggle is gone for a concrete reason, not a style
    choice: with a real sale date per unit, "only units above the threshold" is computable.
@@ -5002,12 +4954,12 @@ function AdminSecurityScreen({ showToast }) {
 
 /* ============================ TARGETS & INCENTIVES ============================
    Three separate, additive layers — not one combined matrix:
-     1. Volume tiers — a flat rate per car, by total units retailed this month.
-     2. Model bonus — a flat rate per car, fixed per model, stacked on top of (1).
+     1. Volume tiers — a flat rate per scooter, by total units retailed this month.
+     2. Model bonus — a flat rate per scooter, fixed per model, stacked on top of (1).
      3. Add-on incentives — six named products, each the value type it actually is:
         a commission percentage where the payout scales with billing (Accessories, the
-        generic Additional Add-on), a flat amount where it doesn't (Extended Warranty,
-        Car Coating, In-house Insurance, In-house Finance). */
+        generic Additional Add-on), a flat amount where it doesn't (River Care Warranty,
+        Body Coating, In-house Insurance, In-house Finance). */
 
 /* ============================ TARGETS & COMMISSIONS DATA ============================
    Every configurable line shows both bases at once — a flat box, a small "Or", a
@@ -5017,23 +4969,26 @@ function AdminSecurityScreen({ showToast }) {
    one or two of the three without deleting anyone's numbers. */
 
 const ADMIN_TIERS_SEED = [
-  { id: 1, from: 0, to: 6, flatRate: 1500, pctRate: 0 },
-  { id: 2, from: 7, to: 10, flatRate: 2500, pctRate: 0 },
-  { id: 3, from: 11, to: 999, flatRate: 4000, pctRate: 0 },
+  { id: 1, from: 0, to: 12, flatRate: 300, pctRate: 0 },
+  { id: 2, from: 13, to: 20, flatRate: 450, pctRate: 0 },
+  { id: 3, from: 21, to: 999, flatRate: 600, pctRate: 0 },
 ];
+// One model, so the model layer is a single Indie line; per-variant pushes (e.g. the
+// Plus Five plan) live in the variant-specific rules seeded in the Commissions screen.
 const ADMIN_MODEL_BONUS_SEED = {
-  Exter: { flat: 0, pct: 0 }, Venue: { flat: 0, pct: 0 },
-  Verna: { flat: 500, pct: 0 }, Creta: { flat: 500, pct: 0 },
-  Alcazar: { flat: 1500, pct: 0 }, "Ioniq 5": { flat: 2500, pct: 0 },
+  Indie: { flat: 100, pct: 0 },
 };
-const ADMIN_TARGET_BONUS_SEED = { flat: 5000, pct: 0 };
+const ADMIN_VARIANT_RULES_SEED = [
+  { id: 1, model: "Indie", variant: "750W + Plus Five", flat: 250, pct: 0 },
+];
+const ADMIN_TARGET_BONUS_SEED = { flat: 1000, pct: 0 };
 const ADMIN_ADDONS_SEED = [
   { key: "accessories", label: "Accessories", flatValue: 0, pctValue: 10, flagField: "accessoriesBill", billField: "accessoriesBill" },
-  { key: "warranty", label: "Extended Warranty", flatValue: 800, pctValue: 0, flagField: "warranty", billField: "warrantyBill" },
-  { key: "coating", label: "Car Coating", flatValue: 600, pctValue: 0, flagField: "coating", billField: "coatingBill" },
+  { key: "warranty", label: "River Care Warranty", flatValue: 150, pctValue: 0, flagField: "warranty", billField: "warrantyBill" },
+  { key: "coating", label: "Body Coating", flatValue: 100, pctValue: 0, flagField: "coating", billField: "coatingBill" },
   { key: "addon", label: "Additional Add-on", flatValue: 0, pctValue: 8, flagField: "addonBill", billField: "addonBill" },
-  { key: "insurance", label: "In-house Insurance", flatValue: 1000, pctValue: 0, flagField: "insurance", billField: "insuranceBill" },
-  { key: "finance", label: "In-house Finance", flatValue: 1000, pctValue: 0, flagField: "finance", billField: "financeBill" },
+  { key: "insurance", label: "In-house Insurance", flatValue: 200, pctValue: 0, flagField: "insurance", billField: "insuranceBill" },
+  { key: "finance", label: "In-house Finance", flatValue: 200, pctValue: 0, flagField: "finance", billField: "financeBill" },
 ];
 
 function adminTierFor(retailed, tiers) {
@@ -5047,21 +5002,21 @@ function adminComputeIncentive(rep, tiers, volumeOn, modelBonus, modelOn, varian
   const closed = LEADS.filter(l => l.ownerId === rep.id && (l.stage === "Retailed" || l.stage === "Delivered"));
   const tier = adminTierFor(rep.retailed, tiers);
 
-  // Grouped by the exact model + variant a car was — the finest grain a variant rule can
-  // match at. Cars of a model with no matching rule fall back to the model's own bonus.
+  // Grouped by the exact model + variant a scooter was — the finest grain a variant rule can
+  // match at. Scooters of a model with no matching rule fall back to the model's own bonus.
   const byVariant = {};
   closed.forEach(l => {
     const model = ADMIN_MODELS.find(m => l.model.startsWith(m)) || l.model;
     const variant = l.model.slice(model.length).trim();
     const key = model + "|" + variant;
-    (byVariant[key] = byVariant[key] || { model, variant, cars: [] }).cars.push(l);
+    (byVariant[key] = byVariant[key] || { model, variant, units: [] }).units.push(l);
   });
-  const modelLines = Object.values(byVariant).map(({ model, variant, cars }) => {
+  const modelLines = Object.values(byVariant).map(({ model, variant, units }) => {
     const rule = variantRules.find(r => r.model === model && r.variant === variant);
     const bonus = rule ? { flat: rule.flat, pct: rule.pct } : (modelBonus[model] || { flat: 0, pct: 0 });
-    const volumeAmt = volumeOn ? cars.length * tier.flatRate + cars.reduce((s, l) => s + l.value * tier.pctRate / 100, 0) : 0;
-    const modelAmt = modelOn ? cars.length * bonus.flat + cars.reduce((s, l) => s + l.value * bonus.pct / 100, 0) : 0;
-    return { model: variant ? `${model} ${variant}` : model, count: cars.length, tier, bonus, overridden: !!rule, amount: volumeAmt + modelAmt };
+    const volumeAmt = volumeOn ? units.length * tier.flatRate + units.reduce((s, l) => s + l.value * tier.pctRate / 100, 0) : 0;
+    const modelAmt = modelOn ? units.length * bonus.flat + units.reduce((s, l) => s + l.value * bonus.pct / 100, 0) : 0;
+    return { model: variant ? `${model} ${variant}` : model, count: units.length, tier, bonus, overridden: !!rule, amount: volumeAmt + modelAmt };
   });
   const volumeTotal = modelLines.reduce((n, l) => n + l.amount, 0);
 
@@ -5192,7 +5147,7 @@ function AdminTargetRow({ node, depth, expanded, onToggle, onSetTarget }) {
 
 const ADMIN_TXNS_SEED = [
   { id: 1, when: "Today, 9:14 AM", desc: "WhatsApp — Festive Offer campaign", amount: -1240 },
-  { id: 2, when: "Yesterday", desc: "SMS — Test Drive Scheduled (auto)", amount: -380 },
+  { id: 2, when: "Yesterday", desc: "SMS — Test Ride Scheduled (auto)", amount: -380 },
   { id: 3, when: "3 days ago", desc: "Wallet recharge", amount: 10000 },
   { id: 4, when: "6 days ago", desc: "WhatsApp — Delivery Update (auto)", amount: -560 },
   { id: 5, when: "12 days ago", desc: "Wallet recharge — auto top-up", amount: 5000 },
@@ -5219,7 +5174,7 @@ const ADMIN_BILLING_DETAIL = {
     ],
     campaigns: [
       { name: "New Model Launch", recipients: 418, amount: 1000 },
-      { name: "Test Drive Reminder", recipients: 165, amount: 400 },
+      { name: "Test Ride Reminder", recipients: 165, amount: 400 },
       { name: "Diwali Wishes", recipients: 96, amount: 200 },
     ],
   },
@@ -5265,7 +5220,7 @@ function AdminInvoiceScreen({ gstin, billingEmail, onBack, showToast }) {
 
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
-          <span style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink }}>Autoprism Hyundai</span>
+          <span style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink }}>Autoprism River</span>
           <span style={{ fontFamily: F, fontSize: 11, color: C.faint }}>INV-2026-0847</span>
         </div>
         <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, marginBottom: 2 }}>GSTIN {gstin}</div>
@@ -5322,29 +5277,29 @@ function AdminInvoiceScreen({ gstin, billingEmail, onBack, showToast }) {
        something, which a recording can't handle.
    Cost and value are shown side by side rather than collapsed into one "ROI multiple" —
    at these costs-per-call, that multiple is a huge, not-very-believable number the
-   moment an agent influences even one car sale, so it hides more than it shows. */
+   moment an agent influences even one scooter sale, so it hides more than it shows. */
 
-// Value is counted only where a car was actually booked or retailed off the back of the
-// call — a reactivated conversation or an attended test drive on its own earns nothing
+// Value is counted only where a scooter was actually booked or retailed off the back of the
+// call — a reactivated conversation or an attended test ride on its own earns nothing
 // here, since neither is money until it turns into that.
 const ADMIN_AGENTS_SEED = [
   {
-    id: 1, name: "Test Drive Reminder", kind: "Robo Call", status: "running",
-    trigger: "24h before a scheduled test drive",
+    id: 1, name: "Test Ride Reminder", kind: "Robo Call", status: "running",
+    trigger: "24h before a scheduled test ride",
     calls: 380, connected: 312, outcome: "No-show rate: 34% → 19%",
-    costPerCall: 1.10, cost: 418, value: 8400000, valueNote: "6 bookings traced to attendees who'd have no-showed",
+    costPerCall: 1.10, cost: 418, value: 1010000, valueNote: "6 bookings traced to attendees who'd have no-showed",
   },
   {
     id: 3, name: "Cold Lead Re-engagement", kind: "Voice AI", status: "running",
     trigger: "Lead marked Lost <3m, no contact in 30 days",
     calls: 210, connected: 96, outcome: "34 leads reactivated, 6 booked",
-    costPerCall: 8, cost: 1680, value: 8400000, valueNote: "6 bookings from leads written off as lost",
+    costPerCall: 8, cost: 1680, value: 1010000, valueNote: "6 bookings from leads written off as lost",
   },
   {
     id: 4, name: "Post-Delivery Feedback & Referral", kind: "Voice AI", status: "paused",
     trigger: "3 days after vehicle delivery",
     calls: 150, connected: 89, outcome: "22 referrals captured, 3 booked",
-    costPerCall: 8, cost: 1200, value: 4200000, valueNote: "3 sales from referred customers",
+    costPerCall: 8, cost: 1200, value: 505000, valueNote: "3 sales from referred customers",
   },
 ];
 
@@ -5498,7 +5453,7 @@ function AdminWalletScreen({ showToast }) {
   const [alertChannels, setAlertChannels] = useState(["SMS", "Email"]);
   const [alertPhone, setAlertPhone] = useState("+91 90080 11223");
   const [alertEmail, setAlertEmail] = useState("priya.nambiar@autoprism.in");
-  const [gstin, setGstin] = useState("29ABCDE1234F1Z5");
+  const [gstin, setGstin] = useState("27ABCDE1234F1Z5");
   const [billingEmail, setBillingEmail] = useState("accounts@autoprism.in");
   const [txns, setTxns] = useState(ADMIN_TXNS_SEED);
   const [viewingInvoice, setViewingInvoice] = useState(false);
@@ -5659,7 +5614,7 @@ function AdminTargetsScreen({ org, onSetTarget }) {
         <AdminTargetRow node={org} depth={0} expanded={expanded} onToggle={toggle} onSetTarget={onSetTarget} />
       </div>
       <div style={{ fontFamily: F, fontSize: 11, color: C.faint, marginTop: 9, textAlign: "center" }}>
-        Dealership total: {r.target} cars this month.
+        Dealership total: {r.target} scooters this month.
       </div>
     </div>
   );
@@ -5670,7 +5625,7 @@ function AdminCommissionsScreen({ showToast, org }) {
   const [volumeOn, setVolumeOn] = useState(true);
   const [modelBonus, setModelBonus] = useState(ADMIN_MODEL_BONUS_SEED);
   const [modelOn, setModelOn] = useState(true);
-  const [variantRules, setVariantRules] = useState([]);
+  const [variantRules, setVariantRules] = useState(ADMIN_VARIANT_RULES_SEED);
   const [variantRulesOn, setVariantRulesOn] = useState(true);
   const [addingRule, setAddingRule] = useState(false);
   const [ruleModel, setRuleModel] = useState(ADMIN_MODELS[0]);
@@ -5689,7 +5644,7 @@ function AdminCommissionsScreen({ showToast, org }) {
   const addTier = () => setTiers(t => {
     const last = t[t.length - 1];
     return [...t.slice(0, -1), { ...last, to: last.from + 3 },
-      { id: Date.now(), from: last.from + 4, to: 999, flatRate: last.flatRate + 1500, pctRate: last.pctRate }];
+      { id: Date.now(), from: last.from + 4, to: 999, flatRate: last.flatRate + 150, pctRate: last.pctRate }];
   });
 
   const ses = flatten(org);
@@ -5712,7 +5667,7 @@ function AdminCommissionsScreen({ showToast, org }) {
               <input inputMode="numeric" disabled={!volumeOn} value={t.to >= 999 ? "" : String(t.to)} placeholder="∞"
                 onChange={e => updateTier(i, { ...t, to: e.target.value === "" ? 999 : Number(e.target.value.replace(/[^0-9]/g, "")) || 0 })}
                 style={{ ...adminTinyInput, width: 30, flexShrink: 0 }} />
-              <span style={{ fontFamily: F, fontSize: 10, color: C.faint }}>cars</span>
+              <span style={{ fontFamily: F, fontSize: 10, color: C.faint }}>units</span>
             </div>
             <span style={{ fontFamily: F, fontSize: 11, color: C.faint, flexShrink: 0 }}>₹</span>
             <input inputMode="numeric" disabled={!volumeOn} value={String(t.flatRate)}
@@ -5818,7 +5773,7 @@ function AdminCommissionsScreen({ showToast, org }) {
               <div style={{ fontFamily: F, fontSize: 10, fontWeight: 800, color: C.faint, textTransform: "uppercase", margin: "2px 0 4px" }}>Volume + model</div>
               {calc.modelLines.map(l => (
                 <div key={l.model} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                  <span style={{ fontFamily: F, fontSize: 11.5, color: C.sub }}>{l.model} <span style={{ color: C.faint }}>· {l.count} car{l.count !== 1 ? "s" : ""}</span>
+                  <span style={{ fontFamily: F, fontSize: 11.5, color: C.sub }}>{l.model} <span style={{ color: C.faint }}>· {l.count} scooter{l.count !== 1 ? "s" : ""}</span>
                     {l.overridden && <span style={{ marginLeft: 5, fontFamily: F, fontSize: 9, fontWeight: 800, color: C.primary,
                       background: C.primarySoft, borderRadius: 4, padding: "1px 5px" }}>OVERRIDE</span>}</span>
                   <span style={{ fontFamily: F, fontSize: 12, fontWeight: 700, color: C.ink }}>{inr(l.amount)}</span>
@@ -5899,7 +5854,7 @@ function MyAccountScreen({ showToast }) {
         </AdminField>
         <AdminField label="Email ID"><AdminInput value={email} onChange={e => setEmail(e.target.value)} /></AdminField>
         <AdminField label="Language">
-          <AdminSelect value={language} onChange={setLanguage} options={["English", "Hindi", "Telugu", "Kannada", "Tamil"]} />
+          <AdminSelect value={language} onChange={setLanguage} options={["English", "Hindi", "Marathi", "Gujarati", "Tamil"]} />
         </AdminField>
 
         <AdminDivider />
@@ -5985,7 +5940,7 @@ export default function ManagerApp() {
   // that total equally across its direct reports, and each of those splits again across
   // theirs, all the way to the leaves. A Sales Executive has no reports, so the number
   // lands directly on them. Remainders go to the first few children so the total always
-  // adds back up exactly, never silently drops a car.
+  // adds back up exactly, never silently drops a scooter.
   const distributeTarget = (node, total) => {
     if (!node.reports || node.reports.length === 0) return { ...node, target: total };
     const n = node.reports.length;
@@ -6035,10 +5990,10 @@ export default function ManagerApp() {
       { key: "leads:activity",  label: "Recent Activity" },
     ]},
     { key: "inventory", label: "Inventory", Icon: Car, subs: [
-      { key: "inventory:new",      label: "New Cars" },
+      { key: "inventory:new",      label: "New Scooters" },
       { key: "inventory:preowned", label: "Pre-Owned" },
-      { key: "inventory:demo",     label: "Demo Cars" },
-      { key: "inventory:block",    label: "Block/Allocate a car" },
+      { key: "inventory:demo",     label: "Demo Scooters" },
+      { key: "inventory:block",    label: "Block/Allocate a scooter" },
     ]},
     { key: "performance", label: "Performance", Icon: BarChart3, subs: [
       { key: "performance:target", label: "Target Achievement" },
