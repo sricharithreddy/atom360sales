@@ -106,7 +106,7 @@ const LABEL_OPTIONS = ["Exchange", "Finance", "Urgent"];
 
 // The 6-milestone status timeline. "Lost" is deliberately excluded — it's an exit from the
 // funnel, not a milestone reached along it, so it's handled as a separate action.
-const STATUS_ORDER = ["New", "Contacted", "Test Drive", "Opportunity", "Booking", "Retailed", "Delivered"];
+const STATUS_ORDER = ["New", "Contacted", "Test Ride", "Opportunity", "Booking", "Retailed", "Delivered"];
 const STATUS_FILTER_OPTIONS = [...STATUS_ORDER, "Lost"];
 
 // Ordered worst → best. Estimate range spans one level below to one level above the selected condition.
@@ -145,7 +145,7 @@ const LANG_STRINGS = {
   // Actions
   "Call":           { hi: "Call karo",   te: "Call cheyyandi",kn: "Call maadi", ta: "Call pannu"  },
   "WhatsApp":       { hi: "WhatsApp karo",te: "WhatsApp cheyyandi",kn: "WhatsApp maadi",ta: "WhatsApp pannu"},
-  "Test Drive":     { hi: "Test Drive",  te: "Test Drive",   kn: "Test Drive",  ta: "Test Drive"  },
+  "Test Ride":     { hi: "Test Ride",  te: "Test Ride",   kn: "Test Ride",  ta: "Test Ride"  },
   "Quote":          { hi: "Quote",       te: "Quote",        kn: "Quote",       ta: "Quote"       },
   "Log this call":  { hi: "Call log karo",te: "Call log cheyyandi",kn: "Call log maadi",ta: "Call log pannu"},
   "Save Log":       { hi: "Save karo",   te: "Save cheyyandi",kn: "Save maadi", ta: "Save pannu"  },
@@ -800,24 +800,13 @@ const RAW_LEADS = [
 
 /* ============================== MOCK INVENTORY (flat variants — grouped by model for display) ============================== */
 const INVENTORY = [
-  // Indie 750W — the volume seller; River Care plans ride on the same physical scooter
-  { id: 1, model: "Indie", variant: "750W", color: "Monsoon Blue", fuel: "Electric", transmission: "Automatic", priceLakh: 1.67, status: "In Stock", units: 6, restock: 7 },
-  { id: 2, model: "Indie", variant: "750W", color: "Summer Red", fuel: "Electric", transmission: "Automatic", priceLakh: 1.67, status: "In Stock", units: 4, restock: 7 },
-  { id: 3, model: "Indie", variant: "750W", color: "Spring Yellow", fuel: "Electric", transmission: "Automatic", priceLakh: 1.67, status: "Low Stock", units: 2, restock: 10 },
-  { id: 4, model: "Indie", variant: "750W", color: "Winter White", fuel: "Electric", transmission: "Automatic", priceLakh: 1.67, status: "In Stock", units: 5, restock: 7 },
-  { id: 5, model: "Indie", variant: "750W", color: "Storm Grey", fuel: "Electric", transmission: "Automatic", priceLakh: 1.67, status: "In Transit", units: 0, restock: 14 },
-  { id: 6, model: "Indie", variant: "750W + Plus Two", color: "Monsoon Blue", fuel: "Electric", transmission: "Automatic", priceLakh: 1.73, status: "In Stock", units: 3, restock: 8 },
-  { id: 7, model: "Indie", variant: "750W + Plus Two", color: "Storm Grey", fuel: "Electric", transmission: "Automatic", priceLakh: 1.73, status: "Low Stock", units: 2, restock: 10 },
-  { id: 8, model: "Indie", variant: "750W + Plus Five", color: "Winter White", fuel: "Electric", transmission: "Automatic", priceLakh: 1.77, status: "Low Stock", units: 1, restock: 12 },
-  { id: 9, model: "Indie", variant: "750W + Plus Five", color: "Summer Red", fuel: "Electric", transmission: "Automatic", priceLakh: 1.77, status: "In Stock", units: 3, restock: 8 },
-
-  // Indie 480W — slower charger, lower on-road price
-  { id: 10, model: "Indie", variant: "480W", color: "Monsoon Blue", fuel: "Electric", transmission: "Automatic", priceLakh: 1.63, status: "In Stock", units: 4, restock: 7 },
-  { id: 11, model: "Indie", variant: "480W", color: "Storm Grey", fuel: "Electric", transmission: "Automatic", priceLakh: 1.63, status: "In Stock", units: 3, restock: 8 },
-  { id: 12, model: "Indie", variant: "480W", color: "Spring Yellow", fuel: "Electric", transmission: "Automatic", priceLakh: 1.63, status: "In Transit", units: 0, restock: 18 },
-  { id: 13, model: "Indie", variant: "480W + Plus Two", color: "Winter White", fuel: "Electric", transmission: "Automatic", priceLakh: 1.69, status: "In Stock", units: 2, restock: 9 },
-  { id: 14, model: "Indie", variant: "480W + Plus Two", color: "Spring Yellow", fuel: "Electric", transmission: "Automatic", priceLakh: 1.69, status: "In Stock", units: 3, restock: 9 },
-  { id: 15, model: "Indie", variant: "480W + Plus Five", color: "Summer Red", fuel: "Electric", transmission: "Automatic", priceLakh: 1.73, status: "Low Stock", units: 1, restock: 21 },
+  // Indie — one model; variants are charger (750W / 480W) × River Care plan. Lakh prices are on-road.
+  { id: 1, model: "Indie", variant: "750W", color: "Monsoon Blue", fuel: "Electric", transmission: "Automatic", priceLakh: 1.67, status: "In Stock", units: 9, restock: 7 },
+  { id: 2, model: "Indie", variant: "750W + Plus Two", color: "Summer Red", fuel: "Electric", transmission: "Automatic", priceLakh: 1.73, status: "In Stock", units: 5, restock: 8 },
+  { id: 3, model: "Indie", variant: "750W + Plus Five", color: "Winter White", fuel: "Electric", transmission: "Automatic", priceLakh: 1.77, status: "Low Stock", units: 2, restock: 12 },
+  { id: 4, model: "Indie", variant: "480W", color: "Storm Grey", fuel: "Electric", transmission: "Automatic", priceLakh: 1.63, status: "In Stock", units: 4, restock: 8 },
+  { id: 5, model: "Indie", variant: "480W + Plus Two", color: "Spring Yellow", fuel: "Electric", transmission: "Automatic", priceLakh: 1.69, status: "Low Stock", units: 1, restock: 14 },
+  { id: 6, model: "Indie", variant: "480W + Plus Five", color: "Monsoon Blue", fuel: "Electric", transmission: "Automatic", priceLakh: 1.73, status: "In Transit", units: 0, restock: 21 },
 ];
 
 // Powertrain attributes kept as filter groups for parity with the shared inventory schema — every
@@ -919,7 +908,7 @@ function queueScore(lead) {
 
 // A lead only belongs in the Calls queue if calling it is actually useful today. Lost deals never
 // need a call. Closed-stage deals (Booked/Delivered) or leads whose most recent action was a
-// completed test drive / delivery only surface again if a follow-up was explicitly scheduled.
+// completed test ride / delivery only surface again if a follow-up was explicitly scheduled.
 function callsQueueEligible(lead) {
   if (lead.stage === "Lost") return false;
   const isClosedStage = lead.stage === "Booking" || lead.stage === "Retailed" || lead.stage === "Delivered";
@@ -934,7 +923,7 @@ function callsQueueEligible(lead) {
 const WINDOW_ANCHOR = { morning: "09:30", afternoon: "14:00", evening: "18:00" };
 
 // Builds "the shape of the day" instead of disconnected lists: urgent items that need doing
-// right now (pinned, no fixed time), and the rest of today in order (test drives at their real
+// right now (pinned, no fixed time), and the rest of today in order (test rides at their real
 // time, calls slotted at their window's anchor, deliveries folded in at the end of the day).
 function buildDaySchedule(leads) {
   const pinned = [];
@@ -978,7 +967,7 @@ function getAttentionItems(leads) {
       items.push({ lead: l, icon: Phone, color: C.hot, text: `Follow-up overdue — ${l.name}` });
     }
     if (l.testDrive?.date && isSameDay(l.testDrive.date, today)) {
-      items.push({ lead: l, icon: ScooterIcon, color: C.purple, text: `Test drive today — ${l.name}` });
+      items.push({ lead: l, icon: ScooterIcon, color: C.purple, text: `Test ride today — ${l.name}` });
     }
     if (l.expectedDeliveryDate && daysUntil(l.expectedDeliveryDate) >= 0 && daysUntil(l.expectedDeliveryDate) <= 1) {
       items.push({ lead: l, icon: CarFront, color: C.green, text: `Delivery due soon — ${l.name}` });
@@ -1002,7 +991,7 @@ function TradeInIcon({ size = 14, color = "currentColor" }) {
       {/* top curved arrow */}
       <path d="M5 7C5 3.5 8.5 1.5 12 1.8C15 2 17.5 3.5 18.5 6" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
       <path d="M15.3 4L18.6 6L16.3 8.6" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      {/* car glyph */}
+      {/* vehicle glyph */}
       <path d="M7.3 11.5L8.8 8.5H15.2L16.7 11.5" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
       <rect x="5" y="11.5" width="14" height="4" rx="1.2" stroke={color} strokeWidth="1.6" />
       <circle cx="8.3" cy="16.3" r="1.4" fill={color} />
@@ -1137,7 +1126,7 @@ function labelStyle(label) {
 
 function StageBadge({ stage }) {
   const map = {
-    "New": C.faint, "Contacted": C.cold, "Test Drive": C.primary,
+    "New": C.faint, "Contacted": C.cold, "Test Ride": C.primary,
     "Opportunity": C.warm, "Booking": C.green, "Retailed": C.green, "Delivered": C.green, "Lost": C.faint,
   };
   const color = map[stage] || C.sub;
@@ -1320,10 +1309,10 @@ function MenuDrawer({ active, onChange, onClose, onLogout, onQuickQuote, onOpenM
       { key: "activity",         label: "Recent Activity" },
     ]},
     { key: "inventory", label: "Inventory", Icon: CarFront, subs: [
-      { key: "inventory:new",      label: "New Cars" },
+      { key: "inventory:new",      label: "New Scooters" },
       { key: "inventory:preowned", label: "Pre-Owned" },
-      { key: "inventory:demo",     label: "Demo Cars" },
-      { key: "inventory:block",    label: "Block/Allocate a car" },
+      { key: "inventory:demo",     label: "Demo Scooters" },
+      { key: "inventory:block",    label: "Block/Allocate a scooter" },
     ]},
     { key: "performance", label: "Performance", Icon: BarChart3, subs: [
       { key: "leaderboard", label: "Leaderboard" },
@@ -1457,7 +1446,7 @@ function TestDriveFields({ value, onChange, model, leads, excludeLeadId }) {
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <ScooterIcon size={12} color={C.warm} />
             <span style={{ fontFamily: F, fontSize: 10, fontWeight: 800, color: C.warm, textTransform: "uppercase", letterSpacing: .3 }}>
-              TD car may be unavailable
+              Demo scooter may be unavailable
             </span>
           </div>
           {availability.conflicts.map((c, i) => (
@@ -1473,14 +1462,14 @@ function TestDriveFields({ value, onChange, model, leads, excludeLeadId }) {
       {availability && availability.conflicts.length === 0 && (
         <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 9 }}>
           <Check size={12} color={C.green} />
-          <span style={{ fontFamily: F, fontSize: 11, color: C.green, fontWeight: 600 }}>Demo car likely available at this time</span>
+          <span style={{ fontFamily: F, fontSize: 11, color: C.green, fontWeight: 600 }}>Demo scooter likely available at this time</span>
         </div>
       )}
     </div>
   );
 }
 
-// Cancelling a scheduled test drive, with a reason — same presets+notes pattern as Lost.
+// Cancelling a scheduled test ride, with a reason — same presets+notes pattern as Lost.
 function TestDriveCancelForm({ onCancel, onSubmit }) {
   const [reason, setReason] = useState(null);
   const [note, setNote] = useState("");
@@ -1500,7 +1489,7 @@ function TestDriveCancelForm({ onCancel, onSubmit }) {
 
   return (
     <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px dashed ${C.border}` }} onClick={e => e.stopPropagation()}>
-      <div style={{ fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.ink, marginBottom: 8 }}>Cancel Test Drive</div>
+      <div style={{ fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.ink, marginBottom: 8 }}>Cancel Test Ride</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {TEST_DRIVE_CANCEL_REASONS.map(r => (
           <button key={r.key} onClick={() => setReason(r.key)} style={chipStyle(reason === r.key)}>{r.label}</button>
@@ -1518,7 +1507,7 @@ function TestDriveCancelForm({ onCancel, onSubmit }) {
   );
 }
 
-// Logged after a test drive happens — captures how it actually went, same presets+notes
+// Logged after a test ride happens — captures how it actually went, same presets+notes
 // pattern as the call log. Clearing the lead's upcoming testDrive also feeds the existing
 // "recently completed" suppression logic in the Calls queue.
 function TestDriveResponseForm({ onCancel, onSubmit }) {
@@ -1527,7 +1516,7 @@ function TestDriveResponseForm({ onCancel, onSubmit }) {
   const [recording, setRecording] = useState(false);
   const [booking, setBooking] = useState(null);
   const [attempted, setAttempted] = useState(false);
-  // A customer who loved the drive is a booking conversation, not a closed task — so we
+  // A customer who loved the ride is a booking conversation, not a closed task — so we
   // insist on either the amount or a date they have committed to pay it.
   const needsBooking = response === "loved_ready";
   const canSubmit = !!response && (!needsBooking || bookingStepComplete(booking));
@@ -1556,7 +1545,7 @@ function TestDriveResponseForm({ onCancel, onSubmit }) {
       </div>
       {attempted && !canSubmit && (
         <div style={{ marginTop: 10 }}>
-          <MissingBanner items={!response ? ["how the test drive went"] : bookingMissing(booking)} />
+          <MissingBanner items={!response ? ["how the test ride went"] : bookingMissing(booking)} />
         </div>
       )}
       <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
@@ -1672,9 +1661,9 @@ function CallLogForm({ lead, onSubmit, onCancel, voiceFirst = true }) {
       if (!callback.window) m.push("time window");
     }
     if (outcome === "test_drive") {
-      if (!testDrive.mode) m.push("test drive location");
-      if (!testDrive.date) m.push("test drive date");
-      if (!testDrive.time) m.push("test drive time");
+      if (!testDrive.mode) m.push("test ride location");
+      if (!testDrive.date) m.push("test ride date");
+      if (!testDrive.time) m.push("test ride time");
     }
     if (outcome === "ready") {
       if (!readyVehicle.model || !readyVehicle.variant) m.push("confirmed vehicle");
@@ -2363,7 +2352,8 @@ const DEMO_USED_UNITS = [
 
   { id: "P1", category: "used", model: "450X", variant: "2.9 kWh", color: "Space Grey",
     vin: "MD9USED00001", chassis: "CHU10001", engineNo: null, motorNo: "MTU10001", status: "in_stock",
-    branch: "Baner", odometer: "18,200 km", mfgMonth: "2023", owners: 1, priceLakh: 0.82, ev: null, blockedFor: null },
+    branch: "Baner", odometer: "18,200 km", mfgMonth: "2023", owners: 1, priceLakh: 0.82,
+    ev: { batteryKwh: 2.9, rangeKm: 111, charger: "Home charger · 0–80% in ~4 h", batteryWarranty: "Till Apr 2026 — expired" }, blockedFor: null },
   { id: "P2", category: "used", model: "Activa 6G", variant: "DLX", color: "Pearl Siren Blue",
     vin: "MD9USED00002", chassis: "CHU10002", engineNo: "ENU10002", status: "in_stock",
     branch: "Vashi", odometer: "31,700 km", mfgMonth: "2021", owners: 2, priceLakh: 0.48, ev: null, blockedFor: null },
@@ -2397,17 +2387,17 @@ function StatusPill({ status, detail }) {
 
 /* ---- Blocking a unit for a customer ---- */
 // Two guards, both of which reflect real dealership failures:
-//   1. A car can only be held once the booking amount is in — otherwise stock gets tied up
+//   1. A scooter can only be held once the booking amount is in — otherwise stock gets tied up
 //      against verbal interest and other SEs lose sales they could have closed.
 //   2. If the unit doesn't match what the customer actually booked (different variant or
 //      colour), the SE has to acknowledge the mismatch. This is the drift that causes a
-//      customer to turn up on delivery day to a car they didn't order.
+//      customer to turn up on delivery day to a scooter they didn't order.
 function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
   const [q, setQ] = useState("");
   const [picked, setPicked] = useState(null);
-  // Not a checkbox. Changing the car a customer is buying is a decision with a consequence
-  // either way, so the SE has to say which one it is: finalise this car and move the
-  // booking onto it, or go back and find the car that was actually booked.
+  // Not a checkbox. Changing the scooter a customer is buying is a decision with a consequence
+  // either way, so the SE has to say which one it is: finalise this scooter and move the
+  // booking onto it, or go back and find the scooter that was actually booked.
   const [resolution, setResolution] = useState(null); // null | "finalise" | "wrong_car"
 
   const term = q.trim().toLowerCase();
@@ -2429,7 +2419,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
       <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} onClick={onClose} />
       <div style={{ position: "relative", background: C.card, borderRadius: "18px 18px 0 0", maxHeight: "88vh", overflowY: "auto", padding: 16 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-          <span style={{ fontFamily: F, fontSize: 16, fontWeight: 800, color: C.ink }}>{waitlistMode ? "Add to waitlist" : "Block this car"}</span>
+          <span style={{ fontFamily: F, fontSize: 16, fontWeight: 800, color: C.ink }}>{waitlistMode ? "Add to waitlist" : "Block this scooter"}</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><X size={18} color={C.sub} /></button>
         </div>
         <div style={{ fontFamily: F, fontSize: 11.5, color: C.sub, marginBottom: 14 }}>
@@ -2475,7 +2465,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
               <div style={{ display: "flex", gap: 8, background: C.hotSoft, border: `1px solid ${C.hot}55`, borderRadius: 10, padding: 11, marginBottom: 10 }}>
                 <AlertTriangle size={14} color={C.hot} style={{ flexShrink: 0, marginTop: 1 }} />
                 <div style={{ fontFamily: F, fontSize: 11.5, color: C.hot, lineHeight: 1.4 }}>
-                  <strong>Booking amount not received.</strong> A car can only be held once the booking is paid — otherwise it sits blocked while another customer could have taken it.
+                  <strong>Booking amount not received.</strong> A scooter can only be held once the booking is paid — otherwise it sits blocked while another customer could have taken it.
                 </div>
               </div>
             )}
@@ -2485,7 +2475,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
                 <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                   <AlertTriangle size={14} color={C.warm} style={{ flexShrink: 0, marginTop: 1 }} />
                   <div style={{ fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.warm }}>
-                    This car doesn't match what {picked.name.split(" ")[0]} booked
+                    This scooter doesn't match what {picked.name.split(" ")[0]} booked
                   </div>
                 </div>
                 {mismatches.map(m => (
@@ -2498,7 +2488,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
                 ))}
                 <div style={{ paddingLeft: 22, marginTop: 10 }}>
                   <div style={{ fontFamily: F, fontSize: 11, fontWeight: 700, color: C.warm, marginBottom: 7 }}>
-                    Is this car finalised, replacing the one that was booked?
+                    Is this scooter finalised, replacing the one that was booked?
                   </div>
                   <div style={{ display: "flex", gap: 7 }}>
                     <button onClick={() => setResolution("finalise")} style={{
@@ -2507,7 +2497,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
                       background: resolution === "finalise" ? C.greenSoft : C.card,
                       color: resolution === "finalise" ? C.green : C.sub,
                       fontFamily: F, fontWeight: 700, fontSize: 11.5,
-                    }}>Yes — finalise this car</button>
+                    }}>Yes — finalise this scooter</button>
                     <button onClick={() => setResolution("wrong_car")} style={{
                       flex: 1, padding: "8px 0", borderRadius: 8, cursor: "pointer",
                       border: `1.5px solid ${resolution === "wrong_car" ? C.hot : C.borderStrong}`,
@@ -2529,7 +2519,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
                     <div style={{ display: "flex", gap: 7, marginTop: 9, background: C.hotSoft, borderRadius: 8, padding: "8px 10px" }}>
                       <AlertTriangle size={13} color={C.hot} style={{ flexShrink: 0, marginTop: 1 }} />
                       <span style={{ fontFamily: F, fontSize: 10.5, color: C.hot, lineHeight: 1.4 }}>
-                        Then this isn't the right car. Close this and pick the {picked.variant || picked.model}
+                        Then this isn't the right scooter. Close this and pick the {picked.variant || picked.model}
                         {picked.colorInterest?.length ? ` in ${picked.colorInterest.join(" or ")}` : ""} the customer actually booked.
                       </span>
                     </div>
@@ -2549,10 +2539,10 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
           }}>
           {!picked ? "Select a customer"
             : !bookingPaid ? "Booking amount required"
-            : mismatches.length && resolution === "wrong_car" ? "Pick the booked car instead"
+            : mismatches.length && resolution === "wrong_car" ? "Pick the booked scooter instead"
             : mismatches.length && !resolution ? "Answer the question above"
             : waitlistMode ? "Add to waitlist" : mismatches.length ? "Block & update booking"
-            : "Block this car"}
+            : "Block this scooter"}
         </button>
       </div>
     </div>
@@ -2916,7 +2906,7 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
   const ready = READINESS[unit.readiness];
   const docsMissing = DOC_CHECKLIST.filter(d => !unit.docs[d.key]);
 
-  // Reverse-match: which of my live leads are actually looking for this car. This is the
+  // Reverse-match: which of my live leads are actually looking for this scooter. This is the
   // thing a consumer app has no reason to build, and the thing that turns dead stock.
   const matches = (leads || []).filter(l =>
     !l.closed && l.model === unit.model &&
@@ -2948,13 +2938,13 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
               <span style={{ minWidth: 0 }}>
-                {/* Demo cars sit in the same list but carry a tag — the distinction matters
-                    for the pitch (low km, warranty intact) not for where the car lives. */}
+                {/* Demo scooters sit in the same list but carry a tag — the distinction matters
+                    for the pitch (low km, warranty intact) not for where the scooter lives. */}
                 {unit.kind === "demo" && (
                   <span style={{ display: "inline-block", background: C.tealSoft, color: C.teal,
                     borderRadius: 5, padding: "1px 6px", marginBottom: 3,
                     fontFamily: F, fontSize: 8.5, fontWeight: 800, letterSpacing: 0.4 }}>
-                    DEMO CAR
+                    DEMO SCOOTER
                   </span>
                 )}
                 <span style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink, lineHeight: 1.25 }}>
@@ -2995,7 +2985,7 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
           </span>
           <span style={{ fontFamily: F, fontSize: 10, color: C.faint }}>·</span>
           <span style={{ fontFamily: F, fontSize: 10, color: C.sub }}>
-            {unit.enquiries} enquiries · {unit.testDrives} TDs
+            {unit.enquiries} enquiries · {unit.testDrives} test rides
           </span>
           <span style={{ flex: 1 }} />
           <span style={{ background: ready.soft, borderRadius: 999, padding: "2px 8px",
@@ -3225,18 +3215,18 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
    looking at that colour sees how many people are ahead — so two reps can't both promise
    the next arrival to different customers.
 
-   When a car arrives, the earliest entry is allotted automatically. Automatic allotment
+   When a scooter arrives, the earliest entry is allotted automatically. Automatic allotment
    is not the same as acceptance, though: the customer may have changed their mind on
-   colour, or the specific car may have a problem. So an allotment sits in a pending
+   colour, or the specific scooter may have a problem. So an allotment sits in a pending
    state until the SE accepts or declines it, and declining asks *why* — because
-   "this particular car has a scratch" and "she now wants white" lead to different
+   "this particular scooter has a scratch" and "she now wants white" lead to different
    outcomes. The first keeps the customer's place in the queue; the second means the
    queue they're in is the wrong one. */
 
 const DECLINE_REASONS = [
   {
     key: "car_issue",
-    label: "Issue with this specific car",
+    label: "Issue with this specific scooter",
     hint: "Damage, higher odometer on the transit unit, wrong build month",
     outcome: "Position kept — the customer stays first in line for the next arrival.",
   },
@@ -3329,7 +3319,7 @@ function WaitlistPanel({ model, variant, color, entries, currentUser, waitWeeks,
   );
 }
 
-// A car has arrived and been auto-allotted. Until the SE acts on this, the car is held
+// A scooter has arrived and been auto-allotted. Until the SE acts on this, the scooter is held
 // but not confirmed — which is the honest state, because the customer hasn't seen it yet.
 function AllotmentBanner({ allotment, onAccept, onDecline }) {
   return (
@@ -3339,7 +3329,7 @@ function AllotmentBanner({ allotment, onAccept, onDecline }) {
         <CheckCircle2 size={15} color={C.green} style={{ flexShrink: 0, marginTop: 1 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: F, fontSize: 12, fontWeight: 800, color: C.green }}>
-            Car arrived — auto-allotted to {allotment.name}
+            Scooter arrived — auto-allotted to {allotment.name}
           </div>
           <div style={{ fontFamily: F, fontSize: 10.5, color: C.sub, marginTop: 3, lineHeight: 1.45 }}>
             {allotment.model} {allotment.variant} · {allotment.color} · VIN {allotment.vin}
@@ -3353,7 +3343,7 @@ function AllotmentBanner({ allotment, onAccept, onDecline }) {
         <button onClick={() => onDecline(allotment)} style={{
           flex: 1, background: C.card, border: `1.5px solid ${C.borderStrong}`, borderRadius: 9,
           padding: "9px 0", cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.sub,
-        }}>Decline this car</button>
+        }}>Decline this scooter</button>
         <button onClick={() => onAccept(allotment)} style={{
           flex: 1.3, background: C.green, border: "none", borderRadius: 9, padding: "9px 0",
           cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 800, color: "#fff",
@@ -3403,7 +3393,7 @@ function DeclineAllotmentSheet({ allotment, onClose, onConfirm }) {
           <div style={{ display: "flex", gap: 7, background: C.bg, borderRadius: 9, padding: "10px 11px", marginTop: 4 }}>
             <AlertTriangle size={13} color={C.sub} style={{ flexShrink: 0, marginTop: 1 }} />
             <span style={{ fontFamily: F, fontSize: 10.5, color: C.sub, lineHeight: 1.45 }}>
-              <strong>What happens: </strong>{picked.outcome} The car goes back to available stock either way.
+              <strong>What happens: </strong>{picked.outcome} The scooter goes back to available stock either way.
             </span>
           </div>
         )}
@@ -3418,7 +3408,7 @@ function DeclineAllotmentSheet({ allotment, onClose, onConfirm }) {
   );
 }
 
-// Photo capture for a car whose set is incomplete. Real capture is a device concern; what
+// Photo capture for a scooter whose set is incomplete. Real capture is a device concern; what
 // matters in the UI is that the rep can see which categories are thin and act on it.
 function AddPhotosSheet({ unit, onClose, onAdd }) {
   const CATS = ["Left side", "Right side", "Tyres", "Storage / battery bay", "Damage / wear", "Documents"];
@@ -3490,24 +3480,24 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
     setUnits(us => us.map(u => u.id === unit.id
       ? { ...u, blockedFor: {
             leadId: lead.id, name: lead.name, phone: lead.phone, at: new Date(), mismatches,
-            // Who placed the hold — without this, an SE finding a blocked car has no idea
+            // Who placed the hold — without this, an SE finding a blocked scooter has no idea
             // who to talk to about releasing it.
             by: currentUser?.name || "Unknown", byId: currentUser?.id ?? null,
           } }
       : u));
 
     // Every block is written to the lead's activity — an allocation is a commitment to the
-    // customer, and whoever picks the file up next needs to see which car was held and why.
+    // customer, and whoever picks the file up next needs to see which scooter was held and why.
     const changed = mismatches.length > 0 && resolution === "finalise";
     const note = changed
-      ? `Car finalised — ${unit.model} ${unit.variant} in ${unit.color} (VIN ${unit.vin}) blocked. Booking updated from ${mismatches.map(m => `${m.field}: ${m.booked} → ${m.unit}`).join(", ")}. Customer confirmed the change. Blocked by ${currentUser?.name || "an SE"}.`
+      ? `Scooter finalised — ${unit.model} ${unit.variant} in ${unit.color} (VIN ${unit.vin}) blocked. Booking updated from ${mismatches.map(m => `${m.field}: ${m.booked} → ${m.unit}`).join(", ")}. Customer confirmed the change. Blocked by ${currentUser?.name || "an SE"}.`
       : `${unit.model} ${unit.variant} in ${unit.color} (VIN ${unit.vin}) blocked for this customer by ${currentUser?.name || "an SE"}.`;
 
     if (onUpdateLead) {
       onUpdateLead({
         ...lead,
-        // When the SE finalises a different car, the booking record follows it — otherwise
-        // the paperwork and the physical car drift apart and it surfaces on delivery day.
+        // When the SE finalises a different scooter, the booking record follows it — otherwise
+        // the paperwork and the physical scooter drift apart and it surfaces on delivery day.
         ...(changed ? { model: unit.model, variant: unit.variant, colorInterest: [unit.color] } : {}),
         blockedUnit: { id: unit.id, vin: unit.vin, model: unit.model, variant: unit.variant, color: unit.color },
         callHistory: [
@@ -3522,9 +3512,9 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
       ? `🔒 Held & booking updated — ${unit.model} ${unit.color}`
       : `🔒 ${unit.model} ${unit.color} held for ${lead.name.split(" ")[0]}`);
   };
-  // Any time a car is freed — booking cancelled, allotment declined, manual release —
+  // Any time a scooter is freed — booking cancelled, allotment declined, manual release —
   // the queue for that exact combination is checked and the earliest entry gets it.
-  // A freed car should never sit unallocated while someone is waiting for it.
+  // A freed scooter should never sit unallocated while someone is waiting for it.
   const releaseAndCascade = (unit, why) => {
     const queue = waitlistRef.current
       .filter(w => w.model === unit.model && w.variant === unit.variant
@@ -3550,9 +3540,9 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
     return next;
   };
 
-  const doRelease = (unit) => releaseAndCascade(unit, "Car released");
+  const doRelease = (unit) => releaseAndCascade(unit, "Scooter released");
 
-  // A lead elsewhere in the app cancelled or was lost while holding this car.
+  // A lead elsewhere in the app cancelled or was lost while holding this scooter.
   useEffect(() => {
     if (!releasedUnitId) return;
     const unit = units.find(u => u.id === releasedUnitId.id);
@@ -3567,8 +3557,8 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
     { id: "w2", model: "Indie", variant: "750W", color: "Storm Grey",
       leadId: 5, name: "Sunita Gupta", phone: "+91 9000000005",
       by: "Rahul Kumar", at: d(-4), status: "waiting" },
-    // Queued against a colour that has a car in transit — this is the entry that gets
-    // auto-allotted when the car is marked arrived.
+    // Queued against a colour that has a scooter in transit — this is the entry that gets
+    // auto-allotted when the scooter is marked arrived.
     { id: "w3", model: "Indie", variant: "750W", color: "Summer Red",
       leadId: 4, name: "Meena Rao", phone: "+91 9000000004",
       by: "Rahul Kumar", at: d(-6), status: "waiting" },
@@ -3607,7 +3597,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
     showToast(`Added to waitlist — position ${ahead + 1} for ${combo.color}`);
   };
 
-  // When a car arrives, the earliest waiting entry for that exact combination gets it.
+  // When a scooter arrives, the earliest waiting entry for that exact combination gets it.
   const markArrived = (unit) => {
     const queue = waitFor(unit.model, unit.variant, unit.color)
       .filter(w => w.status === "waiting")
@@ -3621,9 +3611,9 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
     if (first) {
       setWaitlist(ws => ws.map(w => w.id === first.id
         ? { ...w, status: "allotted", vin: unit.vin, unitId: unit.id } : w));
-      showToast(`🚗 Arrived — auto-allotted to ${first.name.split(" ")[0]}`);
+      showToast(`🛵 Arrived — auto-allotted to ${first.name.split(" ")[0]}`);
     } else {
-      showToast("🚗 Car arrived — added to available stock");
+      showToast("🛵 Scooter arrived — added to available stock");
     }
   };
 
@@ -3631,10 +3621,10 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
     setUnits(us => us.map(u => u.id === a.unitId
       ? { ...u, blockedFor: { ...u.blockedFor, pending: false } } : u));
     setWaitlist(ws => ws.filter(w => w.id !== a.id));
-    showToast(`✅ ${a.name.split(" ")[0]} confirmed — car held`);
+    showToast(`✅ ${a.name.split(" ")[0]} confirmed — scooter held`);
   };
 
-  // Declining always frees the car. What differs is what happens to the queue place.
+  // Declining always frees the scooter. What differs is what happens to the queue place.
   const declineAllotment = (a, reason) => {
     setWaitlist(ws => ws.map(w => {
       if (w.id !== a.id) return w;
@@ -3643,12 +3633,12 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
       return { ...w, status: "removed" };
     }));
     setDecliningAllotment(null);
-    // Hand the car straight to whoever is next rather than leaving it idle. The declining
-    // customer keeps their place only when the problem was this specific car.
+    // Hand the scooter straight to whoever is next rather than leaving it idle. The declining
+    // customer keeps their place only when the problem was this specific scooter.
     const unit = units.find(u => u.id === a.unitId);
     if (unit) setTimeout(() => releaseAndCascade(unit, "Declined"), 0);
     showToast(reason === "car_issue"
-      ? `Car released — ${a.name.split(" ")[0]} keeps position 1`
+      ? `Scooter released — ${a.name.split(" ")[0]} keeps position 1`
       : reason === "changed_colour"
         ? `Removed from this queue — add ${a.name.split(" ")[0]} to the right colour`
         : `${a.name.split(" ")[0]} removed from the waitlist`);
@@ -3664,7 +3654,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
 
 
   const CATEGORIES = [
-    { key: "new",  label: "New Cars" },
+    { key: "new",  label: "New Scooters" },
     { key: "used", label: "Pre-owned" },
   ];
 
@@ -3709,7 +3699,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
         <div style={{ display: "flex", gap: 7, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 9, padding: "8px 10px", marginBottom: 10 }}>
           <AlertTriangle size={13} color={C.faint} style={{ flexShrink: 0, marginTop: 1 }} />
           <span style={{ fontFamily: F, fontSize: 10.5, color: C.sub, lineHeight: 1.4 }}>
-            Availability and waiting periods only. The assigned Sales Executive allocates a specific car.
+            Availability and waiting periods only. The assigned Sales Executive allocates a specific scooter.
           </span>
         </div>
       )}
@@ -3779,7 +3769,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
           {filtersOn && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <span style={{ flex: 1, fontFamily: F, fontSize: 10.5, color: C.sub }}>
-                {shown.length} of {usedStock.length} cars
+                {shown.length} of {usedStock.length} scooters
               </span>
               <button onClick={() => { setPreKind("all"); setPreBrand(""); setPreModel(""); setPreVariant(""); }}
                 style={{ background: "none", border: "none", cursor: "pointer",
@@ -3790,7 +3780,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
           {shown.length === 0 && (
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12,
               padding: 22, textAlign: "center", fontFamily: F, fontSize: 12.5, color: C.sub }}>
-              No pre-owned cars match these filters.
+              No pre-owned scooters match these filters.
             </div>
           )}
 
@@ -4150,7 +4140,7 @@ function MISReport({ leads, user }) {
 
   const stats = [
     { label: "Calls Made", value: callsMade, icon: Phone },
-    { label: "Test Drives", value: testDrivesDone, icon: ScooterIcon },
+    { label: "Test Rides", value: testDrivesDone, icon: ScooterIcon },
     { label: "Bookings", value: bookingsMade, icon: Package },
     { label: "Deliveries", value: deliveriesDone, icon: CarFront },
     { label: "New Leads", value: newLeads, icon: UserPlus },
@@ -4381,7 +4371,7 @@ function LeadsScreen({ currentId, leads, onOpenLead, onCall, onWhatsApp, onCount
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
-            <span style={{ fontFamily: F, fontSize: 9, fontWeight: 700, color: C.sub, textTransform: "uppercase", letterSpacing: 0.6 }}>Cars retailed · this month</span>
+            <span style={{ fontFamily: F, fontSize: 9, fontWeight: 700, color: C.sub, textTransform: "uppercase", letterSpacing: 0.6 }}>Scooters retailed · this month</span>
             <span style={{ fontFamily: F, fontSize: 10, fontWeight: 700, color: achieved >= target ? C.darkGreen : C.primary }}>
               {achieved >= target ? "Target hit 🎯" : `${target - achieved} more to go`}
             </span>
@@ -4400,7 +4390,7 @@ function LeadsScreen({ currentId, leads, onOpenLead, onCall, onWhatsApp, onCount
           const TABS = [
             { key: "all",     label: "All",           match: (l) => l.stage !== "Lost" },
             { key: "ready",   label: "Ready to Book", match: (l) => l.bucket === "ready" || l.stage === "Booking" },
-            { key: "oppty",   label: "Opportunity",   match: (l) => ["Opportunity", "Test Drive"].includes(l.stage) },
+            { key: "oppty",   label: "Opportunity",   match: (l) => ["Opportunity", "Test Ride"].includes(l.stage) },
             { key: "lost",    label: "Lost",          match: (l) => l.stage === "Lost" },
           ];
           const active = allTab || "all";
@@ -4475,7 +4465,7 @@ function LeadsScreen({ currentId, leads, onOpenLead, onCall, onWhatsApp, onCount
               const tabs = [
                 { key: null,          label: "All",          n: all.length },
                 { key: "ready",       label: "Ready to Book",n: all.filter(i => isReadyToBook(i.lead)).length },
-                { key: "test-drive",  label: "Test Drive",   n: all.filter(i => i.kind === "test-drive").length },
+                { key: "test-drive",  label: "Test Ride",   n: all.filter(i => i.kind === "test-drive").length },
                 { key: "delivery",    label: "Delivery",     n: all.filter(i => i.kind === "delivery").length },
               ];
               return tabs.map(t => {
@@ -5108,11 +5098,11 @@ function PaymentBreakdownFields({ value, onChange }) {
         </div>
         <div style={{ width: 58, flexShrink: 0 }}>
           <span style={labelStyle}>ROI (%)</span>
-          <input type="number" min="0" step="0.1" value={pd.roi} onChange={e => set({ roi: e.target.value })} placeholder="9.5" style={{ ...smallInput, width: "100%", boxSizing: "border-box" }} />
+          <input type="number" min="0" step="0.1" value={pd.roi} onChange={e => set({ roi: e.target.value })} placeholder="11.5" style={{ ...smallInput, width: "100%", boxSizing: "border-box" }} />
         </div>
         <div style={{ width: 68, flexShrink: 0 }}>
           <span style={labelStyle}>Tenure</span>
-          <input type="number" min="0" value={pd.loanTenure} onChange={e => set({ loanTenure: e.target.value })} placeholder="60" style={{ ...smallInput, width: "100%", boxSizing: "border-box" }} />
+          <input type="number" min="0" value={pd.loanTenure} onChange={e => set({ loanTenure: e.target.value })} placeholder="36" style={{ ...smallInput, width: "100%", boxSizing: "border-box" }} />
         </div>
       </div>
 
@@ -5187,7 +5177,7 @@ function PaymentBreakdownFields({ value, onChange }) {
       <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 11 }}>
       <div style={{ display: "flex", gap: 8, marginBottom: 11 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <span style={labelStyle}>Extended Warranty (₹)</span>
+          <span style={labelStyle}>River Care Plan (₹)</span>
           <input type="number" min="0" value={pd.extendedWarranty} onChange={e => set({ extendedWarranty: e.target.value })} placeholder="0" style={{ ...smallInput, width: "100%" }} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -5292,7 +5282,7 @@ function DeliveryConfirmForm({ onCancel, onConfirm }) {
   );
 }
 // Resolves whatever vehicles were under consideration (up to 3) into exactly one confirmed
-// vehicle at the point of booking. Once a deal is booked, "which car" can't stay ambiguous —
+// vehicle at the point of booking. Once a deal is booked, "which scooter" can't stay ambiguous —
 // and if the details were never fully nailed down, this is where they get finalized, not just picked.
 function VehicleConfirmPicker({ lead, value, onChange }) {
   const baseVehicles = lead.vehicles && lead.vehicles.length ? lead.vehicles : [{ id: "v1", model: lead.model, variant: lead.variant, color: lead.color || "" }];
@@ -5549,7 +5539,7 @@ function FinanceCard({ lead, onUpdateField }) {
   );
 }
 
-/* ============================== DRIVING LICENSE (tied to test drive) ============================== */
+/* ============================== DRIVING LICENSE (tied to test ride) ============================== */
 function DrivingLicenseBlock({ lead, onToggle, onShareLink }) {
   const [copied, setCopied] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -6139,7 +6129,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
           if (channelBlocked(lead, "whatsapp")) { setContactWarning("whatsapp"); return; }
           setWaTemplateOpen(true); setCallLogExpanded(false); setTestDriveExpanded(false); setQuoteFormOpen(false);
         }} />
-        <IconBtn icon={ScooterIcon} label="Test Drive" onClick={() => {
+        <IconBtn icon={ScooterIcon} label="Test Ride" onClick={() => {
           if (lead.testDrive && !testDriveExpanded) {
             setTdForm({ mode: lead.testDrive.mode, date: toDateInputValue(lead.testDrive.date), time: lead.testDrive.time, locationText: lead.testDrive.location?.text || lead.testDrive.location?.mapsLink || "" });
           }
@@ -6208,7 +6198,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
         <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <div style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink }}>Test Drive Scheduled</div>
+              <div style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink }}>Test Ride Scheduled</div>
               <div style={{ fontFamily: F, fontSize: 11.5, color: C.sub, marginTop: 2 }}>
                 {lead.testDrive.mode === "location" ? "Customer's Location" : "Showroom"} · {fmt(lead.testDrive.date)} at {fmtTime(lead.testDrive.time)}
               </div>
@@ -6232,7 +6222,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
               background: "none", border: "none", cursor: "pointer", padding: "8px 0 0", width: "100%",
               fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.hot
             }}>
-              Cancel Test Drive
+              Cancel Test Ride
             </button>
           )}
           {testDriveResponseOpen && (
@@ -6253,7 +6243,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
       {testDriveExpanded && (
         <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
           <div style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink }}>
-            {lead.testDrive ? "Reschedule Test Drive" : "Schedule Test Drive"}
+            {lead.testDrive ? "Reschedule Test Ride" : "Schedule Test Ride"}
           </div>
           <TestDriveFields value={tdForm} onChange={setTdForm} model={lead.model} leads={allLeads} excludeLeadId={lead.id} />
           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
@@ -6396,7 +6386,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
                 <span style={{ fontFamily: F, fontWeight: 700, fontSize: 11.5, color: C.faint, textTransform: "uppercase", letterSpacing: 0.4 }}>Vehicles</span>
               </div>
               <VehicleTabsSection lead={lead} onUpdateVehicles={onUpdateVehicles} />
-              <EditableRow label="Budget" value={lead.budget} placeholder="e.g. ₹12–14 L" onSave={v => onUpdateLeadField(lead.id, "budget", v)} />
+              <EditableRow label="Budget" value={lead.budget} placeholder="e.g. ₹1.6–1.7 L" onSave={v => onUpdateLeadField(lead.id, "budget", v)} />
               <EditableRow label="Purchase Target Date" value={lead.targetDate} placeholder="e.g. 15 Jul" onSave={v => onUpdateLeadField(lead.id, "targetDate", v)} />
               <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderTop: `1px solid ${C.border}` }}>
                 <span style={{ fontFamily: F, fontSize: 12, color: C.sub }}>Lead Age</span>
@@ -6764,8 +6754,9 @@ const FUNNEL_STAGES = [
   { key: "delivered",   label: "Delivered",   short: "Deliv" },
 ];
 
-const HIST_SOURCES = ["Website", "CarDekho", "Referral", "Walk-in", "Facebook Ad", "OLX", "Justdial"];
-const HIST_MODELS  = ["Creta", "Venue", "Verna", "i20", "Alcazar", "Exter", "Tucson", "Ioniq 5"];
+const HIST_SOURCES = ["Website", "BikeDekho", "Referral", "Walk-in", "Facebook Ad", "OLX", "Justdial"];
+// One model, so the "model" slice of history is cut by Indie variant (charger × River Care plan).
+const HIST_MODELS  = ["750W", "750W + Plus Two", "750W + Plus Five", "480W", "480W + Plus Two", "480W + Plus Five"];
 
 // Per-source conversion character — referrals close, portals leak early. Having sources
 // behave differently is what makes the source slice worth looking at.
@@ -6773,7 +6764,7 @@ const SOURCE_PROFILE = {
   "Referral":    { contact: 0.95, opp: 0.72, visit: 0.60, book: 0.42, retail: 0.38 },
   "Walk-in":     { contact: 0.98, opp: 0.66, visit: 0.58, book: 0.36, retail: 0.33 },
   "Website":     { contact: 0.88, opp: 0.48, visit: 0.32, book: 0.18, retail: 0.15 },
-  "CarDekho":    { contact: 0.72, opp: 0.34, visit: 0.20, book: 0.10, retail: 0.08 },
+  "BikeDekho":   { contact: 0.72, opp: 0.34, visit: 0.20, book: 0.10, retail: 0.08 },
   "Facebook Ad": { contact: 0.61, opp: 0.24, visit: 0.13, book: 0.06, retail: 0.05 },
   "OLX":         { contact: 0.66, opp: 0.29, visit: 0.17, book: 0.08, retail: 0.06 },
   "Justdial":    { contact: 0.70, opp: 0.31, visit: 0.18, book: 0.09, retail: 0.07 },
@@ -6786,9 +6777,9 @@ function buildHistory(seed = 11) {
   for (let m = 5; m >= 0; m--) {
     const monthDate = new Date(today.getFullYear(), today.getMonth() - m, 1);
     // Volume drifts month to month, and the current month is only part-elapsed.
-    const base = 34 + Math.floor(rnd() * 16);
+    const base = 72 + Math.floor(rnd() * 30);
     // Current month is part-elapsed, but never so thin that the table looks broken.
-    const count = m === 0 ? Math.max(18, Math.round(base * (today.getDate() / 30))) : base;
+    const count = m === 0 ? Math.max(36, Math.round(base * (today.getDate() / 30))) : base;
     for (let i = 0; i < count; i++) {
       const source = HIST_SOURCES[Math.floor(rnd() * HIST_SOURCES.length)];
       const model  = HIST_MODELS[Math.floor(rnd() * HIST_MODELS.length)];
@@ -6798,7 +6789,7 @@ function buildHistory(seed = 11) {
       const visit       = opportunity && rnd() < p.visit / p.opp;
       const booking     = visit       && rnd() < p.book / p.visit;
       const retailed    = booking     && rnd() < p.retail / p.book;
-      // Delivery lags — a car booked this month is often delivered next.
+      // Delivery lags — a scooter booked this month is often delivered next.
       const delivered   = retailed    && (m > 0 || rnd() < 0.55);
       rows.push({ month: monthDate, monthIdx: m, source, model,
         contacted, opportunity, visit, booking, retailed, delivered });
@@ -6941,9 +6932,9 @@ function buildInsights({ rows, totals, prevTotals, bySource, byModel, role }) {
       title: `${worst.from} → ${worst.to} is your biggest leak`,
       body: `Only ${worst.rate}% get through — ${worst.lost} leads stop here. `
         + (worst.to === "Visit"
-            ? "Getting people into a car is the step that most predicts a sale; try offering a home test drive."
+            ? "Getting people onto a scooter is the step that most predicts a sale; try offering a home test ride."
             : worst.to === "Booking"
-            ? "Deals stall here on price or family approval. Ask what's unresolved before the drive ends, not after."
+            ? "Deals stall here on price or family approval. Ask what's unresolved before the ride ends, not after."
             : worst.to === "Contacted"
             ? "These leads were never reached. Speed matters more than anything else at this stage."
             : "Worth reviewing what happens immediately after this step."),
@@ -7018,8 +7009,8 @@ function buildInsights({ rows, totals, prevTotals, bySource, byModel, role }) {
     if (stalled > 5) {
       out.push({
         tone: "info",
-        title: `${stalled} opportunities never took a test drive`,
-        body: `These are people who showed real interest and then didn't get in a car. `
+        title: `${stalled} opportunities never took a test ride`,
+        body: `These are people who showed real interest and then never got on a scooter. `
           + `It's usually the cheapest conversion available to you this month.`,
       });
     }
@@ -7071,34 +7062,36 @@ function KpiTile({ label, value, prev, accent }) {
 /* ============================== COMMISSION ==============================
    Two design problems here, and they pull against each other.
 
-   First: a rep who sees a rupee figure on every car starts steering customers toward
+   First: a rep who sees a rupee figure on every scooter starts steering customers toward
    whatever pays best, which produces bad-fit sales and comes back as cancellations. So
    inventory carries a *relative* signal, not a headline number — small, muted, and never
    competing with stock status. The exact rupees live in one place the rep goes to on
    purpose.
 
-   Second: the interesting thing about commission in auto retail is not the total. It's
-   that most reps under-earn on attachments rather than on volume — a rep selling 7 cars
-   with warranty and insurance attached out-earns one selling 9 without. So the earnings
+   Second: the interesting thing about commission in two-wheeler retail is not the total. It's
+   that most reps under-earn on attachments rather than on volume — a rep selling 14 scooters
+   with River Care and insurance attached out-earns one selling 18 without. So the earnings
    tab leads with what was left on the table, not with the balance. */
 
 const COMMISSION = {
   // Per-unit base. Slower-moving stock pays more — that's the dealership steering the
   // floor, and it's the one place a commission number *should* influence what gets pushed.
+  // Keyed by model ("Indie") for inventory, and by variant for the sales history.
   base: {
-    "Creta": 6000, "Venue": 5000, "Verna": 6500, "i20": 4500,
-    "Alcazar": 9000, "Exter": 4000, "Tucson": 14000, "Ioniq 5": 18000,
+    "Indie": 500,
+    "750W": 500, "750W + Plus Two": 550, "750W + Plus Five": 600,
+    "480W": 400, "480W + Plus Two": 450, "480W + Plus Five": 500,
   },
   // Attachment rates — where the real money is.
   rates: {
-    accessories:  { pct: 1.5, label: "Accessories",       typical: 42000 },
-    warranty:     { pct: 5.0, label: "Extended warranty", typical: 22000 },
-    insurance:    { pct: 3.0, label: "Insurance",         typical: 38000 },
-    finance:      { flat: 2500, label: "Finance",         typical: null },
-    exchange:     { flat: 3000, label: "Exchange",        typical: null },
+    accessories:  { pct: 5.0, label: "Accessories",       typical: 4000 },
+    warranty:     { pct: 5.0, label: "River Care plan",   typical: 7900 },
+    insurance:    { pct: 3.0, label: "Insurance + RSA",   typical: 10889 },
+    finance:      { flat: 300, label: "Finance",          typical: null },
+    exchange:     { flat: 300, label: "Exchange",         typical: null },
   },
   // Volume kicker, paid retrospectively on every unit once the tier is crossed.
-  tiers: [{ at: 6, bonus: 8000 }, { at: 8, bonus: 15000 }, { at: 10, bonus: 25000 }],
+  tiers: [{ at: 12, bonus: 1500 }, { at: 16, bonus: 3000 }, { at: 20, bonus: 5000 }],
 };
 
 const attachValue = (k) => {
@@ -7106,9 +7099,9 @@ const attachValue = (k) => {
   return r.flat != null ? r.flat : Math.round((r.typical * r.pct) / 100);
 };
 
-// Full potential on one car, if every attachment lands.
+// Full potential on one scooter, if every attachment lands.
 function commissionFor(model) {
-  const base = COMMISSION.base[model] || 5000;
+  const base = COMMISSION.base[model] || 500;
   const parts = Object.keys(COMMISSION.rates).map(k => ({ key: k, label: COMMISSION.rates[k].label, value: attachValue(k) }));
   const attachTotal = parts.reduce((n, p) => n + p.value, 0);
   return { base, parts, attachTotal, max: base + attachTotal };
@@ -7179,7 +7172,7 @@ function CommissionBreakup({ model }) {
             <span style={{ fontFamily: F, fontSize: 12, fontWeight: 900, color: C.ink }}>{inrShort(c.max)}</span>
           </div>
           <div style={{ fontFamily: F, fontSize: 9.5, color: C.faint, marginTop: 7, lineHeight: 1.45 }}>
-            Attachments are worth more than the car on most units. Warranty and insurance are
+            Attachments are worth more than the scooter itself on most units. Warranty and insurance are
             the two that move this number.
           </div>
         </div>
@@ -7189,7 +7182,7 @@ function CommissionBreakup({ model }) {
 }
 
 /* ---- Earnings ----
-   Rebuilt around one principle: a rep should be able to trace every rupee back to a car.
+   Rebuilt around one principle: a rep should be able to trace every rupee back to a scooter.
    Aggregate charts fail that test — they say "you earned 59k" without saying which sale
    paid what, so the rep can't learn which behaviour produced the money.
 
@@ -7276,7 +7269,7 @@ function EarningsPanel({ history }) {
   const delivered = deals.filter(d => d.delivered);
   const awaiting  = deals.filter(d => !d.delivered);
 
-  const baseTotal   = delivered.reduce((n, d) => n + (COMMISSION.base[d.model] || 5000), 0);
+  const baseTotal   = delivered.reduce((n, d) => n + (COMMISSION.base[d.model] || 500), 0);
   const attachTotal = delivered.reduce((n, d) => n + earnedOn(d), 0) - baseTotal;
   const attachCount = delivered.reduce((n, d) => n + Object.values(d.attached).filter(Boolean).length, 0);
 
@@ -7349,7 +7342,7 @@ function EarningsPanel({ history }) {
         {/* Where it came from — three lines, each traceable below. */}
         <div style={{ marginTop: 13, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
           {[
-            { l: `Unit commission · ${units} cars`, v: baseTotal, c: C.ink },
+            { l: `Unit commission · ${units} scooters`, v: baseTotal, c: C.ink },
             { l: `Add-ons · ${attachCount} attached`, v: attachTotal, c: C.green },
             { l: singleMonth ? (tier ? `Volume bonus · ${tier.at}+ tier` : "Volume bonus · not reached")
                              : `Volume bonus · ${monthsInRange.length} months`,
@@ -7368,7 +7361,7 @@ function EarningsPanel({ history }) {
           <div style={{ display: "flex", gap: 7, background: C.bg, borderRadius: 9, padding: "9px 10px", marginTop: 5 }}>
             <Clock size={12} color={C.sub} style={{ flexShrink: 0, marginTop: 1 }} />
             <span style={{ fontFamily: F, fontSize: 10.5, color: C.sub, lineHeight: 1.45 }}>
-              A further <strong>{inrShort(pendingTotal)}</strong> across {awaiting.length} booked cars,
+              A further <strong>{inrShort(pendingTotal)}</strong> across {awaiting.length} booked scooters,
               payable once they're delivered.
             </span>
           </div>
@@ -7381,7 +7374,7 @@ function EarningsPanel({ history }) {
           How the volume bonus works
         </div>
         <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, marginBottom: 12, lineHeight: 1.45 }}>
-          Cross a tier and the bonus is paid on the whole month, not only the cars after it.
+          Cross a tier and the bonus is paid on the whole month, not only the scooters after it.
         </div>
 
         {COMMISSION.tiers.map(t => {
@@ -7434,10 +7427,10 @@ function EarningsPanel({ history }) {
         </div>
       )}
 
-      {/* The ledger. Every rupee traceable to a car. */}
+      {/* The ledger. Every rupee traceable to a scooter. */}
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
         <div style={{ fontFamily: F, fontSize: 12.5, fontWeight: 800, color: C.ink, marginBottom: 3 }}>
-          What each car paid
+          What each scooter paid
         </div>
         <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, marginBottom: 11, lineHeight: 1.45 }}>
           Tap a sale to see how it was made up.
@@ -7496,7 +7489,7 @@ function EarningsPanel({ history }) {
             <Sparkles size={13} color={C.green} style={{ flexShrink: 0, marginTop: 1 }} />
             <span style={{ fontFamily: F, fontSize: 10.5, color: C.green, lineHeight: 1.5 }}>
               Add-ons brought in <strong>{inrShort(attachTotal)}</strong> — {pct(attachTotal, total)}% of everything
-              you earned this month, from {attachCount} attachments across {units} cars.
+              you earned this month, from {attachCount} attachments across {units} scooters.
             </span>
           </div>
         )}
@@ -7561,7 +7554,7 @@ function SEDashboardScreen({ leads, user }) {
   const lastM = funnelOf(history.filter(r => r.monthIdx === 1));
 
   const RANGES = [{ k: 1, l: "This month" }, { k: 3, l: "3 months" }, { k: 6, l: "6 months" }];
-  const DIMS = [{ k: "month", l: "By month" }, { k: "source", l: "By source" }, { k: "model", l: "By model" }];
+  const DIMS = [{ k: "month", l: "By month" }, { k: "source", l: "By source" }, { k: "model", l: "By variant" }];
 
   const drillRow = tableRows.find(r => r.label === drill);
 
@@ -7593,7 +7586,7 @@ function SEDashboardScreen({ leads, user }) {
       {/* ---- KPI strip: always this month vs last ---- */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
         <KpiTile label="Contacted · this month" value={thisM.contacted} prev={lastM.contacted} />
-        <KpiTile label="Test drives · this month" value={thisM.visit} prev={lastM.visit} accent={C.primary} />
+        <KpiTile label="Test rides · this month" value={thisM.visit} prev={lastM.visit} accent={C.primary} />
         <KpiTile label="Bookings · this month" value={thisM.booking} prev={lastM.booking} accent={C.warm} />
         <KpiTile label="Retailed · this month" value={thisM.retailed} prev={lastM.retailed} accent={C.darkGreen} />
       </div>
@@ -7647,7 +7640,7 @@ function SEDashboardScreen({ leads, user }) {
             {drillRow.label}
           </div>
           <div style={{ fontFamily: F, fontSize: 11, color: C.sub, lineHeight: 1.55 }}>
-            {drillRow.values.leads} leads · {drillRow.values.visit} test drives
+            {drillRow.values.leads} leads · {drillRow.values.visit} test rides
             ({pct(drillRow.values.visit, drillRow.values.leads)}%) ·
             {" "}{drillRow.values.retailed} retailed ({pct(drillRow.values.retailed, drillRow.values.leads)}%).
             {" "}{pct(drillRow.values.retailed, drillRow.values.leads) > pct(totals.retailed, totals.leads)
@@ -7684,7 +7677,7 @@ function ActivityScreen({ leads, onOpenLead }) {
 
   const tabs = [
     { key: "calls", label: "Calls", data: calls, icon: Phone },
-    { key: "testdrives", label: "Test Drives", data: testDrives, icon: ScooterIcon },
+    { key: "testdrives", label: "Test Rides", data: testDrives, icon: ScooterIcon },
     { key: "bookings", label: "Bookings", data: bookings, icon: Package },
     { key: "delivery", label: "Delivery", data: deliveries, icon: CarFront },
   ];
@@ -7787,192 +7780,46 @@ function ActivityScreen({ leads, onOpenLead }) {
 // reviewers tend to highlight — so an SE walking into a comparison conversation has the
 // talking points ready instead of improvising.
 const LEARNING_CONTENT = {
-  Creta: {
-    segment: "Mid-size SUV",
-    competitors: ["Kia Seltos", "Maruti Grand Vitara", "Honda Elevate"],
+  Indie: {
+    segment: "Electric scooter — \"the SUV of scooters\"",
+    competitors: ["Ather Rizta", "Ola S1 Pro", "TVS iQube", "Bajaj Chetak", "Hero Vida V2"],
     keyStrengths: [
-      "Widest service network in the segment — matters most to buyers outside metro cities",
-      "Strongest resale value of any mid-size SUV, tracked over a 5-year hold",
-      "Panoramic sunroof and ventilated seats available from a lower trim than most rivals",
+      "Best-in-class storage: 43 L under the seat plus a 12 L lockable glovebox with USB charging",
+      "14-inch wheels front and rear, wide tyres and 165 mm ground clearance — the most planted ride on broken roads",
+      "4 kWh IP67 battery, 161 km IDC range (~110–120 km real world), 0–40 km/h in 3.9 s",
     ],
     talkingPoints: [
-      { vs: "Kia Seltos", points: [
-        "Same platform and powertrains — Creta wins on resale value and service network density",
-        "Creta's diesel-automatic combination is available where Seltos often isn't at every trim",
+      { vs: "Ather Rizta", points: [
+        "Rizta is the family-scooter benchmark — Indie wins on storage (43 + 12 L) and wheel size",
+        "Ather's service network and brand recall are bigger; pivot to utility and ride stability",
       ]},
-      { vs: "Maruti Grand Vitara", points: [
-        "Grand Vitara is hybrid-only for its best mileage figures — Creta offers a straightforward turbo-petrol for buyers who don't want hybrid running costs",
-        "Creta's cabin trim and sunroof size are usually seen as a class above at the equivalent price point",
+      { vs: "Ola S1 Pro", points: [
+        "Ola wins on headline price and spec sheet — don't argue it",
+        "Indie counters on build, ground clearance, storage and a calmer, more stable ride with a pillion",
       ]},
-      { vs: "Honda Elevate", points: [
-        "Elevate is newer to the segment with a thinner dealer network in tier-2/3 towns",
-        "Creta has a longer track record — a real point for buyers who ask about long-term reliability",
+      { vs: "TVS iQube", points: [
+        "iQube buyers want a familiar badge and a nearby service centre — acknowledge it",
+        "Indie gives more storage, bigger wheels and twin pannier mounts for real everyday utility",
       ]},
     ],
     objectionHandling: [
-      { objection: "\"Seltos looks sportier\"", response: "Agree it's a fair styling preference, then pivot to running cost: resale value and service cost over 5 years favour Creta noticeably." },
-      { objection: "\"Why not the hybrid Grand Vitara for better mileage?\"", response: "Ask their real daily running — hybrids pay back mainly in heavy city traffic. For highway-heavy use, Creta's turbo-petrol is usually cheaper to own." },
+      { objection: "\"River is a new brand — what about service?\"", response: "Walk them to the on-site workshop, then explain River Care: Plus Two takes warranty to 5 years, Plus Five to 8. That's the reassurance they're asking for." },
+      { objection: "\"Is the range enough?\"", response: "Ask their real daily running. Most city riders do 25–40 km a day — ~110–120 km real-world range is three to four days between charges on the 750W charger." },
     ],
     reviewThemes: [
-      "Ride comfort and highway stability are consistently rated above segment average",
-      "Cabin quality and features-for-price are the most repeated praise across reviewers",
-      "Turbo-petrol DCT is frequently called out as the pick of the range for city + highway mix",
+      "Storage and practicality are the most repeated praise across reviewers",
+      "Ride stability from the 14-inch wheels and wide tyres is consistently called out",
+      "Gen 3 brought upgraded tyres and better connectivity at the same price",
     ],
-    searchTip: "Search \"Hyundai Creta 2025 review\" — Autocar India, CarWale, and CarDekho all have recent long-form reviews worth watching together with a customer if they're undecided.",
-  },
-  Venue: {
-    segment: "Compact SUV",
-    competitors: ["Tata Nexon", "Maruti Brezza"],
-    keyStrengths: [
-      "Turbo-petrol DCT option gives genuinely quick performance in the segment",
-      "Feature list at mid-trim (sunroof, connected car tech) beats most rivals at the same price",
-    ],
-    talkingPoints: [
-      { vs: "Tata Nexon", points: [
-        "Nexon's 5-star crash rating is a strong pitch for them — don't dodge it, pivot to Venue's lower service cost and better infotainment responsiveness instead",
-        "Venue's turbo-DCT is noticeably smoother in traffic than Nexon's AMT",
-      ]},
-      { vs: "Maruti Brezza", points: [
-        "Brezza's mileage claim is close on paper — Venue's real-world city mileage is competitive and the turbo-petrol is more fun to drive",
-        "Venue's cabin tech (sunroof, digital cluster) is available at a lower trim than Brezza's equivalent",
-      ]},
-    ],
-    objectionHandling: [
-      { objection: "\"Nexon is safer\"", response: "Acknowledge the crash rating directly — don't argue it. Then move to total cost of ownership and in-city drivability, where Venue is genuinely stronger." },
-    ],
-    reviewThemes: [
-      "Turbo-petrol engine and DCT gearbox combination is the most-praised part of the range",
-      "Reviewers consistently note the features-per-rupee value at the SX trim",
-    ],
-    searchTip: "Search \"Hyundai Venue N Line review\" for the sportier trim specifically — useful when a customer is cross-shopping on driving feel, not just space.",
-  },
-  i20: {
-    segment: "Premium hatchback",
-    competitors: ["Maruti Baleno", "Tata Altroz"],
-    keyStrengths: [
-      "Cabin quality and dashboard design are consistently rated best-in-class for the segment",
-      "Diesel option available where most hatchback rivals have gone petrol-only",
-    ],
-    talkingPoints: [
-      { vs: "Maruti Baleno", points: [
-        "i20's cabin materials and fit-finish are usually seen as a clear step up",
-        "Baleno wins on outright mileage — be upfront about this, then pivot to ride quality and NVH, where i20 leads",
-      ]},
-      { vs: "Tata Altroz", points: [
-        "Altroz's 5-star safety rating is real — pivot to i20's stronger resale and lower long-term maintenance cost",
-      ]},
-    ],
-    objectionHandling: [
-      { objection: "\"Baleno gives better mileage\"", response: "True on paper — ask if they're cross-shopping on running cost or on how the car feels to drive daily. i20 wins clearly on the second." },
-    ],
-    reviewThemes: [
-      "Interior design and build quality are the most consistently praised aspects",
-      "Ride comfort at highway speed is repeatedly called out as segment-leading",
-    ],
-    searchTip: "Search \"Hyundai i20 vs Baleno comparison\" — several channels have done direct back-to-back tests that are useful to show a customer weighing both.",
-  },
-  Verna: {
-    segment: "Mid-size sedan",
-    competitors: ["Honda City", "Skoda Slavia"],
-    keyStrengths: [
-      "Only car in the segment offering a turbo-petrol with a proper sporty character",
-      "ADAS (driver assistance) available at a lower trim than most segment rivals",
-    ],
-    talkingPoints: [
-      { vs: "Honda City", points: [
-        "City has a stronger brand reputation for reliability — don't dismiss it, but point to Verna's turbo-petrol performance and ADAS availability as real differentiators",
-      ]},
-      { vs: "Skoda Slavia", points: [
-        "Slavia has a European road-manners reputation — Verna counters with a much larger dealer and service network",
-      ]},
-    ],
-    objectionHandling: [
-      { objection: "\"Honda has a better reliability reputation\"", response: "Fair point historically — pivot to Verna's warranty terms and the fact that recent JD Power/quality survey gaps between Korean and Japanese brands have narrowed significantly." },
-    ],
-    reviewThemes: [
-      "Turbo-petrol performance is the most repeated highlight — often called the most engaging car in its class to drive",
-      "ADAS features at the price point are frequently flagged as excellent value",
-    ],
-    searchTip: "Search \"Hyundai Verna turbo review\" for driving-focused content — most useful when a customer explicitly asks about performance, not just comfort.",
-  },
-  Alcazar: {
-    segment: "3-row SUV",
-    competitors: ["Tata Safari", "Mahindra XUV700"],
-    keyStrengths: [
-      "Genuinely usable third row for shorter trips — not just an emergency seat",
-      "Captain seat option in the 6-seat variant is a strong pitch for premium-feel buyers",
-    ],
-    talkingPoints: [
-      { vs: "Tata Safari", points: [
-        "Safari has more road presence — Alcazar counters with a noticeably better-finished cabin and lower service cost",
-      ]},
-      { vs: "Mahindra XUV700", points: [
-        "XUV700 wins on raw power and ADAS tech — Alcazar counters on ride comfort, cabin refinement, and resale value",
-      ]},
-    ],
-    objectionHandling: [
-      { objection: "\"XUV700 has more powerful engines\"", response: "True on the top trim — ask about their actual use case. For city + occasional highway family use, Alcazar's refinement and comfort usually wins the comparison once they drive both." },
-    ],
-    reviewThemes: [
-      "Third-row usability is repeatedly called out as better than most competitors at this price",
-      "Cabin refinement and ride quality are consistently rated above the segment average",
-    ],
-    searchTip: "Search \"Hyundai Alcazar 6-seater review\" — most family buyers cross-shopping this segment specifically want to see third-row and captain-seat usability.",
-  },
-  Tucson: {
-    segment: "Premium SUV",
-    competitors: ["Jeep Compass", "Skoda Kodiaq"],
-    keyStrengths: [
-      "AWD available at a more accessible price point than most premium SUV rivals",
-      "Panoramic sunroof, ventilated seats, and full ADAS suite standard from a mid trim",
-    ],
-    talkingPoints: [
-      { vs: "Jeep Compass", points: [
-        "Compass has stronger off-road brand credibility — Tucson counters with better in-city drivability and a significantly lower cost of ownership",
-      ]},
-      { vs: "Skoda Kodiaq", points: [
-        "Kodiaq is a genuine 7-seater — be upfront about that if the customer needs 7 seats. For 5-seat premium SUV use, Tucson is priced well below Kodiaq for a comparable feature set",
-      ]},
-    ],
-    objectionHandling: [
-      { objection: "\"Compass feels more premium off-road\"", response: "Ask how often they'll actually go off-road — for the vast majority of owners, Tucson's on-road comfort and running costs matter more day to day." },
-    ],
-    reviewThemes: [
-      "Highway ride and NVH are consistently rated among the best in the premium SUV segment",
-      "Feature-for-price value versus European rivals is a frequently repeated point",
-    ],
-    searchTip: "Search \"Hyundai Tucson AWD review\" — reviewers who've driven the AWD variant specifically tend to focus on the value angle versus pricier European SUVs.",
-  },
-  Exter: {
-    segment: "Micro SUV",
-    competitors: ["Tata Punch", "Maruti Fronx"],
-    keyStrengths: [
-      "Highest ground clearance in the micro-SUV segment — a genuine, visible differentiator",
-      "CNG factory-fitted option available, unlike some rivals' aftermarket-only CNG",
-    ],
-    talkingPoints: [
-      { vs: "Tata Punch", points: [
-        "Punch has a 5-star crash rating — acknowledge it directly, then pivot to Exter's larger boot and factory CNG option",
-      ]},
-      { vs: "Maruti Fronx", points: [
-        "Fronx's turbo-petrol is quicker — Exter counters on ground clearance, boot space, and a roomier rear seat",
-      ]},
-    ],
-    objectionHandling: [
-      { objection: "\"Punch is safer\"", response: "Don't argue the rating — acknowledge it and move to what Exter offers that Punch doesn't at this price: factory CNG and more boot space." },
-    ],
-    reviewThemes: [
-      "Ground clearance and general road presence for the segment are the most-praised aspects",
-      "Boot space is repeatedly called out as best-in-class for a micro-SUV",
-    ],
-    searchTip: "Search \"Hyundai Exter CNG review\" — most useful for customers specifically asking about running cost, since CNG is a major reason buyers shortlist this segment.",
+    searchTip: "Search \"River Indie Gen 3 review\" — BikeWale, BikeDekho and several YouTube reviewers have long-form rides worth watching together with a customer if they're undecided.",
   },
 };
+
 /* ============================== LEARNING ==============================
    Four categories, one axis. The previous version filtered by topic *and* format, which
    is two questions to answer before seeing anything — and the answer to "what do I want
    to learn about" is usually "whatever fits the gap I have right now". Format answers
-   that on its own: fifteen minutes in the car is a podcast, five minutes between
+   that on its own: fifteen minutes on the commute is a podcast, five minutes between
    customers is an article.
 
    Internal is its own category rather than a tag. Content from someone on your own floor
@@ -7995,7 +7842,7 @@ const LEARN_LIBRARY = [
     blurb: "Four ways to answer \"what's your best price\" that don't start with a number." },
   { id: "addons", cat: "video", mins: 9, topic: "Sales",
     title: "Selling add-ons at booking", by: "Autoprism Sales Lab",
-    blurb: "Warranty and insurance are a booking conversation. Once the customer has the keys in mind, they stop buying." },
+    blurb: "River Care and accessories are a booking conversation. Once the customer has the keys in mind, they stop buying." },
   { id: "who-decides", cat: "video", mins: 11, topic: "Communication",
     title: "Reading the room — who actually decides", by: "Meera Shankar · sales trainer",
     blurb: "The person asking questions is often not the person signing." },
@@ -8006,8 +7853,8 @@ const LEARN_LIBRARY = [
     title: "Explaining finance without jargon", by: "Autoprism Sales Lab",
     blurb: "Said in language a customer repeats correctly to their spouse that evening." },
   { id: "ev-basics", cat: "video", mins: 16, topic: "Product",
-    title: "Selling an EV to a petrol buyer", by: "Autoprism Sales Lab",
-    blurb: "The four objections that come up every time on the Ioniq 5." },
+    title: "Selling an EV to a petrol-scooter rider", by: "Autoprism Sales Lab",
+    blurb: "The four objections that come up every time on the Indie — range, charging, service, resale." },
 
   // ---- Podcasts ----
   { id: "qualify-call", cat: "podcast", mins: 22, topic: "Sales",
@@ -8026,7 +7873,7 @@ const LEARN_LIBRARY = [
   // ---- Articles ----
   { id: "battlecards", cat: "article", mins: 9, topic: "Product",
     title: "Comparison battlecards", by: "Autoprism",
-    blurb: "Creta vs Seltos, Venue vs Nexon, Alcazar vs XUV700 — including where each rival honestly beats us.", tag: "Updated" },
+    blurb: "Indie vs Ather Rizta, Ola S1 Pro, TVS iQube and Bajaj Chetak — including where each rival honestly beats us.", tag: "Updated" },
   { id: "whatsapp", cat: "article", mins: 6, topic: "Communication",
     title: "WhatsApp that gets replied to", by: "Autoprism",
     blurb: "Openers, follow-ups, and the three habits that get you blocked." },
@@ -8035,18 +7882,18 @@ const LEARN_LIBRARY = [
     blurb: "Why notes written from memory cost you the next call." },
   { id: "exchange", cat: "article", mins: 7, topic: "Product",
     title: "Talking about exchange valuation", by: "Autoprism",
-    blurb: "The customer's car is always worth more to them than to the market." },
+    blurb: "The customer's old scooter is always worth more to them than to the market." },
 
   // ---- Internal (your own floor) ----
   { id: "closing-td", cat: "internal", mins: 8, topic: "Sales",
-    title: "Closing after the test drive", by: "Ravi Menon · 14 yrs, Indiranagar",
-    blurb: "The drive is over and the customer is standing by the car. The next ninety seconds decide it.", tag: "Most watched" },
+    title: "Closing after the test ride", by: "Ravi Menon · 14 yrs, Baner",
+    blurb: "The ride is over and the customer is standing by the scooter. The next ninety seconds decide it.", tag: "Most watched" },
   { id: "home-td", cat: "internal", mins: 7, topic: "Sales",
-    title: "Home test drives that convert", by: "Divya Pillai · top converter",
+    title: "Home test rides that convert", by: "Divya Pillai · top converter",
     blurb: "Takes an hour longer, closes far better. How to offer it and to whom." },
   { id: "walkaround", cat: "internal", mins: 13, topic: "Product",
     title: "The six-point walkaround", by: "Ravi Menon",
-    blurb: "A repeatable route around the car, in the order that builds interest." },
+    blurb: "A repeatable route around the scooter — storage, wheels, display, charger — in the order that builds interest." },
 ];
 
 // Minutes logged this month, by category. In production this comes from playback events.
@@ -8062,82 +7909,36 @@ const LEARN_LOG = { video: 47, podcast: 63, article: 18, internal: 21 };
 
 const PRODUCT_REF = [
   {
-    model: "Creta", segment: "Mid-size SUV", price: "₹11.2 – 19.8 L",
-    specs: ["1.5 petrol / diesel / 1.5 turbo", "6 airbags standard", "Level-2 ADAS on SX(O)", "Panoramic sunroof"],
-    pitch: "The safe default in the segment — best service reach and the strongest resale.",
+    model: "Indie", segment: "Electric scooter", price: "₹1.63 – 1.77 L",
+    specs: ["4 kWh IP67 battery · 161 km IDC", "6.7 kW peak · 26 Nm · 90 km/h", "43 L + 12 L storage", "14-inch wheels · dual disc + CBS", "750W charger: 0–80% in ~5 h"],
+    pitch: "The SUV of scooters — storage, stability and utility. Open the seat and the glovebox before you talk price.",
     rivals: [
-      { name: "Kia Seltos",
-        headline: "Same platform and engines. The difference is what happens after the sale.",
-        wins: ["Widest service network in the segment", "Strongest 5-year resale", "Diesel-automatic on more trims"],
-        edge: "Seltos has a sharper interior. If they've seen it, agree — then move to ownership cost." },
-      { name: "Maruti Grand Vitara",
-        headline: "They'll win on fuel economy. Win on everything you can feel.",
-        wins: ["Far stronger performance, petrol and diesel", "Better ride quality on bad roads", "Higher feature count at the same price"],
-        edge: "Strong-hybrid economy is genuinely better. Don't argue the number — reframe on drive quality." },
+      { name: "Ather Rizta",
+        headline: "The family-scooter benchmark. Win on space and stability, not on brand.",
+        wins: ["43 L under-seat + 12 L glovebox", "14-inch wheels and 165 mm ground clearance", "Pannier mounts and front & rear footpegs"],
+        edge: "Ather's brand recall and service network are bigger. Acknowledge it, then show the workshop and River Care." },
+      { name: "Ola S1 Pro",
+        headline: "Ola wins the spec sheet and the sticker. Win on what the customer will feel every day.",
+        wins: ["More planted ride with a pillion", "IP67 battery and high ground clearance for monsoon roads", "Far more usable storage"],
+        edge: "Ola's headline price and feature count are genuinely ahead. Don't dispute them — move to build and service experience." },
+      { name: "TVS iQube",
+        headline: "iQube sells on a trusted badge. Indie sells on everything you can open and carry.",
+        wins: ["More storage and a lockable glovebox", "Bigger wheels, wider tyres", "6.7 kW peak motor — quicker off the line"],
+        edge: "TVS's service network is much wider. Be honest, then explain our on-site service and River Care plans." },
+      { name: "Bajaj Chetak",
+        headline: "Chetak sells on its metal body and the Bajaj name. Compete on practicality.",
+        wins: ["Much larger storage", "14-inch wheels front and rear", "Twin-beam LED headlamps and 6-inch display"],
+        edge: "The metal body and Bajaj badge are real draws for traditional buyers. Agree, then put them on a test ride." },
+      { name: "Hero Vida V2",
+        headline: "Vida competes on price and removable batteries. Win on ride and storage.",
+        wins: ["Bigger fixed battery — no swapping chores", "More storage and better ride over bad roads", "Wider stance, more stable with a pillion"],
+        edge: "Removable batteries suit riders without parking-level charging. Check where they'll charge before pitching." },
     ],
     articles: [
-      { title: "Creta variant ladder — which trim to pitch", mins: 6 },
-      { title: "Handling the \"waiting period\" objection", mins: 4 },
+      { title: "750W or 480W charger — which to pitch", mins: 4 },
+      { title: "River Care Plus Two vs Plus Five — explaining the plans", mins: 5 },
+      { title: "Handling the \"range anxiety\" objection", mins: 4 },
     ],
-  },
-  {
-    model: "Venue", segment: "Compact SUV", price: "₹7.9 – 12.9 L",
-    specs: ["1.0 turbo petrol", "DCT and iMT options", "Dual-tone roof", "6 airbags"],
-    pitch: "Refinement and running cost, not crash rating. Compete where you win.",
-    rivals: [
-      { name: "Tata Nexon",
-        headline: "Nexon leads on safety rating — don't fight that. Compete on refinement.",
-        wins: ["Smoother turbo and gearbox", "Better cabin fit and finish", "Lower routine service cost"],
-        edge: "Nexon rates higher on crash safety. Be honest, then pivot to total ownership." },
-      { name: "Kia Sonet",
-        headline: "Closest rival on paper. Decided on delivery and service, not features.",
-        wins: ["Shorter waiting period on most variants", "Wider service footprint", "Better resale"],
-        edge: "Sonet's diesel-automatic is a genuine draw. Check stock before promising." },
-    ],
-    articles: [{ title: "Venue vs the sub-4m field — one-page summary", mins: 5 }],
-  },
-  {
-    model: "Alcazar", segment: "7-seater SUV", price: "₹19.9 – 25.8 L",
-    specs: ["6 and 7 seat layouts", "1.5 turbo / diesel", "Captain seats on Signature", "Level-2 ADAS"],
-    pitch: "Ask who sits in the third row. That question decides this segment.",
-    rivals: [
-      { name: "Mahindra XUV700",
-        headline: "XUV700 wins on power and price. Alcazar wins on the third row being usable.",
-        wins: ["Genuinely usable third row for adults", "Quieter at highway speed", "Shorter, more predictable wait"],
-        edge: "Don't compete on straight-line performance — you'll lose. Move to who's travelling." },
-    ],
-    articles: [{ title: "Selling the 6-seat vs 7-seat decision", mins: 5 }],
-  },
-  {
-    model: "Ioniq 5", segment: "Electric SUV", price: "₹44.6 – 48.2 L",
-    specs: ["72.6 kWh · 631 km certified", "800V — 10–80% in ~18 min", "V2L power output", "8 yr / 1.6 L km battery warranty"],
-    pitch: "Charging speed and service network. That's the whole argument.",
-    rivals: [
-      { name: "BYD Atto 3",
-        headline: "Charging speed and service access decide this, not sticker price.",
-        wins: ["800V — roughly half the charging time", "Established service network in India", "Higher certified range"],
-        edge: "Atto 3 is materially cheaper. If budget is the constraint, steer to a petrol SUV instead of losing them." },
-    ],
-    articles: [
-      { title: "The four EV objections and how to answer them", mins: 8 },
-      { title: "Home charger installation — what to promise", mins: 5 },
-    ],
-  },
-  {
-    model: "Verna", segment: "Mid-size sedan", price: "₹10.9 – 17.9 L",
-    specs: ["1.5 NA / 1.5 turbo", "Level-2 ADAS", "Ventilated front seats", "5-star Global NCAP"],
-    pitch: "The turbo is the car. Get them to drive that variant, not the base.",
-    rivals: [
-      { name: "Honda City",
-        headline: "City sells on badge and refinement. Verna sells on everything measurable.",
-        wins: ["Turbo option City has no answer to", "More features at every price point", "5-star crash rating"],
-        edge: "City's resale and brand trust are real. Acknowledge, then get them into the turbo." },
-      { name: "VW Virtus",
-        headline: "Closest on performance. Wins and losses are on ownership, not the drive.",
-        wins: ["Far better service reach", "Lower maintenance cost", "More equipment as standard"],
-        edge: "Virtus feels more solid on the highway. Don't dispute it — compete on running cost." },
-    ],
-    articles: [{ title: "Why the turbo variant sells itself on a drive", mins: 4 }],
   },
 ];
 
@@ -8497,31 +8298,31 @@ function buildAdvice(me, execs) {
   if (TD_CLOSE(me) < TD_CLOSE(best) && me.testDrives >= 8) {
     const couldBe = Math.round((me.testDrives * TD_CLOSE(best)) / 100);
     out.push({
-      title: `Close more of the drives you already run`,
-      body: `You ran ${me.testDrives} test drives — more than anyone on the floor — but ${TD_CLOSE(me)}% turn into bookings `
-        + `against ${best.name.split(" ")[0]}'s ${TD_CLOSE(best)}%. At their rate your ${me.testDrives} drives would be `
+      title: `Close more of the rides you already run`,
+      body: `You ran ${me.testDrives} test rides — more than anyone on the floor — but ${TD_CLOSE(me)}% turn into bookings `
+        + `against ${best.name.split(" ")[0]}'s ${TD_CLOSE(best)}%. At their rate your ${me.testDrives} rides would be `
         + `${couldBe} bookings instead of ${me.bookings}.`,
-      action: `Ask for the booking before the customer leaves the drive, not on a follow-up call.`,
-      module: "Closing after the test drive",
+      action: `Ask for the booking before the customer gets off the scooter, not on a follow-up call.`,
+      module: "Closing after the test ride",
     });
   }
 
   if (HOME_PCT(me) < avg(HOME_PCT)) {
     out.push({
-      title: `Take more drives to the customer`,
-      body: `${HOME_PCT(me)}% of your drives happen at the customer's place, against ${avg(HOME_PCT)}% for the rest of the team. `
+      title: `Take more rides to the customer`,
+      body: `${HOME_PCT(me)}% of your rides happen at the customer's place, against ${avg(HOME_PCT)}% for the rest of the team. `
         + `${best.name.split(" ")[0]} runs ${HOME_PCT(best)}% at home and closes ${TD_CLOSE(best)}%.`,
-      action: `Offer a home drive to anyone who has already visited once — the family is there and nobody is watching the clock.`,
-      module: "Home test drives that convert",
+      action: `Offer a home test ride to anyone who has already visited once — the family is there and nobody is watching the clock.`,
+      module: "Home test rides that convert",
     });
   }
 
   if ((me.addOns || 0) < avg(u => u.addOns || 0)) {
     out.push({
       title: `Attach more add-ons`,
-      body: `${me.addOns} add-ons across ${me.achieved} cars. The rest of the team average ${avg(u => u.addOns || 0)}. `
+      body: `${me.addOns} add-ons across ${me.achieved} scooters. The rest of the team average ${avg(u => u.addOns || 0)}. `
         + `It doesn't move you up the board, but it is the largest single lever on what you take home.`,
-      action: `Raise warranty and insurance at booking, while the customer is still deciding — not at delivery.`,
+      action: `Raise River Care and accessories at booking, while the customer is still deciding — not at delivery.`,
       module: "Selling the add-ons at booking",
     });
   }
@@ -8553,7 +8354,7 @@ function LeaderboardScreen({ currentId }) {
 
   const COLS = [
     { key: "opportunity", label: "Opp",    get: (u) => u.opportunity || 0, base: true },
-    { key: "td",          label: "TD",     get: (u) => u.testDrives || 0 },
+    { key: "td",          label: "TR",     get: (u) => u.testDrives || 0 },
     { key: "booking",     label: "Book",   get: (u) => u.bookings || 0 },
     { key: "retailed",    label: "Retail", get: (u) => u.achieved, hero: true },
   ];
@@ -8577,7 +8378,7 @@ function LeaderboardScreen({ currentId }) {
               #{myRank} of {ranked.length} on the floor
             </div>
             <div style={{ fontFamily: F, fontSize: 12, opacity: 0.92, marginTop: 3 }}>
-              {above ? `${gap} more ${gap === 1 ? "car" : "cars"} to pass ${above.name.split(" ")[0]}.` : "Top of the floor."}
+              {above ? `${gap} more ${gap === 1 ? "scooter" : "scooters"} to pass ${above.name.split(" ")[0]}.` : "Top of the floor."}
             </div>
           </div>
           <Trophy size={30} color="#fff" style={{ opacity: 0.9, flexShrink: 0 }} />
@@ -8764,7 +8565,7 @@ function ProfileScreen({ user, onLogout, voiceFirst, onToggleVoiceFirst, lang, o
           { icon: Mail, label: "Email", value: user.email },
           { icon: Phone, label: "Phone", value: user.phone },
           { icon: MapPin, label: "Branch", value: user.branch },
-          { icon: Target, label: "Monthly Target", value: user.target ? `${user.target} cars` : "—" },
+          { icon: Target, label: "Monthly Target", value: user.target ? `${user.target} scooters` : "—" },
         ].map((r, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 10px", borderTop: i ? `1px solid ${C.border}` : "none" }}>
             <r.icon size={15} color={C.sub} />
@@ -8830,7 +8631,7 @@ function BottomSheet({ title, subtitle, onClose, children }) {
 function AddLeadSheet({ onClose, onSubmit, prefill }) {
   const [form, setForm] = useState({
     name: prefill?.name || "", phone: prefill?.phone || "", altPhone: "", model: prefill?.model || "", variant: prefill?.variant || "",
-    budget: prefill?.finalPrice ? `₹${prefill.finalPrice.toFixed(1)} L` : "", source: "Walk-in",
+    budget: prefill?.finalPrice ? `₹${prefill.finalPrice.toFixed(2)} L` : "", source: "Walk-in",
   });
   const models = [...new Set(INVENTORY.map(v => v.model))];
   const variantsForModel = INVENTORY.filter(v => v.model === form.model);
@@ -8869,11 +8670,11 @@ function AddLeadSheet({ onClose, onSubmit, prefill }) {
             {variantsForModel.map(v => <option key={v.id} value={v.variant}>{v.variant}</option>)}
           </select>
         )}
-        <input placeholder="Budget (optional, e.g. ₹12–14 L)" value={form.budget} onChange={e => setForm(f => ({ ...f, budget: e.target.value }))} style={{ ...formInputStyle, width: "100%" }} />
+        <input placeholder="Budget (optional, e.g. ₹1.6–1.7 L)" value={form.budget} onChange={e => setForm(f => ({ ...f, budget: e.target.value }))} style={{ ...formInputStyle, width: "100%" }} />
         <div>
           <span style={{ fontFamily: F, fontSize: 10.5, color: C.sub, fontWeight: 600 }}>Source</span>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
-            {["Walk-in", "Website", "CarDekho", "Referral", "Others"].map(s => (
+            {["Walk-in", "Website", "BikeDekho", "Referral", "Others"].map(s => (
               <button key={s} onClick={() => setForm(f => ({ ...f, source: s }))} style={chipStyle(form.source === s)}>{s}</button>
             ))}
           </div>
@@ -8897,7 +8698,7 @@ function QuickQuoteSheet({ onClose, onConvert }) {
   const variantsForModel = INVENTORY.filter(v => v.model === form.model);
   const canGenerate = !!(form.phone.trim() && form.model && form.variant);
   const discountVal = Math.max(0, parseFloat(form.discount) || 0);
-  const finalPrice = result ? Math.max(0.1, result.priceLakh - discountVal) : null;
+  const finalPrice = result ? Math.max(0.01, result.priceLakh - discountVal) : null;
 
   const handleVoice = () => {
     if (recording) return;
@@ -8924,7 +8725,7 @@ function QuickQuoteSheet({ onClose, onConvert }) {
             {variantsForModel.map(v => <option key={v.id} value={v.variant}>{v.variant}</option>)}
           </select>
         )}
-        <input type="number" min="0" step="0.1" placeholder="Discount, ₹ L (optional)" value={form.discount}
+        <input type="number" min="0" step="0.01" placeholder="Discount, ₹ L (optional, e.g. 0.03)" value={form.discount}
           onChange={e => setForm(f => ({ ...f, discount: e.target.value }))} style={{ ...formInputStyle, width: "100%" }} />
       </div>
       <button disabled={!canGenerate} onClick={() => setResult(INVENTORY.find(v => v.model === form.model && v.variant === form.variant) || null)}
@@ -8938,18 +8739,18 @@ function QuickQuoteSheet({ onClose, onConvert }) {
           {discountVal > 0 ? (
             <>
               <div style={{ fontFamily: F, fontSize: 13, color: C.faint, textDecoration: "line-through", marginTop: 4 }}>
-                ₹{result.priceLakh.toFixed(1)} L
+                ₹{result.priceLakh.toFixed(2)} L
               </div>
               <div style={{ fontFamily: F, fontWeight: 800, fontSize: 22, color: C.darkGreen }}>
-                ₹{finalPrice.toFixed(1)} L
+                ₹{finalPrice.toFixed(2)} L
               </div>
               <div style={{ fontFamily: F, fontSize: 11, color: C.green, fontWeight: 700, marginTop: 2 }}>
-                Discount applied: ₹{discountVal.toFixed(1)} L
+                Discount applied: ₹{formatINR(discountVal * 100000).slice(1)}
               </div>
             </>
           ) : (
             <div style={{ fontFamily: F, fontWeight: 800, fontSize: 22, color: C.ink, marginTop: 4 }}>
-              ₹{result.priceLakh.toFixed(1)} L
+              ₹{result.priceLakh.toFixed(2)} L
             </div>
           )}
           <div style={{ fontFamily: F, fontSize: 11.5, color: C.sub, marginTop: 3 }}>
@@ -9062,7 +8863,7 @@ function FilteredLeadsScreen({ label, leads, onOpenLead, onCall, onWhatsApp, onL
 function BookingCelebration({ data, repName, onClose }) {
   const [copied, setCopied] = useState(false);
   const handleShare = async () => {
-    const text = `🚗 BOOKING CONFIRMED\n${data.model} ${data.variant}\nAdvance: ₹${data.advance} (${data.mode})\nDelivery: ${data.deliveryDate ? new Date(data.deliveryDate).toLocaleDateString("en-IN", {day:"2-digit",month:"short",year:"numeric"}) : "TBD"}\nClosed by: ${repName}`;
+    const text = `🛵 BOOKING CONFIRMED\n${data.model} ${data.variant}\nAdvance: ₹${data.advance} (${data.mode})\nDelivery: ${data.deliveryDate ? new Date(data.deliveryDate).toLocaleDateString("en-IN", {day:"2-digit",month:"short",year:"numeric"}) : "TBD"}\nClosed by: ${repName}`;
     try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch(e) {}
   };
 
@@ -9115,7 +8916,7 @@ export default function SalesExecutiveApp() {
   const toastTimer = useRef(null);
   const [showAddLead, setShowAddLead] = useState(false);
   const [showMIS, setShowMIS] = useState(false);
-  // Set when a lead releases its held car, so InventoryScreen can cascade it.
+  // Set when a lead releases its held scooter, so InventoryScreen can cascade it.
   const [releasedUnitId, setReleasedUnitId] = useState(null);
   const [showQuickQuote, setShowQuickQuote] = useState(false);
   const [quickQuotePrefill, setQuickQuotePrefill] = useState(null);
@@ -9183,9 +8984,9 @@ export default function SalesExecutiveApp() {
     if (!note) return [];
     const text = note.toLowerCase();
     const rules = [
-      { signal: "Exchange", words: ["exchange", "trade-in", "trade in", "old car", "current car"], reason: "From this call: customer mentioned their current car. Add the Exchange signal to start booking an evaluation?" },
+      { signal: "Exchange", words: ["exchange", "trade-in", "trade in", "old scooter", "old bike", "current scooter", "activa", "jupiter"], reason: "From this call: customer mentioned their current two-wheeler. Add the Exchange signal to start booking an evaluation?" },
       { signal: "Finance", words: ["loan", "emi", "finance", "down payment"], reason: "From this call: customer asked about loan/EMI options. Add the Finance signal to start the loan process?" },
-      { signal: "Comparing Competitor", words: ["seltos", "brezza", "nexon", "compass", "competitor", "comparing"], reason: "From this call: customer is comparing with a competitor. Add the signal to see the battle card?" },
+      { signal: "Comparing Competitor", words: ["ather", "rizta", "ola", "iqube", "chetak", "vida", "competitor", "comparing"], reason: "From this call: customer is comparing with a competitor. Add the signal to see the battle card?" },
     ];
     return rules
       .filter(r => r.words.some(w => text.includes(w)))
@@ -9314,20 +9115,20 @@ export default function SalesExecutiveApp() {
     setLeads(prev => prev.map(l => {
       if (l.id !== leadId) return l;
       const reasonLabel = LOST_REASONS.find(r => r.key === reason)?.label || reason;
-      // A lost lead holding a car is the worst kind of dead stock — nobody can sell it and
-      // nobody is buying it. Record the car so inventory can release it and pass it on.
+      // A lost lead holding a scooter is the worst kind of dead stock — nobody can sell it and
+      // nobody is buying it. Record the scooter so inventory can release it and pass it on.
       if (l.blockedUnit) freedUnit = l.blockedUnit;
       return {
         ...l, stage: "Lost", lostReason: { reason, note, date: today }, blockedUnit: null,
         timeline: [
           { type: "call", text: `Marked as Lost — ${reasonLabel}`, date: today },
-          ...(l.blockedUnit ? [{ type: "call", text: `Held car released — ${l.blockedUnit.model} ${l.blockedUnit.color} (VIN ${l.blockedUnit.vin})`, date: today }] : []),
+          ...(l.blockedUnit ? [{ type: "call", text: `Held scooter released — ${l.blockedUnit.model} ${l.blockedUnit.color} (VIN ${l.blockedUnit.vin})`, date: today }] : []),
           ...l.timeline,
         ],
       };
     }));
     if (freedUnit) setReleasedUnitId({ id: freedUnit.id, at: Date.now() });
-    showToast(freedUnit ? "Lead lost — held car released back to stock" : "Lead marked as Lost");
+    showToast(freedUnit ? "Lead lost — held scooter released back to stock" : "Lead marked as Lost");
   };
   const handleUpdateFinanceField = (leadId, field, value) => {
     setLeads(prev => prev.map(l => l.id !== leadId ? l : { ...l, finance: { ...l.finance, [field]: value } }));
@@ -9392,7 +9193,7 @@ export default function SalesExecutiveApp() {
         timeline: [{ type: "call", text: note, date: today }, ...l.timeline],
       };
     }));
-    showToast("🚗 Vehicle preference updated");
+    showToast("🛵 Vehicle preference updated");
   };
   const handleLogWhatsApp = (leadId, { outcome, note }) => {
     const outcomeLabel = WHATSAPP_OUTCOMES.find(o => o.key === outcome)?.label || outcome;
@@ -9443,7 +9244,7 @@ export default function SalesExecutiveApp() {
   const handleSetCompetitor = (leadId, competitor) => {
     setLeads(prev => prev.map(l => l.id !== leadId ? l : { ...l, competitor }));
   };
-  // Standalone "Schedule Test Drive" quick action (Lead Detail) — full date/time/location capture.
+  // Standalone "Schedule Test Ride" quick action (Lead Detail) — full date/time/location capture.
   // Distinguishes a fresh schedule from a reschedule of an existing one.
   const handleScheduleTestDrive = (leadId, data) => {
     setLeads(prev => prev.map(l => {
@@ -9459,19 +9260,19 @@ export default function SalesExecutiveApp() {
           mode: data.mode, date: dateObj, time: data.time,
           location: locText ? { text: isLink ? "" : locText, mapsLink: isLink ? locText : "" } : null,
         },
-        timeline: [{ type: "test-drive", text: `Test drive ${isReschedule ? "rescheduled" : "scheduled"} — ${modeLabel} on ${fmt(dateObj)} at ${fmtTime(data.time)}`, date: today }, ...l.timeline],
+        timeline: [{ type: "test-drive", text: `Test ride ${isReschedule ? "rescheduled" : "scheduled"} — ${modeLabel} on ${fmt(dateObj)} at ${fmtTime(data.time)}`, date: today }, ...l.timeline],
       };
     }));
-    showToast(`🚗 Test drive ${leads.find(l => l.id === leadId)?.testDrive ? "rescheduled" : "scheduled"}`);
+    showToast(`🛵 Test ride ${leads.find(l => l.id === leadId)?.testDrive ? "rescheduled" : "scheduled"}`);
   };
-  // Marks the upcoming test drive as done, clears it from the queue, and logs the customer's
+  // Marks the upcoming test ride as done, clears it from the queue, and logs the customer's
   // actual response — this also feeds the existing "recently completed" suppression in Calls.
   const handleCompleteTestDrive = (leadId, { response, note, booking }) => {
     setLeads(prev => prev.map(l => {
       if (l.id !== leadId) return l;
       const respLabel = TEST_DRIVE_RESPONSES.find(r => r.key === response)?.label || response;
       let updated = { ...l, testDrive: null };
-      updated.timeline = [{ type: "test-drive", text: `Test drive completed — ${respLabel}`, date: today }, ...l.timeline];
+      updated.timeline = [{ type: "test-drive", text: `Test ride completed — ${respLabel}`, date: today }, ...l.timeline];
       if (note?.trim()) updated.notes = [note.trim(), ...l.notes];
 
       // Feedback decides what happens next — a hot response shouldn't sit as cold as a lukewarm
@@ -9500,31 +9301,31 @@ export default function SalesExecutiveApp() {
         updated.bucket = "comparing";
       } else if (response === "neutral") {
         updated.followUp = { date: d(4), window: null };
-        updated.nextAction = "Neutral on the test drive — check in and address concerns";
+        updated.nextAction = "Neutral on the test ride — check in and address concerns";
       } else if (response === "wants_second") {
         updated.followUp = { date: d(1), window: null };
-        updated.nextAction = "Wants a second test drive — get it scheduled";
+        updated.nextAction = "Wants a second test ride — get it scheduled";
       }
       // "not_liked" — no follow-up forced; leaving it to be reviewed and marked lost if that's
       // where it's heading, rather than pretending there's momentum that isn't there.
       return updated;
     }));
-    showToast("✅ Test drive marked complete");
+    showToast("✅ Test ride marked complete");
   };
   const handleCancelTestDrive = (leadId, { reason, note }) => {
     setLeads(prev => prev.map(l => {
       if (l.id !== leadId) return l;
       const reasonLabel = TEST_DRIVE_CANCEL_REASONS.find(r => r.key === reason)?.label || reason;
       let updated = { ...l, testDrive: null };
-      updated.timeline = [{ type: "test-drive", text: `Test drive cancelled — ${reasonLabel}`, date: today }, ...l.timeline];
+      updated.timeline = [{ type: "test-drive", text: `Test ride cancelled — ${reasonLabel}`, date: today }, ...l.timeline];
       if (note?.trim()) updated.notes = [note.trim(), ...l.notes];
       return updated;
     }));
-    showToast("Test drive cancelled");
+    showToast("Test ride cancelled");
   };
 
   // Post-call log: records the outcome as a timeline entry, and — for Call Back / Wants Test
-  // Drive — updates the lead's followUp / testDrive fields so the queue reflects it next time.
+  // Ride — updates the lead's followUp / testDrive fields so the queue reflects it next time.
   const handleLogCall = (leadId, payload) => {
     setLeads(prev => prev.map(l => {
       if (l.id !== leadId) return l;
@@ -9545,7 +9346,7 @@ export default function SalesExecutiveApp() {
       if (payload.outcome === "test_drive" && payload.testDrive.date) {
         const dateObj = parseDateInput(payload.testDrive.date);
         const modeLabel = TEST_DRIVE_MODES.find(m => m.key === payload.testDrive.mode)?.label || "";
-        text = `Call outcome: Wants test drive — ${modeLabel} on ${fmt(dateObj)} at ${fmtTime(payload.testDrive.time)}`;
+        text = `Call outcome: Wants test ride — ${modeLabel} on ${fmt(dateObj)} at ${fmtTime(payload.testDrive.time)}`;
         const locText = (payload.testDrive.locationText || "").trim();
         const isLink = locText.startsWith("http");
         updated.testDrive = {
@@ -9602,7 +9403,7 @@ export default function SalesExecutiveApp() {
   const handleAddLead = (form) => {
     const initialNotes = [];
     if (form.quoteNotes?.trim()) initialNotes.push(form.quoteNotes.trim());
-    if (form.quoteDiscount) initialNotes.push(`Quoted with ₹${form.quoteDiscount.toFixed(1)} L discount`);
+    if (form.quoteDiscount) initialNotes.push(`Quoted with ${formatINR(form.quoteDiscount * 100000)} discount`);
     const newLead = {
       id: ++LEAD_SEQ, owner: DEFAULT_USER_ID, name: form.name.trim(), phone: form.phone.trim(), altPhone: (form.altPhone || "").trim(),
       model: form.model, variant: form.variant || "Base", bucket: "new", propensity: 35,

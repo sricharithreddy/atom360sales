@@ -12,7 +12,7 @@ full-screen with a slim login switcher at the top.
 | Sales Executive | `/#sales` |
 | Manager + Admin | `/#manager` |
 
-Sample data only — nothing is saved to a server.
+Demo dealer: **Autoprism River** — River Indie electric scooters, Baner (Pune) and Vashi (Navi Mumbai). Prices follow River's Maharashtra price sheet (Sep 2026). Sample data only — nothing is saved to a server.
 
 ## Structure
 
