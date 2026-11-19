@@ -595,7 +595,7 @@ const pu = (key, label, w, f, align) => ({ key, label, w, align, sort: (a) => a[
 // Finance · Overview — earnings per vehicle. Sales ₹ sits in the grey line under the name.
 const OVERVIEW_COLS = [
   UNITS_COL(34),
-  { key: "s", label: "₹/unit", w: 46, sort: (a) => a.perUnit, cell: (a) => money(lakh(a.perUnit), vsTone(a.perUnit, G.perUnit)) },
+  { key: "s", label: "₹/unit", w: 46, sort: (a) => a.perUnit, cell: (a) => money(ok(a.perUnit) ? `₹${(a.perUnit / 1000).toFixed(1)}k` : "—", vsTone(a.perUnit, G.perUnit)) },
   pu("i", "Ins", 42, "insPU"),
   pu("a", "Acc", 38, "accPU"),
   pu("rc", "RC", 40, "rcPU", "right"),

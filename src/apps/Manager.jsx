@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { unitsOf, PUNE_STORES, VARIANTS as INV_VARIANTS, COLOURS as INV_COLOURS } from "../data/epicRiverInventory.js";
 import {
   AlertTriangle, ArrowRight, BarChart3, Bell, Bike as Car, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, Clock, FileText, GraduationCap, Headphones, History, IndianRupee, Lock, Mail, MapPin, Menu, MessageSquare, Pause, Pencil, Phone, PlayCircle, Plus, Search, Send, Settings, ShieldAlert, ShieldCheck, Sparkles, Target, Trash2, Upload, User, UserPlus, Users, X,
 } from "lucide-react";
@@ -2393,15 +2394,24 @@ function OrgLeadsScreen({ sub, handling, transfers, onOpen, managerActivity = []
 /* ============================ INVENTORY ============================ */
 /* ============================ INVENTORY ============================ */
 // New stock is held per charger variant — the River Care plan is sold on paper, not stocked.
-const STOCK = [
-  { model: "Indie", variants: [
-    { name: "750W", colours: { "Monsoon Blue": 6, "Summer Red": 4, "Spring Yellow": 3, "Winter White": 5, "Storm Grey": 2 } },
-    { name: "480W", colours: { "Monsoon Blue": 2, "Summer Red": 1, "Spring Yellow": 0, "Winter White": 3, "Storm Grey": 2 } } ]},
-];
+// Counts come from the shared Epic River inventory (src/data/epicRiverInventory.js), so they
+// agree with the Telecaller, Sales Executive and CEO logins. STOCK_BY_BRANCH[branch] has the
+// same { model, variants:[{ name, colours:{colour: units} }] } shape the screen always used.
+const STOCK_BY_BRANCH = Object.fromEntries(Object.entries(PUNE_STORES).map(([branch, locId]) => {
+  return [branch, [{ model: "Indie", variants: INV_VARIANTS.map(v => ({ name: v.key,
+    colours: Object.fromEntries(INV_COLOURS.map(c => [c, unitsOf(locId, v.key, c)])) })) }]];
+}));
+const STOCK_BRANCHES = Object.keys(STOCK_BY_BRANCH);
+// Both stores combined (used by the "All" view and the demo-variant picker).
+const STOCK = [{ model: "Indie", variants: INV_VARIANTS.map(v => ({ name: v.key,
+  colours: Object.fromEntries(INV_COLOURS.map(c => [c,
+    Object.values(PUNE_STORES).reduce((n, id) => n + unitsOf(id, v.key, c), 0)])) })) }];
 const PREOWNED = [
   { kind: "demo", model: "Indie 750W", reg: "MH12 RV 4421", year: 2025, km: 2400, ask: 132000, days: 41, branch: "Aundh" },
   { kind: "demo", model: "Indie 750W", reg: "MH14 RV 0918", year: 2026, km: 900, ask: 145000, days: 22, branch: "Shivaji Nagar" },
   { kind: "demo", model: "Indie 480W", reg: "MH12 RV 7730", year: 2026, km: 600, ask: 142000, days: 9, branch: "Aundh" },
+  { kind: "demo", model: "Indie 480W", reg: "MH12 RV 5106", year: 2026, km: 1300, ask: 139000, days: 30, branch: "Aundh" },
+  { kind: "demo", model: "Indie 480W", reg: "MH14 RV 2287", year: 2026, km: 450, ask: 143000, days: 12, branch: "Shivaji Nagar" },
   { kind: "used", model: "Honda Activa 6G", reg: "MH12 PK 2210", year: 2021, km: 21000, ask: 48000, days: 62, branch: "Aundh" },
   { kind: "used", model: "TVS Jupiter 125", reg: "MH14 AX 5561", year: 2022, km: 16500, ask: 52000, days: 18, branch: "Shivaji Nagar" },
   { kind: "used", model: "Suzuki Access 125", reg: "MH12 MG 8823", year: 2020, km: 29000, ask: 38000, days: 55, branch: "Aundh" },
@@ -2514,11 +2524,15 @@ function InventoryScreen({ sub }) {
   const [open, setOpen] = useState(new Set());
   const [units, setUnits] = useState(PREOWNED);
   const [adding, setAdding] = useState(false);
+  const [branch, setBranch] = useState("All");
   const toggle = (k) => setOpen(s2 => { const n = new Set(s2); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   const count = (v) => Object.values(v.colours).reduce((a, b2) => a + b2, 0);
   const view = sub || "new";
   const title = { new: "New Scooters", preowned: "Pre-Owned", demo: "Demo Scooters", block: "Block/Allocate a scooter" }[view];
-  const total = STOCK.reduce((n, m) => n + m.variants.reduce((a, v) => a + count(v), 0), 0);
+  const stockOf = (b) => b === "All" ? STOCK : STOCK_BY_BRANCH[b];
+  const totalOf = (b) => stockOf(b).reduce((n, m) => n + m.variants.reduce((a, v) => a + count(v), 0), 0);
+  const shown = stockOf(branch);
+  const total = totalOf(branch);
   const pre = units.filter(p2 => view === "demo" ? p2.kind === "demo" : p2.kind === "used");
 
   if (adding) return <InventoryAddCarScreen kind={view === "demo" ? "demo" : "used"}
@@ -2530,7 +2544,7 @@ function InventoryScreen({ sub }) {
         <span style={{ flex: 1 }}>
           <span style={{ display: "block", fontFamily: F, fontWeight: 800, fontSize: 15.5, color: C.ink }}>{title}</span>
           <span style={{ display: "block", fontFamily: F, fontSize: 11.5, color: C.sub, marginTop: 1, marginBottom: 13 }}>
-            {view === "new" ? `${total} units. Tap a model to expand.`
+            {view === "new" ? `${total} units${branch === "All" ? " across both stores" : ` at ${branch}`}. Tap a model to expand.`
             : view === "block" ? "Held for a customer — SEs block scooters from the lead."
             : `${pre.length} scooters. Ageing past 45 days is flagged.`}
           </span>
@@ -2541,7 +2555,23 @@ function InventoryScreen({ sub }) {
             whiteSpace: "nowrap", flexShrink: 0 }}>+ Add a scooter</button>
         )}
       </div>
-      {view === "new" && STOCK.map(m => {
+      {view === "new" && (
+        <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+          {["All", ...STOCK_BRANCHES].map(b => {
+            const on = branch === b;
+            return (
+              <button key={b} data-branch={b} onClick={() => setBranch(b)} style={{ flex: 1, padding: "8px 3px", borderRadius: 9,
+                cursor: "pointer", border: `1.5px solid ${on ? C.primary : C.border}`, background: on ? C.primarySoft : C.card,
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                <span style={{ fontFamily: F, fontSize: 13.5, fontWeight: 800, color: on ? C.primary : C.ink, lineHeight: 1 }}>{totalOf(b)}</span>
+                <span style={{ fontFamily: F, fontSize: 9, fontWeight: 700, color: on ? C.primary : C.faint,
+                  textTransform: "uppercase", letterSpacing: 0.3, whiteSpace: "nowrap" }}>{b}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {view === "new" && shown.map(m => {
         const mo = open.has(m.model); const n = m.variants.reduce((a, v) => a + count(v), 0);
         return (
           <div key={m.model} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, marginBottom: 8, overflow: "hidden" }}>

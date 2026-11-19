@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
+import { stockFor, unitsOf, PUNE_STORES, INVENTORY_AS_OF } from "../data/epicRiverInventory.js";
 import {
   AlertTriangle, BarChart3, Calendar, Camera, Bike as Car, Check, CheckCircle2, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, Clock, Copy, Download, Eye, FileText, Filter, GraduationCap, Headphones, Image, Link2, Lock, LogOut, Mail, MapPin, Menu, MessageSquare, Mic, MoreHorizontal, Navigation, Package, Pause, Pencil, Phone, Play, PlayCircle, Plus, Search, Settings, Sparkles, Square, Star, Store, Tag, TrendingUp, User, UserPlus, Users, Wind, X, Zap,
 } from "lucide-react";
@@ -170,40 +171,42 @@ function commissionFor(priceLakh, discountAmount, isUsed) {
   return base + discountBonus + usedBonus;
 }
 
-// Every model+variant carries 2-4 color options, each with its own stock count and waiting
-// time — deterministic from a hash so the numbers stay stable across reloads rather than
-// reshuffling randomly.
+// Every model+variant lists all five colours with their real stock, from the shared Epic River
+// inventory (src/data/epicRiverInventory.js) — the same numbers the SE, Manager and CEO logins
+// show. Stock is physical, by charger: "750W + Plus Two" and "750W" draw on the same 750W pool,
+// so `units` is that pool across Aundh + Shivaji Nagar (never sum it across plan-variants).
+// `free` takes off scooters already held for customers; status and waiting time follow `free`.
 function inventoryColorsFor(model, variant, priceLakh) {
-  const paletteSize = 2 + (hashStr(model + variant) % 3); // 2-4 colors
-  const colors = [];
-  for (let i = 0; i < paletteSize + 2; i++) {
-    if (colors.length >= paletteSize) break;
-    const color = COLOR_OPTIONS[hashStr(model + variant + i) % COLOR_OPTIONS.length];
-    if (colors.some(c => c.color === color)) continue;
-    const h = hashStr(model + variant + color);
-    const units = h % 9; // 0-8 units
-    const waitingDays = units >= 4 ? 0 : units >= 1 ? 3 + (h % 8) : 10 + (h % 12);
-    const status = units >= 4 ? "In Stock" : units >= 1 ? "Low Stock" : "In Transit";
+  return COLOR_OPTIONS.map(color => {
+    const byBranch = Object.fromEntries(Object.entries(PUNE_STORES).map(([b, id]) => [b, unitsOf(id, chargerOf(variant), color)]));
+    const units = Object.values(byBranch).reduce((a, b) => a + b, 0);
+    const free = units - seededHeldCount(variant, color);
+    const waitingDays = free >= 1 ? 0 : 7 * (WAITING_WEEKS[model] || 2);
+    const status = free >= 4 ? "In Stock" : free >= 1 ? "Low Stock" : "In Transit";
     const discount = discountFor(model, variant, color);
     const commission = commissionFor(priceLakh, discount, false);
-    colors.push({ color, units, waitingDays, status, discount, commission });
-  }
-  return colors;
+    return { color, units, free, byBranch, waitingDays, status, discount, commission };
+  });
 }
-const INVENTORY = Object.entries(MODEL_VARIANTS).map(([model, variants]) => ({
-  model,
-  variants: variants.map((variant, i) => {
-    const priceLakh = priceForVariant(model, i, variants.length);
-    return { variant, priceLakh, colors: inventoryColorsFor(model, variant, priceLakh) };
-  }),
-}));
+// Built on first use — the stock helpers it reads are declared further down this file.
+let INVENTORY_CACHE = null;
+function getInventory() {
+  if (!INVENTORY_CACHE) INVENTORY_CACHE = Object.entries(MODEL_VARIANTS).map(([model, variants]) => ({
+    model,
+    variants: variants.map((variant, i) => {
+      const priceLakh = priceForVariant(model, i, variants.length);
+      return { variant, priceLakh, colors: inventoryColorsFor(model, variant, priceLakh) };
+    }),
+  }));
+  return INVENTORY_CACHE;
+}
 const INVENTORY_STATUS_META = {
   "In Stock": { color: C.green, soft: C.greenSoft },
   "Low Stock": { color: C.warm, soft: C.warmSoft },
   "In Transit": { color: C.cold, soft: C.coldSoft },
 };
 function inventoryLookup(model, variant, color) {
-  const m = INVENTORY.find(i => i.model === model);
+  const m = getInventory().find(i => i.model === model);
   const v = m?.variants.find(x => x.variant === variant);
   return v?.colors.find(x => x.color === color) || null;
 }
@@ -222,11 +225,11 @@ function usedFinalPrice(u) { return +(u.originalPriceLakh - u.discountLakh).toFi
 // Real stock availability for a model+variant, used when confirming delivery timelines with a
 // customer — aggregates across colors so the telecaller has an accurate answer, not a guess.
 function inventoryAvailabilityFor(model, variant) {
-  const modelEntry = INVENTORY.find(m => m.model === model);
+  const modelEntry = getInventory().find(m => m.model === model);
   const variantEntry = modelEntry?.variants.find(v => v.variant === variant);
   if (!variantEntry) return null;
   const totalUnits = variantEntry.colors.reduce((s, c) => s + c.units, 0);
-  const inStockColors = variantEntry.colors.filter(c => c.units > 0);
+  const inStockColors = variantEntry.colors.filter(c => c.free > 0);
   const minWait = inStockColors.length ? 0 : Math.min(...variantEntry.colors.map(c => c.waitingDays));
   return { totalUnits, minWait, colors: variantEntry.colors };
 }
@@ -5481,8 +5484,7 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
   fontSize: 11,
   color: C.sub
 }}>
-      {availability.units}
-       in stock
+      {availability.units} in stock{availability.free !== availability.units ? ` · ${availability.free} free` : ""}
     </span>
   </div>
   <div style={{
@@ -5493,6 +5495,14 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
   marginTop: 2
 }}>
     {availability.waitingDays === 0 ? "Ready now" : `~${availability.waitingDays}d waiting period`}
+  </div>
+  <div style={{
+  fontFamily: F,
+  fontSize: 10,
+  color: C.faint,
+  marginTop: 2
+}}>
+    {Object.entries(availability.byBranch).map(([b, n]) => `${b} ${n}`).join(" · ")} · stock is by charger; the River Care plan is added at booking
   </div>
 </> : <span style={{
   fontFamily: F,
@@ -8773,47 +8783,98 @@ const UNIT_STATUS = {
   no_stock:   { label: "No Stock",   color: C.faint,  soft: C.bg },
 };
 
-// Deterministic generator so the demo data is stable across renders but still looks like a
-// real yard — most combinations have a unit or two, some have none, a few are in transit.
+// New-scooter units are generated from the shared Epic River inventory
+// (src/data/epicRiverInventory.js) — the same module the Manager and CEO logins read — so
+// every count on this screen agrees with theirs: exactly stockFor(locId) units per branch ×
+// charger variant × colour, with days-in-stock drawn from each line's age buckets.
+// Holds and in-transit arrivals are seeded on top so the block / waitlist / auto-allot demo works:
+//   · every 480W Spring Yellow is held → "No Stock", the waitlist's plain case;
+//   · every 480W Storm Grey is held and one more is on its way to Aundh → marking it arrived
+//     auto-allots it to the first person in that queue.
+// In-transit scooters are not yet at a branch, so they are not part of the on-hand count.
+const STOCK_AS_OF = new Date(INVENTORY_AS_OF + "T00:00:00");
+const AGE_RANGES = [[2, 30], [31, 60], [61, 90], [91, 150]];
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const SEEDED_HOLD_COMBOS = ["480W|Spring Yellow", "480W|Storm Grey"];
+const SEEDED_HOLDERS = [
+  { name: "Kavya Deshmukh", phone: "+91 98220 41107", by: "Rahul Kumar", ago: 3 },
+  { name: "Omkar Joshi", phone: "+91 98903 22874", by: "Divya Pillai", ago: 6 },
+  { name: "Snehal Patil", phone: "+91 97644 10592", by: "Arjun Nair", ago: 2 },
+  { name: "Imran Shaikh", phone: "+91 99230 66418", by: "Rahul Kumar", ago: 8 },
+  { name: "Pooja Kulkarni", phone: "+91 98500 37721", by: "Divya Pillai", ago: 1 },
+  { name: "Aniket Pawar", phone: "+91 90110 58263", by: "Arjun Nair", ago: 5 },
+  { name: "Rutuja Gokhale", phone: "+91 98234 90145", by: "Rahul Kumar", ago: 4 },
+  { name: "Sameer Kadam", phone: "+91 97302 11836", by: "Divya Pillai", ago: 9 },
+  { name: "Neha Bhosale", phone: "+91 99700 24519", by: "Arjun Nair", ago: 2 },
+  { name: "Vikrant More", phone: "+91 98810 73302", by: "Rahul Kumar", ago: 7 },
+  { name: "Shruti Apte", phone: "+91 90960 48857", by: "Divya Pillai", ago: 3 },
+  { name: "Harsh Wagh", phone: "+91 98605 12490", by: "Arjun Nair", ago: 6 },
+];
+const SEEDED_TRANSIT = [{ variant: "480W", color: "Storm Grey", branch: "Aundh", etaDays: 4 }];
+// Plan-variants ("750W + Plus Two") all draw on their charger's physical pool.
+function chargerOf(variant) { return String(variant || "").split(" + ")[0]; }
+function withCharger(variant, charger) { return [charger, ...String(variant || "").split(" + ").slice(1)].join(" + "); }
+// Seeded holds per charger × colour (both stores) — what's physically there but already spoken for.
+function seededHeldCount(variant, color) {
+  if (!SEEDED_HOLD_COMBOS.includes(`${chargerOf(variant)}|${color}`)) return 0;
+  return Object.values(PUNE_STORES).reduce((n, id) => n + unitsOf(id, chargerOf(variant), color), 0);
+}
+
 function buildInventoryUnits() {
   const units = [];
   let seq = 0;
-  const branches = ["Aundh", "Shivaji Nagar"];
-  Object.entries(MODEL_VARIANTS).forEach(([model, variants]) => {
-    variants.forEach((variant, vi) => {
-      COLOR_OPTIONS.forEach((color, ci) => {
-        // Not every colour of every variant is stocked — that's the point of the screen.
-        const h = hashStr(model + variant + color);
-        const count = h % 7 === 0 ? 2 : h % 5 === 0 ? 1 : h % 3 === 0 ? 1 : 0;
-        for (let n = 0; n < count; n++) {
-          seq += 1;
-          const inTransit = (h + n) % 4 === 0;
-          const ev = isEV(model);
-          units.push({
-            id: `U${seq}`,
-            category: "new",
-            model, variant, color,
-            vin: `MD9RIV${String(h % 900 + 100)}${model.slice(0, 2).toUpperCase()}${String(seq).padStart(5, "0")}`,
-            chassis: `CH${String(h % 90000 + 10000)}${seq}`,
-            engineNo: ev ? null : `EN${String((h * 7) % 90000 + 10000)}${seq}`,
-            motorNo: ev ? `MT${String((h * 7) % 90000 + 10000)}${seq}` : null,
-            status: inTransit ? "in_transit" : "in_stock",
-            branch: branches[(h + n) % 2],
-            etaDays: inTransit ? ((h + n) % 12) + 3 : null,
-            mfgMonth: ["Jan 2026", "Feb 2026", "Mar 2026", "Apr 2026"][(h + n) % 4],
-            priceLakh: (VARIANT_PRICES[model] || {})[variant] || null,
-            ev: ev ? {
-              batteryKwh: 4,
-              rangeKm: 161,
-              charger: variant.startsWith("750W") ? "750W portable · 0–80% ~5 h" : "480W portable · 0–100% ~8 h",
-              batteryWarranty: variant.includes("Plus Five") ? "8 yrs (River Care Plus Five)" : variant.includes("Plus Two") ? "5 yrs + Plus Two cover" : "5 yrs (standard)",
-            } : null,
-            blockedFor: null,
-          });
+  let holder = 0;
+  const model = "Indie";
+  const ev = isEV(model);
+  const make = (variant, color, branch, extra) => {
+    seq += 1;
+    const h = hashStr(model + variant + color + branch + seq);
+    return {
+      id: `U${seq}`,
+      category: "new",
+      model, variant, color, branch,
+      vin: `MD9RIV${String(h % 900 + 100)}${model.slice(0, 2).toUpperCase()}${String(seq).padStart(5, "0")}`,
+      chassis: `CH${String(h % 90000 + 10000)}${seq}`,
+      engineNo: ev ? null : `EN${String((h * 7) % 90000 + 10000)}${seq}`,
+      motorNo: ev ? `MT${String((h * 7) % 90000 + 10000)}${seq}` : null,
+      status: "in_stock",
+      etaDays: null,
+      daysInStock: null,
+      mfgMonth: null,
+      priceLakh: (VARIANT_PRICES[model] || {})[variant] || null,
+      ev: ev ? {
+        batteryKwh: 4,
+        rangeKm: 161,
+        charger: variant === "480W" ? "480W portable · 0–100% ~8 h" : "750W portable · 0–80% ~5 h",
+        batteryWarranty: "5 yrs (standard; River Care plan added at booking)",
+      } : null,
+      blockedFor: null,
+      ...extra,
+    };
+  };
+  Object.entries(PUNE_STORES).forEach(([branch, locId]) => {
+    stockFor(locId).lines.forEach(line => {
+      const held = SEEDED_HOLD_COMBOS.includes(`${line.variant}|${line.colour}`);
+      line.buckets.forEach((n, b) => {
+        const [lo, hi] = AGE_RANGES[b];
+        for (let k = 0; k < n; k++) {
+          const days = lo + hashStr(locId + line.variant + line.colour + b + k) % (hi - lo + 1);
+          // Built ~3–6 weeks before it reached the branch.
+          const built = new Date(STOCK_AS_OF);
+          built.setDate(built.getDate() - days - 20 - (days % 22));
+          const who = held ? SEEDED_HOLDERS[holder++ % SEEDED_HOLDERS.length] : null;
+          units.push(make(line.variant, line.colour, branch, {
+            daysInStock: days,
+            mfgMonth: `${MONTHS_SHORT[built.getMonth()]} ${built.getFullYear()}`,
+            blockedFor: who ? { leadId: null, name: who.name, phone: who.phone, at: d(-who.ago), by: who.by } : null,
+          }));
         }
       });
     });
   });
+  SEEDED_TRANSIT.forEach(t => units.push(make(t.variant, t.color, t.branch, {
+    status: "in_transit", etaDays: t.etaDays, mfgMonth: `${MONTHS_SHORT[STOCK_AS_OF.getMonth()]} ${STOCK_AS_OF.getFullYear()}`,
+  })));
   return units;
 }
 
@@ -8893,7 +8954,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
   const bookingPaid = waitlistMode || (picked && (picked.stage === "Booking" || picked.stage === "Retailed" || !!picked.bookingAmount));
   const mismatches = picked ? [
     picked.model && picked.model !== unit.model ? { field: "Model", booked: picked.model, unit: unit.model } : null,
-    picked.variant && picked.variant !== unit.variant ? { field: "Variant", booked: picked.variant, unit: unit.variant } : null,
+    picked.variant && chargerOf(picked.variant) !== unit.variant ? { field: "Variant", booked: picked.variant, unit: withCharger(picked.variant, unit.variant) } : null,
     picked.colorInterest?.length && !picked.colorInterest.includes(unit.color) ? { field: "Colour", booked: picked.colorInterest.join(", "), unit: unit.color } : null,
   ].filter(Boolean) : [];
 
@@ -9049,6 +9110,7 @@ function UnitRow({ unit, onBlock, onRelease, onArrived }) {
           </span>
           <span style={{ display: "block", fontFamily: F, fontSize: 10, color: C.faint, marginTop: 1 }}>
             {unit.branch}
+            {unit.status === "in_stock" && unit.daysInStock != null ? ` · ${unit.daysInStock}d in stock` : ""}
             {unit.status === "in_transit" && unit.etaDays ? ` · arriving in ${unit.etaDays}d` : ""}
             {unit.odometer ? ` · ${unit.odometer}` : ""}
             {unit.owners ? ` · ${unit.owners} owner${unit.owners > 1 ? "s" : ""}` : ""}
@@ -9069,6 +9131,7 @@ function UnitRow({ unit, onBlock, onRelease, onArrived }) {
               [unit.ev ? "Motor no." : "Engine no.", unit.ev ? unit.motorNo : unit.engineNo],
               ["Manufactured", unit.mfgMonth],
               ["Location", unit.branch],
+              unit.daysInStock != null ? ["In stock", `${unit.daysInStock} days`] : null,
               unit.priceLakh ? ["On-road (MH)", `₹${unit.priceLakh} L`] : null,
             ].filter(Boolean).map(([k, v]) => (
               <div key={k} style={{ display: "flex", gap: 8, marginBottom: 4 }}>
@@ -9220,6 +9283,41 @@ const USED_STOCK = [
     insuranceTill: "Jun 2027", photos: 19,
     highlights: ["Dealership demo", "Full service history", "Under warranty"],
     ev: { batteryKwh: 4, rangeKm: 161, charger: "480W portable · 0–100% ~8 h", batteryWarranty: "5 yrs (standard)" },
+    blockedFor: null,
+  },
+  // Demo fleet per branch matches the shared inventory's demo count: 3 at Aundh, 2 at Shivaji Nagar.
+  {
+    id: "D4", kind: "demo", brand: "River",
+    model: "Indie", variant: "480W", year: 2026, color: "Winter White",
+    vin: "MD9RIVDEMO0004", chassis: "CHD10004", engineNo: null, motorNo: "MTD10004",
+    regNo: "MH12 RV 5106", regCity: "Pune", odometer: 1300, fuel: "Electric",
+    transmission: "Automatic", owners: 1, branch: "Aundh",
+    cost: { purchase: 132000, refurb: 600 }, ask: 139000, floor: 135000,
+    daysInStock: 30, enquiries: 3, testDrives: 8,
+    readiness: "retail_ready",
+    inspection: { engine: 5, ac: 5, steering: 5, exterior: 4.5, interior: 5 },
+    defects: ["Small scuff on rear grab rail"],
+    docs: { rc: true, insurance: true, noc: true, service: true, duplicate: true },
+    insuranceTill: "Mar 2028", photos: 22,
+    highlights: ["Dealership demo", "Battery health 99%", "Under warranty", "Non-accidental"],
+    ev: { batteryKwh: 4, rangeKm: 161, charger: "480W portable · 0–100% ~8 h", batteryWarranty: "5 yrs (standard)" },
+    blockedFor: null,
+  },
+  {
+    id: "D5", kind: "demo", brand: "River",
+    model: "Indie", variant: "750W", year: 2026, color: "Summer Red",
+    vin: "MD9RIVDEMO0005", chassis: "CHD10005", engineNo: null, motorNo: "MTD10005",
+    regNo: "MH14 RV 2287", regCity: "Pune", odometer: 450, fuel: "Electric",
+    transmission: "Automatic", owners: 1, branch: "Shivaji Nagar",
+    cost: { purchase: 140000, refurb: 0 }, ask: 148000, floor: 144000,
+    daysInStock: 12, enquiries: 5, testDrives: 4,
+    readiness: "retail_ready",
+    inspection: { engine: 5, ac: 5, steering: 5, exterior: 5, interior: 5 },
+    defects: [],
+    docs: { rc: true, insurance: true, noc: true, service: true, duplicate: true },
+    insuranceTill: "May 2028", photos: 24,
+    highlights: ["Dealership demo", "Nearly new", "Under warranty", "Non-accidental"],
+    ev: { batteryKwh: 4, rangeKm: 161, charger: "750W portable · 0–80% ~5 h", batteryWarranty: "5 yrs (standard)" },
     blockedFor: null,
   },
   {
@@ -9951,20 +10049,21 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
   const [openColor, setOpenColor] = useState(null);
   const [blockingUnit, setBlockingUnit] = useState(null);
   const [waitlist, setWaitlist] = useState([
-    // Seeded so the queue mechanic is visible without having to build one up first.
-    { id: "w1", model: "Indie", variant: "750W", color: "Winter White",
+    // Seeded so the queue mechanic is visible without having to build one up first. Every
+    // 480W Spring Yellow at both stores is already held (see SEEDED_HOLD_COMBOS) — nothing free.
+    { id: "w1", model: "Indie", variant: "480W", color: "Spring Yellow",
       leadId: 3, name: "Ajay Pillai", phone: "+91 9000000003",
       by: "Divya Pillai", at: d(-9), status: "waiting" },
-    { id: "w2", model: "Indie", variant: "750W", color: "Winter White",
+    { id: "w2", model: "Indie", variant: "480W", color: "Spring Yellow",
       leadId: 5, name: "Sunita Gupta", phone: "+91 9000000005",
       by: "Rahul Kumar", at: d(-4), status: "waiting" },
-    // Queued against a colour that has a scooter in transit — this is the entry that gets
+    // Queued against 480W Storm Grey — all held, one more in transit to Aundh (SEEDED_TRANSIT) — this is the entry that gets
     // auto-allotted when the scooter is marked arrived.
-    { id: "w3", model: "Indie", variant: "750W", color: "Summer Red",
+    { id: "w3", model: "Indie", variant: "480W", color: "Storm Grey",
       leadId: 4, name: "Meena Rao", phone: "+91 9000000004",
       by: "Rahul Kumar", at: d(-6), status: "waiting" },
     // Second in line for the same colour — proves the cascade on release/cancel.
-    { id: "w4", model: "Indie", variant: "750W", color: "Summer Red",
+    { id: "w4", model: "Indie", variant: "480W", color: "Storm Grey",
       leadId: 6, name: "Rahul Mehta", phone: "+91 9000000001",
       by: "Rahul Kumar", at: d(-2), status: "waiting" },
   ]);
@@ -10058,6 +10157,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
   const searched = term
     ? catUnits.filter(u =>
         u.model.toLowerCase().includes(term) || u.variant.toLowerCase().includes(term) ||
+        chargerOf(term) === u.variant.toLowerCase() ||
         u.color.toLowerCase().includes(term) || (canAllocate && u.vin.toLowerCase().includes(term)))
     : catUnits;
 
@@ -10085,7 +10185,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
         ...lead,
         // When the SE finalises a different scooter, the booking record follows it — otherwise
         // the paperwork and the physical scooter drift apart and it surfaces on delivery day.
-        ...(changed ? { model: unit.model, variant: unit.variant, colorInterest: [unit.color] } : {}),
+        ...(changed ? { model: unit.model, variant: withCharger(lead.variant, unit.variant), colorInterest: [unit.color] } : {}),
         blockedUnit: { id: unit.id, vin: unit.vin, model: unit.model, variant: unit.variant, color: unit.color },
         callHistory: [
           { id: genActivityId(), date: new Date(), disposition: "car_blocked", note },
@@ -10148,7 +10248,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
           const on = category === c.key;
           const n = c.key === "used"
             ? usedStock.filter(u => !u.blockedFor).length
-            : units.filter(u => u.category === c.key && !u.blockedFor && u.status === "in_stock").length;
+            : units.filter(u => u.category === c.key && u.status === "in_stock").length;
           return (
             <button key={c.key} onClick={() => { setCategory(c.key); setOpenModel(null); setOpenVariant(null); setOpenColor(null); }} style={{
               flex: 1, padding: "8px 4px", borderRadius: 10, cursor: "pointer",
@@ -10162,6 +10262,26 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
           );
         })}
       </div>
+
+      {category === "new" && (() => {
+        // On hand = physically at the branch (held units included), from the shared inventory.
+        const onHand = units.filter(u => u.category === "new" && u.status === "in_stock");
+        const free = onHand.filter(u => !u.blockedFor).length;
+        const transit = units.filter(u => u.category === "new" && u.status === "in_transit").length;
+        return (
+          <div data-testid="inv-branch-split" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "3px 10px", background: C.card,
+            border: `1px solid ${C.border}`, borderRadius: 10, padding: "8px 11px", marginBottom: 10 }}>
+            {Object.keys(PUNE_STORES).map(b => (
+              <span key={b} data-branch={b} style={{ fontFamily: F, fontSize: 11, color: C.sub }}>
+                {b} <strong data-count style={{ color: C.ink }}>{onHand.filter(u => u.branch === b).length}</strong>
+              </span>
+            ))}
+            <span style={{ fontFamily: F, fontSize: 10.5, color: C.faint }}>
+              {free} free · {onHand.length - free} held{transit ? ` · ${transit} in transit` : ""}
+            </span>
+          </div>
+        );
+      })()}
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.card, border: `1.5px solid ${C.border}`, borderRadius: 11, padding: "9px 12px", marginBottom: 12 }}>
         <Search size={14} color={C.faint} />
@@ -10291,7 +10411,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
               <span style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ display: "block", fontFamily: F, fontSize: 13.5, fontWeight: 800, color: C.ink }}>{model}</span>
                 <span style={{ display: "block", fontFamily: F, fontSize: 10.5, color: C.faint, marginTop: 1 }}>
-                  {variants.length} variant{variants.length > 1 ? "s" : ""} · {mUnits.length} unit{mUnits.length > 1 ? "s" : ""}
+                  {variants.length} variant{variants.length > 1 ? "s" : ""} · {mUnits.filter(u => u.status === "in_stock").length} on hand{mUnits.some(u => u.status === "in_transit") ? ` · ${mUnits.filter(u => u.status === "in_transit").length} in transit` : ""}
                 </span>
               </span>
               <StatusPill status={roll.key} detail={roll.detail} />
@@ -10300,6 +10420,9 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
 
             {mOpen && (
               <div style={{ padding: "0 14px 10px" }}>
+                <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, lineHeight: 1.4, padding: "0 0 8px" }}>
+                  Stock is held by charger. River Care Plus Two / Plus Five is added at booking — every plan draws on the same 750W or 480W scooters below.
+                </div>
                 {variants.map(variant => {
                   const vUnits = mUnits.filter(u => u.variant === variant);
                   const vOpen = openVariant === model + variant;
@@ -10336,7 +10459,12 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
                                     background: "none", border: "none", textAlign: "left",
                                     cursor: canAllocate ? "pointer" : "default",
                                   }}>
-                                  <span style={{ flex: 1, fontFamily: F, fontSize: 11.5, color: C.sub }}>{color}</span>
+                                  <span style={{ flex: 1, minWidth: 0 }}>
+                                    <span style={{ display: "block", fontFamily: F, fontSize: 11.5, color: C.sub }}>{color}</span>
+                                    <span data-combo={`${variant}|${color}`} style={{ display: "block", fontFamily: F, fontSize: 9.5, color: C.faint, marginTop: 1 }}>
+                                      {Object.keys(PUNE_STORES).map(b => `${b} ${cUnits.filter(u => u.branch === b && u.status === "in_stock").length}`).join(" · ")}
+                                    </span>
+                                  </span>
                                   <StatusPill status={cRoll.key} detail={cRoll.detail} />
                                   {canAllocate && <ChevronDown size={12} color={C.faint} style={{ flexShrink: 0, transform: cOpen ? "rotate(180deg)" : "none", transition: "transform .18s" }} />}
                                 </button>
