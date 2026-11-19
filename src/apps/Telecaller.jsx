@@ -298,16 +298,16 @@ function MissingBanner({ items }) {
 }
 
 const TEAM_ROSTER = [
-  { name: "Rahul Kumar",   branch: "Baner",       role: "Sales Executive" },
-  { name: "Divya Pillai",  branch: "Baner",       role: "Sales Executive" },
-  { name: "Arjun Nair",    branch: "Vashi",       role: "Sales Executive" },
-  { name: "Meera Iyer",    branch: "Vashi",       role: "Sales Executive" },
-  { name: "Kiran Bhat",    branch: "Baner",       role: "Sales Executive" },
-  { name: "Anjali Reddy",  branch: "Baner",       role: "Sales Executive" },
-  { name: "Vikram Singh",  branch: "Vashi",       role: "Sales Executive" },
-  { name: "Neha Kulkarni", branch: "Vashi",       role: "Sales Executive" },
-  { name: "Sunil Mathur",  branch: "Baner",       role: "Team Leader" },
-  { name: "Priya Sharma",  branch: "Vashi",       role: "Team Leader" },
+  { name: "Rahul Kumar",   branch: "Aundh",       role: "Sales Executive" },
+  { name: "Divya Pillai",  branch: "Aundh",       role: "Sales Executive" },
+  { name: "Arjun Nair",    branch: "Shivaji Nagar",       role: "Sales Executive" },
+  { name: "Meera Iyer",    branch: "Shivaji Nagar",       role: "Sales Executive" },
+  { name: "Kiran Bhat",    branch: "Aundh",       role: "Sales Executive" },
+  { name: "Anjali Reddy",  branch: "Aundh",       role: "Sales Executive" },
+  { name: "Vikram Singh",  branch: "Shivaji Nagar",       role: "Sales Executive" },
+  { name: "Neha Kulkarni", branch: "Shivaji Nagar",       role: "Sales Executive" },
+  { name: "Sunil Mathur",  branch: "Aundh",       role: "Team Leader" },
+  { name: "Priya Sharma",  branch: "Shivaji Nagar",       role: "Team Leader" },
 ];
 const ROLE_COLOR_2 = { "Sales Executive": C.primary, "Team Leader": C.purple, "Manager": C.teal };
 const SOURCE_COLOR = {
@@ -433,7 +433,7 @@ const CALL_QUEUE = [
   {
     id: 1, name: "Colonel Vikram Bhatt (Retd.)", phone: "+91 9000000007", altPhone: "", email: "",
     model: "Indie", variant: "750W + Plus Five", source: "Referral", customerType: "CSD / Defence",
-    location: "Baner", sourceContext: "Very interested, CSD price confirmed. Asked to call back in 4 days to finalize — that date has passed.",
+    location: "Aundh", sourceContext: "Very interested, CSD price confirmed. Asked to call back in 4 days to finalize — that date has passed.",
     propensity: 82, priority: "high",
     contacted: 3, stage: "Contacted", createdDate: d(-16),
     bestCallTime: "", followUpDate: d(1), signals: ["exchange"],
@@ -447,7 +447,7 @@ const CALL_QUEUE = [
   {
     id: 2, name: "Farhan Ahmed", phone: "+91 9000000008", altPhone: "", email: "",
     model: "Indie", variant: "750W + Plus Two", source: "OLX", customerType: "Male",
-    location: "Vashi", sourceContext: "SE promised a callback with a revised quote — hasn't followed up since.",
+    location: "Shivaji Nagar", sourceContext: "SE promised a callback with a revised quote — hasn't followed up since.",
     bookingAmount: "2500", colorInterest: ["Storm Grey"],
     propensity: 76, priority: "high",
     contacted: 4, stage: "Opportunity", createdDate: d(-16),
@@ -455,14 +455,14 @@ const CALL_QUEUE = [
     exchange: { model: "TVS Jupiter", variant: "ZX", year: "2018", odometer: "36000", condition: "good", photos: 0, appraisalScheduled: false, appraisedValue: null },
     finance: { loanAmount: "1.2", bank: "", status: "" },
     modelInterest: null, commPref: null,
-    targetDeliveryDate: null, assignedSE: { name: "Divya Pillai", branch: "Vashi" }, lastSEContactDate: d(-6),
+    targetDeliveryDate: null, assignedSE: { name: "Divya Pillai", branch: "Shivaji Nagar" }, lastSEContactDate: d(-6),
     drivingLicense: null, cancellationRequest: null, closed: false,
     callHistory: [{ id: "seed2", date: dh(-6, 10), disposition: "switched_off", recordingDuration: "2:12", note: "SE promised a callback with a revised quote — hasn't followed up since." }],
   },
   {
     id: 3, name: "Meena Rao", phone: "+91 9000000004", altPhone: "", email: "",
     model: "Indie", variant: "750W + Plus Two", source: "OLX", customerType: "Female",
-    location: "Baner", sourceContext: "Confirmed budget and wants exchange for her old Access. Ready to test ride — needs an SE assigned.",
+    location: "Aundh", sourceContext: "Confirmed budget and wants exchange for her old Access. Ready to test ride — needs an SE assigned.",
     propensity: 71, priority: "high",
     contacted: 2, stage: "Contacted", createdDate: d(-11),
     bestCallTime: "", followUpDate: d(6), signals: ["exchange"],
@@ -476,7 +476,7 @@ const CALL_QUEUE = [
   {
     id: 4, name: "Ajay Pillai", phone: "+91 9000000003", altPhone: "", email: "",
     model: "Indie", variant: "750W", source: "Website", customerType: "Male",
-    location: "Vashi", sourceContext: "Wants a showroom visit this Saturday. Has an old Splendor to exchange, 2017 model.",
+    location: "Shivaji Nagar", sourceContext: "Wants a showroom visit this Saturday. Has an old Splendor to exchange, 2017 model.",
     propensity: 68, priority: "high",
     contacted: 1, stage: "New", createdDate: d(-12),
     bestCallTime: "", followUpDate: d(5), signals: ["exchange", "finance_needed"],
@@ -490,7 +490,7 @@ const CALL_QUEUE = [
   {
     id: 5, name: "Sunita Gupta", phone: "+91 9000000005", altPhone: "", email: "",
     model: "Indie", variant: "480W + Plus Two", source: "BikeDekho", customerType: "Female",
-    location: "Baner", sourceContext: "Prefers WhatsApp only. Asked for the on-road price in writing.",
+    location: "Aundh", sourceContext: "Prefers WhatsApp only. Asked for the on-road price in writing.",
     propensity: 64, priority: "medium",
     contacted: 2, stage: "Contacted", createdDate: d(-13),
     bestCallTime: "", followUpDate: d(4), signals: [],
@@ -504,7 +504,7 @@ const CALL_QUEUE = [
   {
     id: 6, name: "Rahul Mehta", phone: "+91 9000000001", altPhone: "", email: "",
     model: "Indie", variant: "750W", source: "Website", customerType: "Male",
-    location: "Baner", sourceContext: "Fresh web enquiry, not yet attempted.",
+    location: "Aundh", sourceContext: "Fresh web enquiry, not yet attempted.",
     propensity: 58, priority: "medium",
     contacted: 0, stage: "New", createdDate: d(-1),
     bestCallTime: "", followUpDate: null, signals: [],
@@ -518,7 +518,7 @@ const CALL_QUEUE = [
   {
     id: 7, name: "Priya Desai", phone: "+91 9000000002", altPhone: "", email: "",
     model: "Indie", variant: "480W", source: "Instagram Ad", customerType: "Female",
-    location: "Vashi", sourceContext: "Picked up but was riding, asked to call back tomorrow evening.",
+    location: "Shivaji Nagar", sourceContext: "Picked up but was riding, asked to call back tomorrow evening.",
     propensity: 55, priority: "medium",
     contacted: 1, stage: "New", createdDate: d(-11),
     bestCallTime: "", followUpDate: d(6), signals: [],
@@ -532,7 +532,7 @@ const CALL_QUEUE = [
   {
     id: 8, name: "Sanjay Kulkarni", phone: "+91 9000000006", altPhone: "", email: "",
     model: "Indie", variant: "480W + Plus Two", source: "Justdial", customerType: "Male",
-    location: "Baner", sourceContext: "Comparing with Ather Rizta. Wants best possible discount before deciding.",
+    location: "Aundh", sourceContext: "Comparing with Ather Rizta. Wants best possible discount before deciding.",
     propensity: 49, priority: "medium",
     contacted: 3, stage: "Contacted", createdDate: d(-18),
     bestCallTime: "", followUpDate: d(-1), signals: ["finance_needed"],
@@ -546,7 +546,7 @@ const CALL_QUEUE = [
   {
     id: 9, name: "Anita Shetty", phone: "+91 9000000009", altPhone: "", email: "",
     model: "Indie", variant: "750W + Plus Five", source: "Website", customerType: "Female",
-    location: "Vashi", sourceContext: "Lives in a society flat — asked if the portable charger works off a normal 5A socket in the parking.",
+    location: "Shivaji Nagar", sourceContext: "Lives in a society flat — asked if the portable charger works off a normal 5A socket in the parking.",
     propensity: 44, priority: "medium",
     contacted: 1, stage: "New", createdDate: d(-14),
     bestCallTime: "", followUpDate: d(3), signals: [],
@@ -560,7 +560,7 @@ const CALL_QUEUE = [
   {
     id: 10, name: "Ravi Shankar", phone: "+91 9000000010", altPhone: "", email: "",
     model: "Indie", variant: "480W", source: "Facebook Ad", customerType: "Male",
-    location: "Baner", sourceContext: "Postponed purchase to after Diwali. Worth a nurture call.",
+    location: "Aundh", sourceContext: "Postponed purchase to after Diwali. Worth a nurture call.",
     propensity: 38, priority: "low",
     contacted: 2, stage: "Contacted", createdDate: d(-22),
     bestCallTime: "", followUpDate: d(-5), signals: [],
@@ -574,7 +574,7 @@ const CALL_QUEUE = [
   {
     id: 11, name: "Deepa Menon", phone: "+91 9000000011", altPhone: "", email: "",
     model: "Indie", variant: "750W", source: "Referral", customerType: "Female",
-    location: "Vashi", sourceContext: "Employee referral, not yet contacted.",
+    location: "Shivaji Nagar", sourceContext: "Employee referral, not yet contacted.",
     propensity: 35, priority: "low",
     contacted: 0, stage: "New", createdDate: d(-1),
     bestCallTime: "", followUpDate: null, signals: [],
@@ -588,7 +588,7 @@ const CALL_QUEUE = [
   {
     id: 12, name: "Imran Sheikh", phone: "+91 9000000012", altPhone: "", email: "",
     model: "Indie", variant: "750W", source: "BikeWale", customerType: "Male",
-    location: "Baner", sourceContext: "Went quiet after the third call. Number rings out.",
+    location: "Aundh", sourceContext: "Went quiet after the third call. Number rings out.",
     propensity: 31, priority: "low",
     contacted: 4, stage: "Contacted", createdDate: d(-25),
     bestCallTime: "", followUpDate: d(-8), signals: [],
@@ -602,7 +602,7 @@ const CALL_QUEUE = [
   {
     id: 13, name: "Lakshmi Iyer", phone: "+91 9000000013", altPhone: "", email: "",
     model: "Indie", variant: "480W + Plus Five", source: "SMS Campaign", customerType: "Female",
-    location: "Vashi", sourceContext: "Wrong number on file — needs an alternate contact.",
+    location: "Shivaji Nagar", sourceContext: "Wrong number on file — needs an alternate contact.",
     propensity: 27, priority: "low",
     contacted: 1, stage: "New", createdDate: d(-19),
     bestCallTime: "", followUpDate: d(-2), signals: [],
@@ -616,7 +616,7 @@ const CALL_QUEUE = [
   {
     id: 14, name: "George Thomas", phone: "+91 9000000014", altPhone: "", email: "",
     model: "Indie", variant: "750W", source: "Corporate Tie-up", customerType: "Corporate",
-    location: "Baner", sourceContext: "Fleet enquiry for last-mile delivery riders, budget approval pending at their end.",
+    location: "Aundh", sourceContext: "Fleet enquiry for last-mile delivery riders, budget approval pending at their end.",
     propensity: 22, priority: "low",
     contacted: 1, stage: "Contacted", createdDate: d(-30),
     bestCallTime: "", followUpDate: d(-13), signals: [],
@@ -1113,7 +1113,7 @@ function autoAssignSE(lead, allLeads) {
         loadMap[l.assignedSE.name] = (loadMap[l.assignedSE.name] || 0) + 1;
       }
     });
-    const sameBranch = sePool.filter((se) => se.branch === (lead.location || "Baner").split(" ")[0] || (lead.location || "").includes(se.branch));
+    const sameBranch = sePool.filter((se) => se.branch === (lead.location || "Aundh").split(" ")[0] || (lead.location || "").includes(se.branch));
     const pool = sameBranch.length > 0 ? sameBranch : sePool;
     const sorted = [...pool].sort((a, b) => (loadMap[a.name] || 0) - (loadMap[b.name] || 0));
     return sorted[0] || sePool[0];
@@ -6607,7 +6607,7 @@ function AddLeadForm({ onSave, onCancel, customSources, onAddCustomSource }) {
 }}>
       Location
     </div>
-    <input value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Baner" style={inputStyle} />
+    <input value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Aundh" style={inputStyle} />
     <div style={dividedSectionHeadingStyle}>
       Customer Type
     </div>
@@ -7972,7 +7972,7 @@ function LeadRow({ lead, onUpdateLead, showToast, focusMode, allLeads }) {
       const OPENERS = [
         { id: "intro", label: "Introduce yourself", note: "First contact after an enquiry",
           Icon: MessageSquare, color: C.teal,
-          text: `Hi ${first}, this is ${"Priya"} from Autoprism River. You enquired about the ${model} — is now a good time to talk for two minutes?` },
+          text: `Hi ${first}, this is ${"Priya"} from Epic River. You enquired about the ${model} — is now a good time to talk for two minutes?` },
         { id: "reengage", label: "Gentle check-in", note: "Re-open a conversation that went quiet",
           Icon: Clock, color: C.purple,
           text: `Hi ${first}, checking in about the ${model}. Are you still looking, or has the plan changed? Either way is fine — just want to stop bothering you if it's the latter.` },
@@ -8193,7 +8193,7 @@ function QuoteShareScreen({ lead, quote, onMediumUsed, onDone }) {
       "",
       `On-Road Total: ${formatINR(quote.total)}`,
       "",
-      "\u2014 Autoprism River"
+      "\u2014 Epic River"
     ].join("\n");
     const phoneDigits = (lead.phone || "").replace(/\D/g, "");
     const waLink = `https://wa.me/${phoneDigits}?text=${encodeURIComponent(summaryText)}`;
@@ -8778,7 +8778,7 @@ const UNIT_STATUS = {
 function buildInventoryUnits() {
   const units = [];
   let seq = 0;
-  const branches = ["Baner", "Vashi"];
+  const branches = ["Aundh", "Shivaji Nagar"];
   Object.entries(MODEL_VARIANTS).forEach(([model, variants]) => {
     variants.forEach((variant, vi) => {
       COLOR_OPTIONS.forEach((color, ci) => {
@@ -8822,28 +8822,28 @@ function buildInventoryUnits() {
 const DEMO_USED_UNITS = [
   { id: "D1", category: "demo", model: "Indie", variant: "750W", color: "Monsoon Blue",
     vin: "MD9RIVDEMO0001", chassis: "CHD10001", engineNo: null, motorNo: "MTD10001", status: "in_stock",
-    branch: "Baner", odometer: "1,850 km", mfgMonth: "Jun 2026", priceLakh: 1.59,
+    branch: "Aundh", odometer: "1,850 km", mfgMonth: "Jun 2026", priceLakh: 1.59,
     ev: { batteryKwh: 4, rangeKm: 161, charger: "750W portable · 0–80% ~5 h", batteryWarranty: "5 yrs (standard)" }, blockedFor: null },
   { id: "D2", category: "demo", model: "Indie", variant: "750W + Plus Five", color: "Storm Grey",
     vin: "MD9RIVDEMO0002", chassis: "CHD10002", engineNo: null, motorNo: "MTD10002", status: "in_stock",
-    branch: "Vashi", odometer: "1,120 km", mfgMonth: "Jul 2026", priceLakh: 1.69,
+    branch: "Shivaji Nagar", odometer: "1,120 km", mfgMonth: "Jul 2026", priceLakh: 1.69,
     ev: { batteryKwh: 4, rangeKm: 161, charger: "750W portable · 0–80% ~5 h", batteryWarranty: "8 yrs (River Care Plus Five)" }, blockedFor: null },
   { id: "D3", category: "demo", model: "Indie", variant: "480W", color: "Summer Red",
     vin: "MD9RIVDEMO0003", chassis: "CHD10003", engineNo: null, motorNo: "MTD10003", status: "in_stock",
-    branch: "Baner", odometer: "3,400 km", mfgMonth: "Nov 2025", priceLakh: 1.49,
+    branch: "Aundh", odometer: "3,400 km", mfgMonth: "Nov 2025", priceLakh: 1.49,
     ev: { batteryKwh: 4, rangeKm: 161, charger: "480W portable · 0–100% ~8 h", batteryWarranty: "5 yrs (standard)" }, blockedFor: null },
 
   { id: "P1", category: "used", model: "Indie", variant: "750W", color: "Winter White",
     vin: "MD9RIVUSED0001", chassis: "CHU10001", engineNo: null, motorNo: "MTU10001", status: "in_stock",
-    branch: "Baner", odometer: "9,800 km", mfgMonth: "2025", owners: 1, priceLakh: 1.34,
+    branch: "Aundh", odometer: "9,800 km", mfgMonth: "2025", owners: 1, priceLakh: 1.34,
     ev: { batteryKwh: 4, rangeKm: 161, charger: "750W portable · 0–80% ~5 h", batteryWarranty: "5 yrs (standard)" }, blockedFor: null },
   { id: "P2", category: "used", model: "Indie", variant: "480W", color: "Spring Yellow",
     vin: "MD9RIVUSED0002", chassis: "CHU10002", engineNo: null, motorNo: "MTU10002", status: "in_stock",
-    branch: "Vashi", odometer: "14,700 km", mfgMonth: "2024", owners: 2, priceLakh: 1.18,
+    branch: "Shivaji Nagar", odometer: "14,700 km", mfgMonth: "2024", owners: 2, priceLakh: 1.18,
     ev: { batteryKwh: 4, rangeKm: 161, charger: "480W portable · 0–100% ~8 h", batteryWarranty: "5 yrs (standard)" }, blockedFor: null },
   { id: "P3", category: "used", model: "Indie", variant: "480W + Plus Two", color: "Spring Yellow",
     vin: "MD9RIVUSED0003", chassis: "CHU10003", engineNo: null, motorNo: "MTU10003", status: "in_stock",
-    branch: "Vashi", odometer: "6,400 km", mfgMonth: "2025", owners: 1, priceLakh: 1.39,
+    branch: "Shivaji Nagar", odometer: "6,400 km", mfgMonth: "2025", owners: 1, priceLakh: 1.39,
     ev: { batteryKwh: 4, rangeKm: 161, charger: "480W portable · 0–100% ~8 h", batteryWarranty: "5 yrs + Plus Two cover" }, blockedFor: null },
 ];
 
@@ -9176,7 +9176,7 @@ const USED_STOCK = [
     model: "Indie", variant: "750W", year: 2026, color: "Monsoon Blue",
     vin: "MD9RIVDEMO0001", chassis: "CHD10001", engineNo: null, motorNo: "MTD10001",
     regNo: "MH12 RV 0011", regCity: "Pune", odometer: 1850, fuel: "Electric",
-    transmission: "Automatic", owners: 1, branch: "Baner",
+    transmission: "Automatic", owners: 1, branch: "Aundh",
     cost: { purchase: 150000, refurb: 1200 }, ask: 159000, floor: 154500,
     daysInStock: 41, enquiries: 4, testDrives: 11,
     readiness: "retail_ready",
@@ -9192,8 +9192,8 @@ const USED_STOCK = [
     id: "D2", kind: "demo", brand: "River",
     model: "Indie", variant: "750W + Plus Five", year: 2026, color: "Storm Grey",
     vin: "MD9RIVDEMO0002", chassis: "CHD10002", engineNo: null, motorNo: "MTD10002",
-    regNo: "MH43 RV 0022", regCity: "Navi Mumbai", odometer: 1120, fuel: "Electric",
-    transmission: "Automatic", owners: 1, branch: "Vashi",
+    regNo: "MH14 RV 0022", regCity: "Pune", odometer: 1120, fuel: "Electric",
+    transmission: "Automatic", owners: 1, branch: "Shivaji Nagar",
     cost: { purchase: 158000, refurb: 800 }, ask: 169000, floor: 164000,
     daysInStock: 27, enquiries: 7, testDrives: 14,
     readiness: "retail_ready",
@@ -9210,7 +9210,7 @@ const USED_STOCK = [
     model: "Indie", variant: "480W", year: 2025, color: "Summer Red",
     vin: "MD9RIVDEMO0003", chassis: "CHD10003", engineNo: null, motorNo: "MTD10003",
     regNo: "MH12 RV 0033", regCity: "Pune", odometer: 3400, fuel: "Electric",
-    transmission: "Automatic", owners: 1, branch: "Baner",
+    transmission: "Automatic", owners: 1, branch: "Aundh",
     cost: { purchase: 140000, refurb: 2200 }, ask: 149000, floor: 144500,
     daysInStock: 88, enquiries: 2, testDrives: 9,
     readiness: "retail_ready",
@@ -9226,7 +9226,7 @@ const USED_STOCK = [
     id: "P1", kind: "used", brand: "River", model: "Indie", variant: "750W", year: 2025, color: "Winter White",
     vin: "MD9RIVUSED0001", chassis: "CHU10001", engineNo: null, motorNo: "MTU10001",
     regNo: "MH12 RU 4471", regCity: "Pune", odometer: 9800, fuel: "Electric",
-    transmission: "Automatic", owners: 1, branch: "Baner",
+    transmission: "Automatic", owners: 1, branch: "Aundh",
     // Money the customer never sees.
     cost: { purchase: 118000, refurb: 3500 }, ask: 134000, floor: 128000,
     daysInStock: 18, enquiries: 6, testDrives: 2,
@@ -9243,7 +9243,7 @@ const USED_STOCK = [
     id: "P2", kind: "used", brand: "Honda", model: "Activa 6G", variant: "DLX", year: 2021, color: "Pearl Precious White",
     vin: "ME4JF91USED0002", chassis: "CHU10002", engineNo: "JF91E-0010002",
     regNo: "MH12 FB 9902", regCity: "Pune", odometer: 21700, fuel: "Petrol",
-    transmission: "Automatic (CVT)", owners: 2, branch: "Vashi",
+    transmission: "Automatic (CVT)", owners: 2, branch: "Shivaji Nagar",
     cost: { purchase: 42000, refurb: 3800 }, ask: 54000, floor: 50000,
     daysInStock: 63, enquiries: 2, testDrives: 0,
     readiness: "retail_ready",
@@ -9257,8 +9257,8 @@ const USED_STOCK = [
   {
     id: "P3", kind: "used", brand: "River", model: "Indie", variant: "480W + Plus Two", year: 2025, color: "Spring Yellow",
     vin: "MD9RIVUSED0003", chassis: "CHU10003", engineNo: null, motorNo: "MTU10003",
-    regNo: "MH43 RU 1188", regCity: "Navi Mumbai", odometer: 6400, fuel: "Electric",
-    transmission: "Automatic", owners: 1, branch: "Baner",
+    regNo: "MH14 RU 1188", regCity: "Pune", odometer: 6400, fuel: "Electric",
+    transmission: "Automatic", owners: 1, branch: "Aundh",
     cost: { purchase: 120000, refurb: 1800 }, ask: 139000, floor: 133000,
     daysInStock: 6, enquiries: 9, testDrives: 4,
     readiness: "photos",
@@ -9274,8 +9274,8 @@ const USED_STOCK = [
     id: "P5", kind: "used", brand: "TVS",
     model: "Jupiter", variant: "ZX", year: 2020, color: "Titanium Grey",
     vin: "MD626USED00005", chassis: "CHU10005", engineNo: "ENU10005",
-    regNo: "MH43 JK 5521", regCity: "Navi Mumbai", odometer: 28300, fuel: "Petrol",
-    transmission: "Automatic (CVT)", owners: 1, branch: "Vashi",
+    regNo: "MH14 JK 5521", regCity: "Pune", odometer: 28300, fuel: "Petrol",
+    transmission: "Automatic (CVT)", owners: 1, branch: "Shivaji Nagar",
     cost: { purchase: 32000, refurb: 2900 }, ask: 41000, floor: 38000,
     daysInStock: 31, enquiries: 3, testDrives: 1,
     readiness: "retail_ready",
@@ -9291,7 +9291,7 @@ const USED_STOCK = [
     model: "Access 125", variant: "Special Edition", year: 2022, color: "Metallic Matte Black",
     vin: "MB8DPUSED00006", chassis: "CHU10006", engineNo: "ENU10006",
     regNo: "MH12 LM 7734", regCity: "Pune", odometer: 15900, fuel: "Petrol",
-    transmission: "Automatic (CVT)", owners: 1, branch: "Baner",
+    transmission: "Automatic (CVT)", owners: 1, branch: "Aundh",
     cost: { purchase: 45000, refurb: 2400 }, ask: 57000, floor: 53000,
     daysInStock: 12, enquiries: 5, testDrives: 2,
     readiness: "photos",
@@ -9306,7 +9306,7 @@ const USED_STOCK = [
     id: "P4", kind: "used", brand: "Bajaj", model: "Pulsar 150", variant: "Twin Disc", year: 2018, color: "Black Red",
     vin: "MD2A1USED00004", chassis: "CHU10004", engineNo: "ENU10004",
     regNo: "GJ05 HD 3390", regCity: "Surat", odometer: 64800, fuel: "Petrol",
-    transmission: "Manual", owners: 2, branch: "Vashi",
+    transmission: "Manual", owners: 2, branch: "Shivaji Nagar",
     cost: { purchase: 30000, refurb: 7100 }, ask: 42000, floor: 38500,
     daysInStock: 104, enquiries: 1, testDrives: 0,
     readiness: "docs_pending",
@@ -10705,9 +10705,9 @@ const OBJECTIONS = [
 ];
 
 const CALL_OPENERS = [
-  { label: "New enquiry", text: "Good morning, am I speaking with {name}? This is {me} from Autoprism River. You'd enquired about the {model} — is this a good time to talk for two minutes?" },
-  { label: "Reactivating an old lead", text: "Hello {name}, {me} from Autoprism River. We'd spoken a while back about the {model}. There are some new offers this month — would it be worth me sharing them?" },
-  { label: "Missed follow-up", text: "Hi {name}, {me} from Autoprism River. I owe you a call from last week about the {model} — apologies for the delay. Where did you get to on it?" },
+  { label: "New enquiry", text: "Good morning, am I speaking with {name}? This is {me} from Epic River. You'd enquired about the {model} — is this a good time to talk for two minutes?" },
+  { label: "Reactivating an old lead", text: "Hello {name}, {me} from Epic River. We'd spoken a while back about the {model}. There are some new offers this month — would it be worth me sharing them?" },
+  { label: "Missed follow-up", text: "Hi {name}, {me} from Epic River. I owe you a call from last week about the {model} — apologies for the delay. Where did you get to on it?" },
 ];
 
 const COMPARISONS = [
@@ -10808,7 +10808,7 @@ const LEARN_LIBRARY = [
 
   // ---- Internal ----
   { id: "priya-45", cat: "internal", mins: 8, topic: "Qualifying",
-    title: "How I hold a 45% qualification rate", by: "Priya Nair · Baner",
+    title: "How I hold a 45% qualification rate", by: "Priya Nair · Aundh",
     blurb: "Where she sets the bar, and the two questions she asks before deciding to pass a lead on.", tag: "Most watched" },
   { id: "revive", cat: "internal", mins: 6, topic: "Follow-up",
     title: "Reviving a 90-day-old lead", by: "Priya Nair",

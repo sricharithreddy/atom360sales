@@ -41,34 +41,34 @@ const DAYS_LEFT = 9, DAY_OF_MONTH = 21, DISCOUNT_CAP = 2500;
 const ORG = {
   id: 1, name: "Priya Nambiar", role: "Sales Manager", initials: "PN", branch: "All branches",
   reports: [
-    { id: 2, name: "Rajesh Menon", role: "Sales Manager", initials: "RM", branch: "Vashi", reports: [
-      { id: 3, name: "Anil Kumar", role: "Team Leader", initials: "AK", branch: "Vashi", reports: [
-        { id: 10, name: "Arjun Nair", role: "Sales Executive", initials: "AN", branch: "Vashi",
+    { id: 2, name: "Rajesh Menon", role: "Sales Manager", initials: "RM", branch: "Shivaji Nagar", reports: [
+      { id: 3, name: "Anil Kumar", role: "Team Leader", initials: "AK", branch: "Shivaji Nagar", reports: [
+        { id: 10, name: "Arjun Nair", role: "Sales Executive", initials: "AN", branch: "Shivaji Nagar",
           target: 20, retailed: 14, booking: 18, leads: 92, opportunity: 48,
           td: 42, respHrs: 3.8, streak: 2, discountTotal: 53600, prevRetailed: 18 },
-        { id: 11, name: "Meera Iyer", role: "Sales Executive", initials: "MI", branch: "Vashi",
+        { id: 11, name: "Meera Iyer", role: "Sales Executive", initials: "MI", branch: "Shivaji Nagar",
           target: 18, retailed: 8, booking: 12, leads: 76, opportunity: 30,
           td: 16, respHrs: 5.6, streak: 4, discountTotal: 12200, prevRetailed: 4 },
       ]},
-      { id: 6, name: "Latha Rao", role: "Team Leader", initials: "LR", branch: "Vashi", reports: [
-        { id: 16, name: "Sameer Khan", role: "Sales Executive", initials: "SK", branch: "Vashi",
+      { id: 6, name: "Latha Rao", role: "Team Leader", initials: "LR", branch: "Shivaji Nagar", reports: [
+        { id: 16, name: "Sameer Khan", role: "Sales Executive", initials: "SK", branch: "Shivaji Nagar",
           target: 18, retailed: 12, booking: 16, leads: 78, opportunity: 40,
           td: 28, respHrs: 2.9, streak: 6, discountTotal: 26600, prevRetailed: 8 },
       ]},
     ]},
-    { id: 4, name: "Sneha Rao", role: "Team Leader", initials: "SR", branch: "Baner", reports: [
-      { id: 12, name: "Rahul Kumar", role: "Sales Executive", initials: "RK", branch: "Baner",
+    { id: 4, name: "Sneha Rao", role: "Team Leader", initials: "SR", branch: "Aundh", reports: [
+      { id: 12, name: "Rahul Kumar", role: "Sales Executive", initials: "RK", branch: "Aundh",
         target: 22, retailed: 24, booking: 28, leads: 88, opportunity: 56,
         td: 34, respHrs: 1.6, streak: 12, discountTotal: 37200, prevRetailed: 14 },
-      { id: 13, name: "Divya Pillai", role: "Sales Executive", initials: "DP", branch: "Baner",
+      { id: 13, name: "Divya Pillai", role: "Sales Executive", initials: "DP", branch: "Aundh",
         target: 20, retailed: 20, booking: 24, leads: 82, opportunity: 50,
         td: 36, respHrs: 2.1, streak: 9, discountTotal: 28400, prevRetailed: 10 },
     ]},
-    { id: 5, name: "Vikas Shetty", role: "Team Leader", initials: "VS", branch: "Baner", reports: [
-      { id: 14, name: "Kiran Bhat", role: "Sales Executive", initials: "KB", branch: "Baner",
+    { id: 5, name: "Vikas Shetty", role: "Team Leader", initials: "VS", branch: "Aundh", reports: [
+      { id: 14, name: "Kiran Bhat", role: "Sales Executive", initials: "KB", branch: "Aundh",
         target: 20, retailed: 16, booking: 20, leads: 80, opportunity: 44,
         td: 32, respHrs: 2.6, streak: 7, discountTotal: 34200, prevRetailed: 14 },
-      { id: 15, name: "Anjali Reddy", role: "Sales Executive", initials: "AR", branch: "Baner",
+      { id: 15, name: "Anjali Reddy", role: "Sales Executive", initials: "AR", branch: "Aundh",
         target: 16, retailed: 4, booking: 6, leads: 66, opportunity: 22,
         td: 10, respHrs: 7.2, streak: 1, discountTotal: 4800, prevRetailed: 0 },
     ]},
@@ -1291,7 +1291,7 @@ const LEARN_LIBRARY = [
 
   // ---- Internal (your own floor) ----
   { id: "closing-td", cat: "internal", mins: 8, topic: "Sales",
-    title: "Closing after the test ride", by: "Ravi Menon · 14 yrs, Baner",
+    title: "Closing after the test ride", by: "Ravi Menon · 14 yrs, Aundh",
     blurb: "The ride is over and the customer is standing by the scooter. The next ninety seconds decide it.", tag: "Most watched" },
   { id: "home-td", cat: "internal", mins: 7, topic: "Sales",
     title: "Home test rides that convert", by: "Divya Pillai · top converter",
@@ -1721,15 +1721,15 @@ function TransferScreen({ showToast, onTransferred, transfers }) {
 /* ============================ TEAM MEMBERS ============================ */
 function TeamMembersScreen({ showToast }) {
   const [editing, setEditing] = useState(null);   // null · "new" · a node
-  const [form, setForm] = useState({ name: "", role: "Sales Executive", reportsTo: "", branch: "Baner", target: 16 });
+  const [form, setForm] = useState({ name: "", role: "Sales Executive", reportsTo: "", branch: "Aundh", target: 16 });
   const all = [];
   const walk = (n, parent) => { all.push({ ...n, parentName: parent }); (n.reports || []).forEach(c => walk(c, n.name)); };
   walk(ORG, null);
   const leaders = all.filter(n => n.role !== "Sales Executive");
   const roleTone = { "Sales Manager": C.ink, "Team Leader": C.teal, "Sales Executive": C.sub };
   const open = (n) => {
-    if (n === "new") { setForm({ name: "", role: "Sales Executive", reportsTo: leaders[0]?.name || "", branch: "Baner", target: 16 }); }
-    else setForm({ name: n.name, role: n.role, reportsTo: n.parentName || "", branch: "Baner", target: n.target || roll(n).target });
+    if (n === "new") { setForm({ name: "", role: "Sales Executive", reportsTo: leaders[0]?.name || "", branch: "Aundh", target: 16 }); }
+    else setForm({ name: n.name, role: n.role, reportsTo: n.parentName || "", branch: "Aundh", target: n.target || roll(n).target });
     setEditing(n);
   };
   const save = () => {
@@ -1764,7 +1764,7 @@ function TeamMembersScreen({ showToast }) {
           </select>
           <span style={label}>Branch</span>
           <select value={form.branch} onChange={e => setForm({ ...form, branch: e.target.value })} style={field}>
-            {["Baner", "Vashi"].map(b2 => <option key={b2}>{b2}</option>)}
+            {["Aundh", "Shivaji Nagar"].map(b2 => <option key={b2}>{b2}</option>)}
           </select>
           <span style={label}>Monthly target (scooters)</span>
           <input type="number" min={1} max={30} value={form.target}
@@ -2399,12 +2399,12 @@ const STOCK = [
     { name: "480W", colours: { "Monsoon Blue": 2, "Summer Red": 1, "Spring Yellow": 0, "Winter White": 3, "Storm Grey": 2 } } ]},
 ];
 const PREOWNED = [
-  { kind: "demo", model: "Indie 750W", reg: "MH12 RV 4421", year: 2025, km: 2400, ask: 132000, days: 41, branch: "Baner" },
-  { kind: "demo", model: "Indie 750W", reg: "MH43 RV 0918", year: 2026, km: 900, ask: 145000, days: 22, branch: "Vashi" },
-  { kind: "demo", model: "Indie 480W", reg: "MH12 RV 7730", year: 2026, km: 600, ask: 142000, days: 9, branch: "Baner" },
-  { kind: "used", model: "Honda Activa 6G", reg: "MH12 PK 2210", year: 2021, km: 21000, ask: 48000, days: 62, branch: "Baner" },
-  { kind: "used", model: "TVS Jupiter 125", reg: "MH43 AX 5561", year: 2022, km: 16500, ask: 52000, days: 18, branch: "Vashi" },
-  { kind: "used", model: "Suzuki Access 125", reg: "MH12 MG 8823", year: 2020, km: 29000, ask: 38000, days: 55, branch: "Baner" },
+  { kind: "demo", model: "Indie 750W", reg: "MH12 RV 4421", year: 2025, km: 2400, ask: 132000, days: 41, branch: "Aundh" },
+  { kind: "demo", model: "Indie 750W", reg: "MH14 RV 0918", year: 2026, km: 900, ask: 145000, days: 22, branch: "Shivaji Nagar" },
+  { kind: "demo", model: "Indie 480W", reg: "MH12 RV 7730", year: 2026, km: 600, ask: 142000, days: 9, branch: "Aundh" },
+  { kind: "used", model: "Honda Activa 6G", reg: "MH12 PK 2210", year: 2021, km: 21000, ask: 48000, days: 62, branch: "Aundh" },
+  { kind: "used", model: "TVS Jupiter 125", reg: "MH14 AX 5561", year: 2022, km: 16500, ask: 52000, days: 18, branch: "Shivaji Nagar" },
+  { kind: "used", model: "Suzuki Access 125", reg: "MH12 MG 8823", year: 2020, km: 29000, ask: 38000, days: 55, branch: "Aundh" },
 ];
 const HELD = [
   { model: "Indie", variant: "750W", colour: "Monsoon Blue", by: "Rahul Kumar", customer: "Lakshmi Narayan", since: "2d" },
@@ -2631,18 +2631,18 @@ const ADMIN_ROLE_TONE = { CEO: "#0B1946", SM: "#0B1946", TL: "#00695C", SE: "#4F
 
 const ADMIN_USERS_SEED = [
   { id: 1, name: "Priya Nambiar", phone: "+91 90080 11223", email: "priya.nambiar@autoprism.in", role: "SM", branch: "All branches", reportsTo: null, active: true, adminPrivilege: true },
-  { id: 2, name: "Rajesh Menon", phone: "+91 90080 22334", email: "rajesh.menon@autoprism.in", role: "SM", branch: "Vashi", reportsTo: "Priya Nambiar", active: true, adminPrivilege: false },
-  { id: 3, name: "Anil Kumar", phone: "+91 90080 33445", email: "anil.kumar@autoprism.in", role: "TL", branch: "Vashi", reportsTo: "Rajesh Menon", active: true, adminPrivilege: false },
-  { id: 4, name: "Sneha Rao", phone: "+91 90080 44556", email: "sneha.rao@autoprism.in", role: "TL", branch: "Baner", reportsTo: "Priya Nambiar", active: true, adminPrivilege: false },
-  { id: 5, name: "Arjun Nair", phone: "+91 90080 55667", email: "arjun.nair@autoprism.in", role: "SE", branch: "Vashi", reportsTo: "Anil Kumar", active: true, adminPrivilege: false },
-  { id: 6, name: "Rahul Kumar", phone: "+91 90080 66778", email: "rahul.kumar@autoprism.in", role: "SE", branch: "Baner", reportsTo: "Sneha Rao", active: true, adminPrivilege: false },
-  { id: 7, name: "Divya Pillai", phone: "+91 90080 77889", email: "divya.pillai@autoprism.in", role: "SE", branch: "Baner", reportsTo: "Sneha Rao", active: true, adminPrivilege: false },
-  { id: 8, name: "Meera Iyer", phone: "+91 90080 88990", email: "meera.iyer@autoprism.in", role: "CRE", branch: "Vashi", reportsTo: "Anil Kumar", active: true, adminPrivilege: false },
-  { id: 9, name: "Kavya Suresh", phone: "+91 90080 99001", email: "kavya.suresh@autoprism.in", role: "CRE", branch: "Baner", reportsTo: "Sneha Rao", active: true, adminPrivilege: false },
+  { id: 2, name: "Rajesh Menon", phone: "+91 90080 22334", email: "rajesh.menon@autoprism.in", role: "SM", branch: "Shivaji Nagar", reportsTo: "Priya Nambiar", active: true, adminPrivilege: false },
+  { id: 3, name: "Anil Kumar", phone: "+91 90080 33445", email: "anil.kumar@autoprism.in", role: "TL", branch: "Shivaji Nagar", reportsTo: "Rajesh Menon", active: true, adminPrivilege: false },
+  { id: 4, name: "Sneha Rao", phone: "+91 90080 44556", email: "sneha.rao@autoprism.in", role: "TL", branch: "Aundh", reportsTo: "Priya Nambiar", active: true, adminPrivilege: false },
+  { id: 5, name: "Arjun Nair", phone: "+91 90080 55667", email: "arjun.nair@autoprism.in", role: "SE", branch: "Shivaji Nagar", reportsTo: "Anil Kumar", active: true, adminPrivilege: false },
+  { id: 6, name: "Rahul Kumar", phone: "+91 90080 66778", email: "rahul.kumar@autoprism.in", role: "SE", branch: "Aundh", reportsTo: "Sneha Rao", active: true, adminPrivilege: false },
+  { id: 7, name: "Divya Pillai", phone: "+91 90080 77889", email: "divya.pillai@autoprism.in", role: "SE", branch: "Aundh", reportsTo: "Sneha Rao", active: true, adminPrivilege: false },
+  { id: 8, name: "Meera Iyer", phone: "+91 90080 88990", email: "meera.iyer@autoprism.in", role: "CRE", branch: "Shivaji Nagar", reportsTo: "Anil Kumar", active: true, adminPrivilege: false },
+  { id: 9, name: "Kavya Suresh", phone: "+91 90080 99001", email: "kavya.suresh@autoprism.in", role: "CRE", branch: "Aundh", reportsTo: "Sneha Rao", active: true, adminPrivilege: false },
   { id: 10, name: "Farouk Ahmed", phone: "+91 90080 10112", email: "farouk.ahmed@autoprism.in", role: "FIN", branch: "All branches", reportsTo: "Priya Nambiar", active: true, adminPrivilege: false },
   { id: 11, name: "Deepak Shetty", phone: "+91 90080 21223", email: "deepak.shetty@autoprism.in", role: "EVL", branch: "All branches", reportsTo: "Priya Nambiar", active: true, adminPrivilege: false },
   { id: 12, name: "Lakshmi Bhat", phone: "+91 90080 32334", email: "lakshmi.bhat@autoprism.in", role: "INV", branch: "All branches", reportsTo: "Priya Nambiar", active: true, adminPrivilege: false },
-  { id: 13, name: "Anjali Reddy", phone: "+91 90080 43445", email: "anjali.reddy@autoprism.in", role: "SE", branch: "Baner", reportsTo: "Vikas Shetty", active: false, adminPrivilege: false },
+  { id: 13, name: "Anjali Reddy", phone: "+91 90080 43445", email: "anjali.reddy@autoprism.in", role: "SE", branch: "Aundh", reportsTo: "Vikas Shetty", active: false, adminPrivilege: false },
 ];
 
 /* ============================ CALL LOG / BILLING / TEST RIDE REPORT DATA ============================
@@ -2669,7 +2669,7 @@ const ADMIN_TEST_DRIVES = [];
 
 LEADS.forEach(l => {
   const owner = ADMIN_USERS_SEED.find(u => u.id === l.ownerId);
-  const branch = owner ? owner.branch : "Baner";
+  const branch = owner ? owner.branch : "Aundh";
   const cre = ADMIN_USERS_SEED.find(u => u.role === "CRE" && u.branch === branch);
 
   // Pre-handoff qualification calls, attributed to the branch's telecaller.
@@ -2734,18 +2734,18 @@ const ADMIN_WALLET_BILLING = LEADS.map(l => {
   };
 });
 
-const ADMIN_BRANCHES = ["All branches", "Baner", "Vashi"];
+const ADMIN_BRANCHES = ["All branches", "Aundh", "Shivaji Nagar"];
 const ADMIN_MODELS = ["Indie"];
 const ADMIN_SOURCES = ["BikeDekho", "Justdial", "OLX", "Referral", "Walk-in", "Website"];
 const ADMIN_SHOWROOMS = ADMIN_BRANCHES.filter(b => b !== "All branches");
 
 const ADMIN_LOCATIONS_SEED = [
-  { id: 1, name: "Autoprism River — Baner", address: "Baner Road, Baner, Pune, Maharashtra 411045",
-    mapsLink: "https://maps.google.com/?q=Autoprism+River+Baner+Pune", c1: "+91 20 4012 3456", c2: "+91 20 4012 3457",
-    w1: "+91 90080 11111", w2: "", email: "baner@autoprism.in" },
-  { id: 2, name: "Autoprism River — Vashi", address: "Palm Beach Road, Sector 17, Vashi, Navi Mumbai, Maharashtra 400703",
-    mapsLink: "https://maps.google.com/?q=Autoprism+River+Vashi+Navi+Mumbai", c1: "+91 22 4012 9876", c2: "",
-    w1: "+91 90080 22222", w2: "+91 90080 22223", email: "vashi@autoprism.in" },
+  { id: 1, name: "Epic River — Aundh", address: "Ground Floor, Shreenivas Classic, Baner Road, Aundh, Pune, Maharashtra 411045",
+    mapsLink: "https://maps.google.com/?q=Epic+River+Aundh+Pune", c1: "+91 20 4012 3456", c2: "+91 20 4012 3457",
+    w1: "+91 90080 11111", w2: "", email: "aundh@epicriver.in" },
+  { id: 2, name: "Epic River — Shivaji Nagar", address: "Bhale Estate Condominium, B-5 & B-6, Wakadewadi, Shivajinagar, Pune, Maharashtra 411005",
+    mapsLink: "https://maps.google.com/?q=Epic+River+Shivaji+Nagar+Pune", c1: "+91 20 4012 9876", c2: "",
+    w1: "+91 90080 22222", w2: "+91 90080 22223", email: "shivajinagar@epicriver.in" },
 ];
 
 // River Maharashtra price sheet, Sep 2026. Ex-showroom is after the ₹5,000 PM E-DRIVE
@@ -2875,7 +2875,7 @@ function AdminPrivilegeToggle({ icon: Icon, label, sub, on, onClick }) {
 /* ---------------- Users & Roles ---------------- */
 function AdminUserForm({ user, onSave, onCancel }) {
   const isNew = !user;
-  const [f, setF] = useState(user || { name: "", phone: "", email: "", role: "SE", branch: "Baner",
+  const [f, setF] = useState(user || { name: "", phone: "", email: "", role: "SE", branch: "Aundh",
     reportsTo: "", active: true, adminPrivilege: false, reportsPrivilege: false });
   const possibleParents = ADMIN_USERS_SEED.filter(u => {
     if (f.role === "SE" || f.role === "CRE") return u.role === "TL";
@@ -3314,7 +3314,7 @@ function AdminLeadRulesScreen({ showToast }) {
   const [rules, setRules] = useState([
     // Source-only rule (models left at ALL) — proves the two dimensions are independent.
     // River sells one model, so a model-only rule would just mean "everything".
-    { id: 1, showroom: "Vashi", models: ["ALL"], sources: ["BikeDekho"], levels: ["TL"], people: [3], mode: "exclusive" }, // Anil Kumar
+    { id: 1, showroom: "Shivaji Nagar", models: ["ALL"], sources: ["BikeDekho"], levels: ["TL"], people: [3], mode: "exclusive" }, // Anil Kumar
   ]);
   const [building, setBuilding] = useState(null);
 
@@ -3476,7 +3476,7 @@ function AdminLocationForm({ loc, onSave, onCancel }) {
         color: C.primary }}><ChevronLeft size={14} />Back</button>
       <AdminScreenHeader title={isNew ? "Add location" : `Edit ${f.name || "location"}`} />
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14 }}>
-        <AdminField label="Name"><AdminInput value={f.name} onChange={e => setF({ ...f, name: e.target.value })} placeholder="Autoprism River — Branch" /></AdminField>
+        <AdminField label="Name"><AdminInput value={f.name} onChange={e => setF({ ...f, name: e.target.value })} placeholder="Epic River — Branch" /></AdminField>
         <AdminField label="Address"><AdminTextArea rows={2} value={f.address} onChange={e => setF({ ...f, address: e.target.value })} placeholder="Full postal address" /></AdminField>
         <AdminField label="Google Maps link"><AdminInput value={f.mapsLink} onChange={e => setF({ ...f, mapsLink: e.target.value })} placeholder="https://maps.google.com/…" /></AdminField>
         <div style={{ display: "flex", gap: 8 }}>
@@ -4223,25 +4223,25 @@ const ADMIN_STATUS_TONE = { Approved: C.green, Pending: C.warm, Rejected: C.hot 
 const ADMIN_TEMPLATES_SEED = [
   { id: 1, name: "Welcome", channel: "SMS", type: "Transactional", status: "Approved",
     ref: "DLT 1707168312450001",
-    content: "Hi {#var#}, thank you for your interest in Autoprism River. Our team will reach out shortly. - AUTOPR" },
+    content: "Hi {#var#}, thank you for your interest in Epic River. Our team will reach out shortly. - EPICRV" },
   { id: 2, name: "Test Ride Scheduled", channel: "SMS", type: "Transactional", status: "Approved",
     ref: "DLT 1707168312450002",
-    content: "Hi {#var#}, your test ride for {#var#} is confirmed on {#var#} at {#var#}. - AUTOPR" },
+    content: "Hi {#var#}, your test ride for {#var#} is confirmed on {#var#} at {#var#}. - EPICRV" },
   { id: 3, name: "Test Ride Completed & Feedback", channel: "WhatsApp", type: "Transactional", status: "Approved",
     ref: "td_feedback_v2",
     content: "Hi {{1}}, thanks for test riding the {{2}} today! We'd love your feedback: {{3}}" },
   { id: 4, name: "Booking Confirmation", channel: "SMS", type: "Transactional", status: "Approved",
     ref: "DLT 1707168312450003",
-    content: "Hi {#var#}, your booking for {#var#} is confirmed. Booking ID: {#var#}. - AUTOPR" },
+    content: "Hi {#var#}, your booking for {#var#} is confirmed. Booking ID: {#var#}. - EPICRV" },
   { id: 5, name: "Delivery Update", channel: "WhatsApp", type: "Transactional", status: "Pending",
     ref: "delivery_update",
     content: "Hi {{1}}, your {{2}} is ready for delivery on {{3}}. See you at the showroom!" },
   { id: 6, name: "Service Reminder", channel: "SMS", type: "Transactional", status: "Pending",
     ref: "DLT — pending",
-    content: "Hi {#var#}, your {#var#} is due for service. Book a slot: {#var#} - AUTOPR" },
+    content: "Hi {#var#}, your {#var#} is due for service. Book a slot: {#var#} - EPICRV" },
   { id: 7, name: "Festive Offer", channel: "SMS", type: "Marketing", status: "Approved",
     ref: "DLT 1707168312450004",
-    content: "Hi {#var#}, festive offers on the River Indie this week only - free helmet + River Care discount! Visit Autoprism today. - AUTOPR" },
+    content: "Hi {#var#}, festive offers on the River Indie this week only - free helmet + River Care discount! Visit Epic River today. - EPICRV" },
   { id: 8, name: "New Model Launch", channel: "WhatsApp", type: "Marketing", status: "Rejected",
     ref: "new_launch_promo",
     content: "Hi {{1}}, the new {{2}} has arrived! Book a test ride today." },
@@ -4587,16 +4587,16 @@ function AdminMessagingScreen({ showToast }) {
 /* ============================ SECURITY ============================
    Data retention and Data Principal requests live here — DPDP Act, 2023. */
 const ADMIN_SESSIONS_SEED = [
-  { id: 1, user: "Arjun Nair", device: "iPhone 14 · Autoprism app", location: "Vashi", last: "2m ago", current: false },
-  { id: 2, user: "Sneha Rao", device: "Samsung A54 · Autoprism app", location: "Baner", last: "18m ago", current: false },
-  { id: 3, user: "Priya Nambiar", device: "iPhone 15 Pro · Autoprism app", location: "Baner", last: "Just now", current: true },
-  { id: 4, user: "Rahul Kumar", device: "Redmi Note 13 · Autoprism app", location: "Baner", last: "3h ago", current: false },
+  { id: 1, user: "Arjun Nair", device: "iPhone 14 · Autoprism app", location: "Shivaji Nagar", last: "2m ago", current: false },
+  { id: 2, user: "Sneha Rao", device: "Samsung A54 · Autoprism app", location: "Aundh", last: "18m ago", current: false },
+  { id: 3, user: "Priya Nambiar", device: "iPhone 15 Pro · Autoprism app", location: "Aundh", last: "Just now", current: true },
+  { id: 4, user: "Rahul Kumar", device: "Redmi Note 13 · Autoprism app", location: "Aundh", last: "3h ago", current: false },
 ];
 const ADMIN_AUDIT_SEED = [
   { who: "Priya Nambiar", what: "Changed the volume incentive tiers", when: "Today, 10:12 AM" },
   { who: "Rajesh Menon", what: "Added Anjali Reddy as a Sales Executive", when: "Yesterday, 4:40 PM" },
-  { who: "Priya Nambiar", what: "Added a lead rule — BikeDekho leads in Vashi", when: "Yesterday, 11:05 AM" },
-  { who: "Priya Nambiar", what: "Deactivated a Vashi user login", when: "3 days ago" },
+  { who: "Priya Nambiar", what: "Added a lead rule — BikeDekho leads in Shivaji Nagar", when: "Yesterday, 11:05 AM" },
+  { who: "Priya Nambiar", what: "Deactivated a Shivaji Nagar user login", when: "3 days ago" },
   { who: "Rajesh Menon", what: "Edited a Vehicles price list — Indie", when: "4 days ago" },
   { who: "Priya Nambiar", what: "Moved Arjun Nair to Sneha Rao's team", when: "5 days ago" },
   { who: "Priya Nambiar", what: "Changed the Messaging opt-in template", when: "6 days ago" },
@@ -5235,7 +5235,7 @@ function AdminInvoiceScreen({ gstin, billingEmail, onBack, showToast }) {
 
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
-          <span style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink }}>Autoprism River</span>
+          <span style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink }}>Epic River</span>
           <span style={{ fontFamily: F, fontSize: 11, color: C.faint }}>INV-2026-0847</span>
         </div>
         <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, marginBottom: 2 }}>GSTIN {gstin}</div>

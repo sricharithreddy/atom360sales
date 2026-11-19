@@ -60,10 +60,10 @@ const F = `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
 // Single-role app: the person is always viewing as a Sales Executive. The other Sales
 // Executives are kept only so the Leaderboard has peers to rank against.
 const USERS = [
-  { id: 7, name: "Vikram Singh", role: "Sales Executive", reportsTo: null, email: "vikram.singh@autoprism.in", phone: "+91 98450 77889", branch: "Vashi Showroom", target: 18, achieved: 16, monthlyStats: { calls: 52, whatsapp: 38 }, testDrives: 38, bookings: 20, leads: 96, respHrs: 2.9, streak: 6,  prevAchieved: 14, warrantyAttach: 13, addOns: 30, tdShowroom: 24, tdHome: 14, opportunity: 60 },
-  { id: 8, name: "Ananya Rao", role: "Sales Executive", reportsTo: null, email: "ananya.rao@autoprism.in", phone: "+91 98450 88990", branch: "Vashi Showroom", target: 16, achieved: 7, monthlyStats: { calls: 24, whatsapp: 19 }, testDrives: 27, bookings: 9, leads: 84, respHrs: 1.1, streak: 4,  prevAchieved: 9, warrantyAttach: 2, addOns: 11, tdShowroom: 22, tdHome: 5, opportunity: 42 },
-  { id: 9, name: "Karthik Menon", role: "Sales Executive", reportsTo: null, email: "karthik.menon@autoprism.in", phone: "+91 98450 99001", branch: "Baner Showroom", target: 12, achieved: 2, monthlyStats: { calls: 11, whatsapp: 7 }, testDrives: 13, bookings: 4, leads: 72, respHrs: 5.8, streak: 19, prevAchieved: 0, warrantyAttach: 0, addOns: 4, tdShowroom: 13, tdHome: 0, opportunity: 24 },
-  { id: 10, name: "Rahul Kumar", role: "Sales Executive", reportsTo: null, email: "rahul.kumar@autoprism.in", phone: "+91 98450 10112", branch: "Baner Showroom", target: 14, achieved: 9, monthlyStats: { calls: 48, whatsapp: 26 }, testDrives: 50, bookings: 15, leads: 90, respHrs: 2.4, streak: 9,  prevAchieved: 5, warrantyAttach: 7, addOns: 24, tdShowroom: 44, tdHome: 6, opportunity: 68 },
+  { id: 7, name: "Vikram Singh", role: "Sales Executive", reportsTo: null, email: "vikram.singh@autoprism.in", phone: "+91 98450 77889", branch: "Shivaji Nagar Showroom", target: 18, achieved: 16, monthlyStats: { calls: 52, whatsapp: 38 }, testDrives: 38, bookings: 20, leads: 96, respHrs: 2.9, streak: 6,  prevAchieved: 14, warrantyAttach: 13, addOns: 30, tdShowroom: 24, tdHome: 14, opportunity: 60 },
+  { id: 8, name: "Ananya Rao", role: "Sales Executive", reportsTo: null, email: "ananya.rao@autoprism.in", phone: "+91 98450 88990", branch: "Shivaji Nagar Showroom", target: 16, achieved: 7, monthlyStats: { calls: 24, whatsapp: 19 }, testDrives: 27, bookings: 9, leads: 84, respHrs: 1.1, streak: 4,  prevAchieved: 9, warrantyAttach: 2, addOns: 11, tdShowroom: 22, tdHome: 5, opportunity: 42 },
+  { id: 9, name: "Karthik Menon", role: "Sales Executive", reportsTo: null, email: "karthik.menon@autoprism.in", phone: "+91 98450 99001", branch: "Aundh Showroom", target: 12, achieved: 2, monthlyStats: { calls: 11, whatsapp: 7 }, testDrives: 13, bookings: 4, leads: 72, respHrs: 5.8, streak: 19, prevAchieved: 0, warrantyAttach: 0, addOns: 4, tdShowroom: 13, tdHome: 0, opportunity: 24 },
+  { id: 10, name: "Rahul Kumar", role: "Sales Executive", reportsTo: null, email: "rahul.kumar@autoprism.in", phone: "+91 98450 10112", branch: "Aundh Showroom", target: 14, achieved: 9, monthlyStats: { calls: 48, whatsapp: 26 }, testDrives: 50, bookings: 15, leads: 90, respHrs: 2.4, streak: 9,  prevAchieved: 5, warrantyAttach: 7, addOns: 24, tdShowroom: 44, tdHome: 6, opportunity: 68 },
 ];
 const DEFAULT_USER_ID = 10;
 
@@ -328,7 +328,7 @@ const COMPETITOR_BATTLE_CARDS = {
     points: [
       "Ola wins on headline price and feature list — don't argue it. Ask what the customer will actually carry and where they'll ride.",
       "Indie's IP67 battery, 165 mm ground clearance and 14-inch wheels are built for bad roads and monsoon water-logging.",
-      "Walk them through our service and delivery promise — Indie waiting is 1–3 weeks, and the Baner / Vashi workshops are on site.",
+      "Walk them through our service and delivery promise — Indie waiting is 1–3 weeks, and the Aundh / Shivaji Nagar workshops are on site.",
     ],
   },
   "TVS iQube": {
@@ -363,8 +363,8 @@ const DEMO_FLEET = [
   { id: "demo1", model: "Indie", variant: "750W", color: "Monsoon Blue", regNo: "MH12 RV 4421" },
   { id: "demo2", model: "Indie", variant: "750W", color: "Summer Red", regNo: "MH12 RV 4422" },
   { id: "demo3", model: "Indie", variant: "480W", color: "Storm Grey", regNo: "MH12 RV 4423" },
-  { id: "demo4", model: "Indie", variant: "750W", color: "Winter White", regNo: "MH43 RV 1187" },
-  { id: "demo5", model: "Indie", variant: "480W", color: "Spring Yellow", regNo: "MH43 RV 1188" },
+  { id: "demo4", model: "Indie", variant: "750W", color: "Winter White", regNo: "MH14 RV 1187" },
+  { id: "demo5", model: "Indie", variant: "480W", color: "Spring Yellow", regNo: "MH14 RV 1188" },
 ];
 const CALL_WINDOWS = [
   { key: "morning", label: "Morning" },
@@ -2186,7 +2186,7 @@ function WhatsAppTemplateSheet({ lead, user, onSend, onClose }) {
     model: lead.model ? `River ${lead.model}` : "the scooter",
     variant: lead.variant || "",
     rep: (user?.name || "your sales executive").split(" ")[0],
-    dealership: user?.branch ? "Autoprism River — " + user.branch.replace(" Showroom", "") : "Autoprism River",
+    dealership: user?.branch ? "Epic River — " + user.branch.replace(" Showroom", "") : "Epic River",
   };
   const textFor = (t) => drafts[t.id] !== undefined ? drafts[t.id] : t.build(vars);
 
@@ -2307,7 +2307,7 @@ const UNIT_STATUS = {
 function buildInventoryUnits() {
   const units = [];
   let seq = 0;
-  const branches = ["Baner", "Vashi"];
+  const branches = ["Aundh", "Shivaji Nagar"];
   Object.entries(MODEL_VARIANTS).forEach(([model, variants]) => {
     variants.forEach((variant, vi) => {
       COLOR_OPTIONS.forEach((color, ci) => {
@@ -2351,27 +2351,27 @@ function buildInventoryUnits() {
 const DEMO_USED_UNITS = [
   { id: "D1", category: "demo", model: "Indie", variant: "750W", color: "Monsoon Blue",
     vin: "MD9RIVDEMO00001", chassis: "CHD10001", engineNo: null, motorNo: "MTD10001", status: "in_stock",
-    branch: "Baner", odometer: "4,120 km", mfgMonth: "Nov 2025", priceLakh: 1.49,
+    branch: "Aundh", odometer: "4,120 km", mfgMonth: "Nov 2025", priceLakh: 1.49,
     ev: { batteryKwh: 4, rangeKm: 161, charger: "750W portable · 0–80% in ~5 h", batteryWarranty: "5 yrs (extendable to 8 with River Care)" }, blockedFor: null },
   { id: "D2", category: "demo", model: "Indie", variant: "750W", color: "Winter White",
     vin: "MD9RIVDEMO00002", chassis: "CHD10002", engineNo: null, motorNo: "MTD10002", status: "in_stock",
-    branch: "Vashi", odometer: "2,860 km", mfgMonth: "Dec 2025", priceLakh: 1.52,
+    branch: "Shivaji Nagar", odometer: "2,860 km", mfgMonth: "Dec 2025", priceLakh: 1.52,
     ev: { batteryKwh: 4, rangeKm: 161, charger: "750W portable · 0–80% in ~5 h", batteryWarranty: "5 yrs (extendable to 8 with River Care)" }, blockedFor: null },
   { id: "D3", category: "demo", model: "Indie", variant: "480W", color: "Storm Grey",
     vin: "MD9RIVDEMO00003", chassis: "CHD10003", engineNo: null, motorNo: "MTD10003", status: "in_stock",
-    branch: "Baner", odometer: "6,540 km", mfgMonth: "Oct 2025", priceLakh: 1.39,
+    branch: "Aundh", odometer: "6,540 km", mfgMonth: "Oct 2025", priceLakh: 1.39,
     ev: { batteryKwh: 4, rangeKm: 161, charger: "480W portable · full charge in ~8 h", batteryWarranty: "5 yrs (extendable to 8 with River Care)" }, blockedFor: null },
 
   { id: "P1", category: "used", model: "450X", variant: "2.9 kWh", color: "Space Grey",
     vin: "MD9USED00001", chassis: "CHU10001", engineNo: null, motorNo: "MTU10001", status: "in_stock",
-    branch: "Baner", odometer: "18,200 km", mfgMonth: "2023", owners: 1, priceLakh: 0.82,
+    branch: "Aundh", odometer: "18,200 km", mfgMonth: "2023", owners: 1, priceLakh: 0.82,
     ev: { batteryKwh: 2.9, rangeKm: 111, charger: "Home charger · 0–80% in ~4 h", batteryWarranty: "Till Apr 2026 — expired" }, blockedFor: null },
   { id: "P2", category: "used", model: "Activa 6G", variant: "DLX", color: "Pearl Siren Blue",
     vin: "MD9USED00002", chassis: "CHU10002", engineNo: "ENU10002", status: "in_stock",
-    branch: "Vashi", odometer: "31,700 km", mfgMonth: "2021", owners: 2, priceLakh: 0.48, ev: null, blockedFor: null },
+    branch: "Shivaji Nagar", odometer: "31,700 km", mfgMonth: "2021", owners: 2, priceLakh: 0.48, ev: null, blockedFor: null },
   { id: "P3", category: "used", model: "Jupiter", variant: "ZX", color: "Starlight Blue",
     vin: "MD9USED00003", chassis: "CHU10003", engineNo: "ENU10003", status: "in_stock",
-    branch: "Baner", odometer: "12,400 km", mfgMonth: "2023", owners: 1, priceLakh: 0.61, ev: null, blockedFor: null },
+    branch: "Aundh", odometer: "12,400 km", mfgMonth: "2023", owners: 1, priceLakh: 0.61, ev: null, blockedFor: null },
 ];
 
 // Rolls a set of units up into the status shown on a collapsed row.
@@ -2703,7 +2703,7 @@ const USED_STOCK = [
     model: "Indie", variant: "750W", year: 2026, color: "Monsoon Blue",
     vin: "MD9RIVDEMO00001", chassis: "CHD10001", engineNo: null, motorNo: "MTD10001",
     regNo: "MH12 RV 4421", regCity: "Pune", odometer: 4120, fuel: "Electric",
-    transmission: "Automatic", owners: 1, branch: "Baner",
+    transmission: "Automatic", owners: 1, branch: "Aundh",
     cost: { purchase: 138000, refurb: 1200 }, ask: 149000, floor: 144000,
     daysInStock: 41, enquiries: 4, testDrives: 11,
     readiness: "retail_ready",
@@ -2719,8 +2719,8 @@ const USED_STOCK = [
     id: "D2", kind: "demo", brand: "River",
     model: "Indie", variant: "750W", year: 2026, color: "Winter White",
     vin: "MD9RIVDEMO00002", chassis: "CHD10002", engineNo: null, motorNo: "MTD10002",
-    regNo: "MH43 RV 1187", regCity: "Navi Mumbai", odometer: 2860, fuel: "Electric",
-    transmission: "Automatic", owners: 1, branch: "Vashi",
+    regNo: "MH14 RV 1187", regCity: "Pune", odometer: 2860, fuel: "Electric",
+    transmission: "Automatic", owners: 1, branch: "Shivaji Nagar",
     cost: { purchase: 141000, refurb: 800 }, ask: 152000, floor: 147000,
     daysInStock: 27, enquiries: 7, testDrives: 14,
     readiness: "retail_ready",
@@ -2737,7 +2737,7 @@ const USED_STOCK = [
     model: "Indie", variant: "480W", year: 2025, color: "Storm Grey",
     vin: "MD9RIVDEMO00003", chassis: "CHD10003", engineNo: null, motorNo: "MTD10003",
     regNo: "MH12 RV 4423", regCity: "Pune", odometer: 6540, fuel: "Electric",
-    transmission: "Automatic", owners: 1, branch: "Baner",
+    transmission: "Automatic", owners: 1, branch: "Aundh",
     cost: { purchase: 126000, refurb: 2400 }, ask: 139000, floor: 133000,
     daysInStock: 88, enquiries: 2, testDrives: 9,
     readiness: "retail_ready",
@@ -2753,7 +2753,7 @@ const USED_STOCK = [
     id: "P1", kind: "used", brand: "Ather", model: "450X", variant: "2.9 kWh", year: 2023, color: "Space Grey",
     vin: "MD9USED00001", chassis: "CHU10001", engineNo: null, motorNo: "MTU10001",
     regNo: "MH12 TK 4471", regCity: "Pune", odometer: 18200, fuel: "Electric",
-    transmission: "Automatic", owners: 1, branch: "Baner",
+    transmission: "Automatic", owners: 1, branch: "Aundh",
     // Money the customer never sees.
     cost: { purchase: 62000, refurb: 4500 }, ask: 82000, floor: 76000,
     daysInStock: 18, enquiries: 6, testDrives: 2,
@@ -2770,7 +2770,7 @@ const USED_STOCK = [
     id: "P2", kind: "used", brand: "Honda", model: "Activa 6G", variant: "DLX", year: 2021, color: "Pearl Siren Blue",
     vin: "MD9USED00002", chassis: "CHU10002", engineNo: "ENU10002",
     regNo: "MH12 SJ 9902", regCity: "Pune", odometer: 31700, fuel: "Petrol",
-    transmission: "Automatic", owners: 2, branch: "Vashi",
+    transmission: "Automatic", owners: 2, branch: "Shivaji Nagar",
     cost: { purchase: 34000, refurb: 3800 }, ask: 48000, floor: 44000,
     daysInStock: 63, enquiries: 2, testDrives: 0,
     readiness: "retail_ready",
@@ -2785,7 +2785,7 @@ const USED_STOCK = [
     id: "P3", kind: "used", brand: "TVS", model: "Jupiter", variant: "ZX", year: 2023, color: "Starlight Blue",
     vin: "MD9USED00003", chassis: "CHU10003", engineNo: "ENU10003",
     regNo: "MH12 UC 1188", regCity: "Pune", odometer: 12400, fuel: "Petrol",
-    transmission: "Automatic", owners: 1, branch: "Baner",
+    transmission: "Automatic", owners: 1, branch: "Aundh",
     cost: { purchase: 46000, refurb: 2200 }, ask: 61000, floor: 56500,
     daysInStock: 6, enquiries: 9, testDrives: 4,
     readiness: "photos",
@@ -2800,8 +2800,8 @@ const USED_STOCK = [
     id: "P5", kind: "used", brand: "Suzuki",
     model: "Access 125", variant: "Special Edition", year: 2021, color: "Metallic Matte Grey",
     vin: "MD9USED00005", chassis: "CHU10005", engineNo: "ENU10005",
-    regNo: "MH43 AK 5521", regCity: "Navi Mumbai", odometer: 24300, fuel: "Petrol",
-    transmission: "Automatic", owners: 1, branch: "Vashi",
+    regNo: "MH14 AK 5521", regCity: "Pune", odometer: 24300, fuel: "Petrol",
+    transmission: "Automatic", owners: 1, branch: "Shivaji Nagar",
     cost: { purchase: 38000, refurb: 2900 }, ask: 52000, floor: 47500,
     daysInStock: 31, enquiries: 3, testDrives: 1,
     readiness: "retail_ready",
@@ -2817,7 +2817,7 @@ const USED_STOCK = [
     model: "Pulsar 150", variant: "Twin Disc", year: 2022, color: "Black Red",
     vin: "MD9USED00006", chassis: "CHU10006", engineNo: "ENU10006",
     regNo: "MH12 LM 7734", regCity: "Pune", odometer: 21900, fuel: "Petrol",
-    transmission: "Manual", owners: 1, branch: "Baner",
+    transmission: "Manual", owners: 1, branch: "Aundh",
     cost: { purchase: 52000, refurb: 3400 }, ask: 69000, floor: 64000,
     daysInStock: 12, enquiries: 5, testDrives: 2,
     readiness: "photos",
@@ -2832,7 +2832,7 @@ const USED_STOCK = [
     id: "P4", kind: "used", brand: "Hero", model: "Splendor Plus", variant: "i3S", year: 2019, color: "Heavy Grey",
     vin: "MD9USED00004", chassis: "CHU10004", engineNo: "ENU10004",
     regNo: "GA07 HD 3390", regCity: "Panaji", odometer: 54800, fuel: "Petrol",
-    transmission: "Manual", owners: 2, branch: "Vashi",
+    transmission: "Manual", owners: 2, branch: "Shivaji Nagar",
     cost: { purchase: 22000, refurb: 5100 }, ask: 34000, floor: 30000,
     daysInStock: 104, enquiries: 1, testDrives: 0,
     readiness: "docs_pending",
@@ -7898,7 +7898,7 @@ const LEARN_LIBRARY = [
 
   // ---- Internal (your own floor) ----
   { id: "closing-td", cat: "internal", mins: 8, topic: "Sales",
-    title: "Closing after the test ride", by: "Ravi Menon · 14 yrs, Baner",
+    title: "Closing after the test ride", by: "Ravi Menon · 14 yrs, Aundh",
     blurb: "The ride is over and the customer is standing by the scooter. The next ninety seconds decide it.", tag: "Most watched" },
   { id: "home-td", cat: "internal", mins: 7, topic: "Sales",
     title: "Home test rides that convert", by: "Divya Pillai · top converter",
