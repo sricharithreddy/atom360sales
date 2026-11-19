@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   ChevronDown, ChevronLeft, ChevronRight, FileText, IndianRupee, MapPin, Menu, Package, Phone, Plus,
-  Settings, ShieldCheck, ShoppingBag, Store, Target, Upload, User, Wrench,
+  Settings, ShieldCheck, ShoppingBag, Store, Target, Upload, User,
 } from "lucide-react";
 import { GROUP, ZONES, LOCATIONS, monthsOpen } from "../data/epicRiverLocations.js";
 import { stockFor, VARIANTS, COLOURS } from "../data/epicRiverInventory.js";
@@ -78,8 +78,7 @@ const PERIOD_LINE = `Nov 2026 · MTD · day ${DAY} of ${MONTH_DAYS}`;
 /* ---------------- Product ---------------- */
 const P750 = 154799, P480 = 150799;   // ex-showroom after PM E-DRIVE subsidy
 const RC_PLUS2 = 5899, RC_PLUS5 = 9912;   // River Care packs
-// Dealer-sold insurance (River's Maharashtra price sheet): insurance + RSA, plus optional add-ons.
-const INS_BASE = 10889, INS_ZD = 1250, INS_BMP = 850;
+const ONROAD_750 = 166748, ONROAD_480 = 162748;   // on-road price, the base for loan-to-value
 
 /* ---------------- Network: 100 outlets, as-is from the dataset ---------------- */
 const ZONE_LABEL = Object.fromEntries(ZONES.map(z => [z.key, z.label]));
@@ -106,17 +105,24 @@ const LOC_BY_ID = Object.fromEntries(LOCS.map(l => [l.id, l]));
     l.factor = l.plan === "on" ? rr(q, 0.99, 1.18) : l.plan === "risk" ? rr(q, 0.845, 0.925) : rr(q, 0.56, 0.76);
     l.conv = l.plan === "off" ? rr(q, 0.12, 0.18) : rr(q, 0.16, 0.27);
     l.dpsF = l.plan === "off" ? rr(q, 0.85, 1.4) : rr(q, 0.55, 1.12);
-    // River Care attach (units with Plus Two or Plus Five ÷ units), the Plus Five share of
-    // those plans, and accessories ₹ per scooter — each varies by outlet.
-    l.fin = rr(q, 0.36, 0.64); l.rc = rr(q, 0.27, 0.56); l.p5s = rr(q, 0.29, 0.41);
-    l.acc = rr(q, 1000, 2550); l.exch = rr(q, 0.07, 0.22); l.mix = rr(q, 0.6, 0.8);
+    // The first four draws are no longer used (the F&I model below has its own seed); they stay
+    // so the draws after them — model mix and booking rate — keep their values.
+    q(); q(); q(); q();
+    l.exch = rr(q, 0.07, 0.22); l.mix = rr(q, 0.6, 0.8);
     l.obRate = rr(q, 0.3, 0.6); l.tdr = rr(q, 0.32, 0.55); l.bkr = rr(q, 0.08, 0.24);
     l.avgPrice = l.mix * P750 + (1 - l.mix) * P480;
-    // Add-ons (own seed, so the numbers above stay as they were): insurance penetration and
-    // add-on take-up, accessory attach and items per attached scooter.
-    const q2 = rngFor("addon:" + l.id);
-    l.insPen = rr(q2, 0.7, 0.95); l.zdR = rr(q2, 0.3, 0.6); l.bmpR = rr(q2, 0.15, 0.4);
-    l.accAtt = rr(q2, 0.45, 0.85); l.accIpa = rr(q2, 1.4, 2.4);
+    // Finance & insurance (own seed). Outlet-level rates; per-SE numbers are split from them.
+    const f = rngFor("fi4:" + l.id);
+    l.fi = {
+      ins: f() < 0.1 ? rr(f, 0.86, 0.895) : rr(f, 0.94, 0.99),        // in-house policies ÷ units
+      prem: rr(f, 10350, 11450),                                       // ₹ per in-house policy
+      any: rr(f, 0.39, 0.72),                                          // any finance (in-house + self-arranged) ÷ units
+      share: rr(f, 0.67, 0.94),                                        // in-house ÷ all loans
+      ltv: rr(f, 0.745, 0.88),                                         // loan ÷ on-road price
+      acc: rr(f, 0.52, 0.88), bill: 1450 + 1950 * f() ** 1.5,          // accessory attach · ₹ per buyer
+      rc: 0.095 + 0.27 * f() ** 1.3, p5: rr(f, 0.16, 0.42),            // River Care attach · Plus Five share
+    };
+    if (l.fi.any * l.fi.share > 0.64) l.fi.any = 0.64 / l.fi.share;   // in-house finance stays ≤ ~65% of units
   });
 })();
 // Calibrate so the group's full-month November target is ≈ 5,900 scooters.
@@ -193,15 +199,12 @@ const CEO_NODE = mkNode("CEO", "Arvind Kesavan", null);
         idx: SES.length, id: node.id, node, loc: l,
         skill, tw: rr(q, 0.85, 1.15), s2: skill * rr(q, 0.8, 1.2),
         conv: l.conv * rr(q, 0.82, 1.18), tdr: l.tdr * rr(q, 0.85, 1.15), bkr: l.bkr * rr(q, 0.7, 1.3),
-        dpsF: l.dpsF * rr(q, 0.85, 1.15), fin: clamp(l.fin * rr(q, 0.8, 1.2), 0, 0.95),
-        rc: clamp(l.rc * rr(q, 0.85, 1.15), 0.25, 0.6), p5s: clamp(l.p5s * rr(q, 0.85, 1.15), 0.25, 0.45),
-        acc: clamp(l.acc * rr(q, 0.85, 1.15), 900, 2800),
+        dpsF: l.dpsF * rr(q, 0.85, 1.15), _1: q(), _2: q(), _3: q(), _4: q(),   // unused draws, kept for seed stability
         exch: l.exch * rr(q, 0.75, 1.25), mix: clamp(l.mix * rr(q, 0.9, 1.1), 0.4, 0.95),
       };
-      const q2 = rngFor("addon:" + node.id);
-      s.insPen = clamp(l.insPen * rr(q2, 0.94, 1.06), 0.68, 0.97);
-      s.zdR = clamp(l.zdR * rr(q2, 0.85, 1.15), 0.3, 0.6); s.bmpR = clamp(l.bmpR * rr(q2, 0.85, 1.15), 0.15, 0.4);
-      s.accAtt = clamp(l.accAtt * rr(q2, 0.9, 1.1), 0.45, 0.85); s.accIpa = clamp(l.accIpa * rr(q2, 0.85, 1.15), 1.2, 2.8);
+      // Nine per-SE noise draws for the F&I split (own seed).
+      const q2 = rngFor("fi4:" + node.id);
+      s.nz = Array.from({ length: 9 }, () => q2());
       node.seIdx = s.idx;
       SES.push(s);
       l.ses.push(s.idx);
@@ -225,8 +228,26 @@ function nudge(A, T, plan) {
   }
   return Math.max(0, A);
 }
-const KEYS = ["heads", "target", "retail", "book", "value", "acc", "rc", "p2", "p5", "rcVal",
-  "ins", "zd", "bmp", "insPrem", "accAtt", "accItems"];
+const KEYS = ["heads", "target", "retail", "book", "value",
+  "ins", "insPrem", "loans", "fin", "loanAmt", "loanRoad", "accBuy", "acc", "rc", "p2", "p5", "rcVal"];
+// Split an integer total across weights with a cap per part (part ≤ cap); integer parts that add back.
+function splitCap(total, weights, caps) {
+  const out = weights.map(() => 0);
+  let left = Math.min(total, caps.reduce((a, b) => a + b, 0));
+  let free = weights.map((_, i) => i).filter(i => caps[i] > 0);
+  while (left > 0 && free.length) {
+    const part = splitInt(left, free.map(i => weights[i]));
+    free.forEach((i, k) => { out[i] += part[k]; });
+    left = 0;
+    free = free.filter(i => { if (out[i] >= caps[i]) { left += out[i] - caps[i]; out[i] = caps[i]; return false; } return true; });
+  }
+  return out;
+}
+// round(n × rate), kept inside the outlet's [lo, hi] band where an integer allows it (tiny outlets).
+function within(n, rate, lo, hi) {
+  const a = Math.ceil(n * lo - 1e-9), b = Math.floor(n * hi + 1e-9);
+  return a <= b ? clamp(Math.round(n * rate), a, b) : Math.round(n * rate);
+}
 const SE_ROWS = (() => {
   const rows = new Array(SES.length);
   LOCS.forEach(l => {
@@ -234,22 +255,33 @@ const SE_ROWS = (() => {
     l.mtd = nudge(Math.round(tgtM(l, NOW_MI) * l.factor * (DAY / MONTH_DAYS)), l.monthTarget, l.plan);
     const tA = splitInt(l.mtd, l.ses.map(i => SES[i].skill));
     const tT = splitInt(l.monthTarget, l.ses.map(i => SES[i].tw));
+    // F&I: outlet totals from the outlet's rates, split across its SEs (weight = units × noise).
+    const fi = l.fi, U = l.mtd, se = l.ses.map(i => SES[i]);
+    const w = (j) => se.map((s, k) => tA[k] * (0.8 + 0.4 * s.nz[j]));
+    const L = within(U, fi.any, 0.35, 0.75);
+    const IN = within(L, fi.share, Math.max(0.65, (0.25 * U) / L || 0), Math.min(0.95, (0.65 * U) / L || 1));
+    const PL = within(U, fi.rc, 0.08, 0.38);
+    const pol = splitCap(within(U, fi.ins, 0.84, 0.99), w(0), tA);
+    const loans = splitCap(L, w(1), tA);
+    const inL = splitCap(IN, w(2), loans);
+    const accB = splitCap(within(U, fi.acc, 0.5, 0.9), w(3), tA);
+    const plans = splitCap(PL, w(4), tA);
+    const p5s = splitCap(within(PL, fi.p5, 0.15, 0.45), w(5), plans);
     l.ses.forEach((i, k) => {
       const s = SES[i];
       const retail = tA[k];
       const r750 = Math.round(retail * s.mix);
-      const plans = Math.round(retail * s.rc);
-      const p5 = Math.round(plans * s.p5s), p2 = plans - p5;
-      const acc = Math.round((retail * s.acc) / 10) * 10;
-      const pol = Math.round(retail * s.insPen), zd = Math.round(pol * s.zdR), bmp = Math.round(pol * s.bmpR);
-      const accAtt = Math.min(retail, Math.max(acc > 0 ? 1 : 0, Math.round(retail * s.accAtt)));
+      const n = inL[k], n750 = Math.round(n * s.mix);
+      const road = n750 * ONROAD_750 + (n - n750) * ONROAD_480;
+      const ltv = Math.min(0.9, fi.ltv * (0.98 + 0.04 * s.nz[7]));
+      const p5 = p5s[k], p2 = plans[k] - p5;
       rows[i] = {
         heads: 1, target: tT[k], retail, book: retail + Math.round(retail * s.bkr),
         value: r750 * P750 + (retail - r750) * P480,
-        acc,
-        rc: plans, p2, p5, rcVal: p2 * RC_PLUS2 + p5 * RC_PLUS5,
-        ins: pol, zd, bmp, insPrem: pol * INS_BASE + zd * INS_ZD + bmp * INS_BMP,
-        accAtt, accItems: Math.max(accAtt, Math.round(accAtt * s.accIpa)),
+        ins: pol[k], insPrem: Math.round((pol[k] * fi.prem * (0.97 + 0.06 * s.nz[6])) / 10) * 10,
+        loans: loans[k], fin: n, loanAmt: Math.round((road * ltv) / 1000) * 1000, loanRoad: road,
+        accBuy: accB[k], acc: Math.round((accB[k] * fi.bill * (0.93 + 0.14 * s.nz[8])) / 10) * 10,
+        rc: plans[k], p2, p5, rcVal: p2 * RC_PLUS2 + p5 * RC_PLUS5,
       };
     });
   });
@@ -260,22 +292,46 @@ function sumIdx(idx) {
   for (let j = 0; j < idx.length; j++) { const r = SE_ROWS[idx[j]]; for (let k = 0; k < KEYS.length; k++) o[KEYS[k]] += r[KEYS[k]]; }
   return o;
 }
+// Every ratio is Σnumerator ÷ Σdenominator. "Units" = retail units invoiced month to date.
 function derive(a) {
   return {
     ...a,
     ach: div(a.retail, a.target),
     proj: (a.retail / DAY) * MONTH_DAYS,     // month projection at the current daily pace
-    perUnit: div(a.value, a.retail), accPU: div(a.acc, a.retail),
-    rcAtt: div(a.rc, a.retail), rcPU: div(a.rcVal, a.retail), p5Sh: div(a.p5, a.rc),
-    insPen: div(a.ins, a.retail), premPP: div(a.insPrem, a.ins), insPU: div(a.insPrem, a.retail),
-    zdSh: div(a.zd, a.ins), bmpSh: div(a.bmp, a.ins),
-    accAttR: div(a.accAtt, a.retail), ipa: div(a.accItems, a.accAtt),
-    addPU: div(a.insPrem + a.acc + a.rcVal, a.retail),
+    insPct: div(a.ins, a.retail), premAvg: div(a.insPrem, a.ins),
+    finPct: div(a.fin, a.retail), finShare: div(a.fin, a.loans), anyFin: div(a.loans, a.retail),
+    loanAvg: div(a.loanAmt, a.fin), ltv: div(a.loanAmt, a.loanRoad),
+    accPct: div(a.accBuy, a.retail), accBill: div(a.acc, a.accBuy),
+    rcPct: div(a.rc, a.retail), p5Sh: div(a.p5, a.rc),
+    addPU: div(a.acc + a.rcVal, a.retail),
   };
 }
 const AGG = new Map();
 const aggOf = (t) => { let a = AGG.get(t.key); if (!a) { a = derive(sumIdx(t.ses)); AGG.set(t.key, a); } return a; };
 const GROUP_AGG = derive(sumIdx(ALL_SE));
+
+/* ---------------- Dealer income at the Admin rates ----------------
+   Linear in the summed fields, so per-SE income summed = income of the sums. */
+const DEFAULT_RATES = { ins: 15, pay: 1.5, file: 750, acc: 25, rc: 20 };
+function withIncome(a, R) {
+  const incIns = (a.insPrem * R.ins) / 100;
+  const incFin = (a.loanAmt * R.pay) / 100 + R.file * a.fin;
+  const incAdd = (a.acc * R.acc) / 100 + (a.rcVal * R.rc) / 100;
+  const incTot = incIns + incFin + incAdd;
+  return { ...a, incIns, incFin, incAdd, incTot,
+    insPV: div(incIns, a.retail), finPV: div(incFin, a.retail), addPV: div(incAdd, a.retail), totPV: div(incTot, a.retail) };
+}
+const INC_AGG = new Map();
+function aggWith(R) {
+  const rk = JSON.stringify(R);
+  let f = INC_AGG.get(rk);
+  if (!f) {
+    const m = new Map();
+    f = (t) => { let a = m.get(t.key); if (!a) { a = withIncome(aggOf(t), R); m.set(t.key, a); } return a; };
+    INC_AGG.set(rk, f);
+  }
+  return f;
+}
 
 /* ---------------- Stock (point in time) — the shared Epic River inventory ---------------- */
 const STOCK_AGG = new Map();
@@ -451,56 +507,86 @@ function rowSub(t, parent) {
   return `${t.kind === "GROUP" ? "Group" : t.kind === "STATE" ? "State" : "City"} · ${n} outlet${n === 1 ? "" : "s"}`;
 }
 
-function TreeRow({ t, depth, expanded, onToggle, onOutlet, parent, cols, agg, cmp, sub }) {
+const KIND_WORD = { GROUP: "Group", STATE: "State", CITY: "City", OUTLET: "Outlet" };
+const displayName = (t) => t.label || (t.node ? shortName(t.name) : t.name);
+// Finance screens: the sub-line under a name is "<kind> · N units".
+const fiSub = (a, t) => `${t.node ? t.node.role : KIND_WORD[t.kind]} · ${nIN(a.retail)} unit${a.retail === 1 ? "" : "s"}`;
+/* Collapse single-child levels: a city with one outlet shows as one row "City · Outlet" (same for
+   any one-child level in the People tree). The merged row is the child, carrying both names. */
+const MERGED = new Map();
+function collapsed(t) {
+  if (!t.hasKids) return t;
+  const ks = t.kids();
+  if (ks.length !== 1) return t;
+  let m = MERGED.get(t.key);
+  if (!m) {
+    const c = collapsed(ks[0]);
+    m = { ...c, name: `${t.name} · ${c.name}`, label: `${displayName(t)} · ${displayName(c)}`, merged: t.key };
+    MERGED.set(t.key, m);
+  }
+  return m;
+}
+
+/* `part`: "line" renders only this row, "kids" only its (expanded) children, default both. */
+function TreeRow({ t, depth, expanded, onToggle, onOutlet, parent, cols, agg, cmp, sub, subFull, collapse, part }) {
   const a = agg(t);
   const open = expanded.has(t.key);
   const isOutlet = t.kind === "OUTLET" && onOutlet;
   const clickable = t.hasKids || isOutlet;
   const attrs = Object.fromEntries(Object.entries(a).filter(([, v]) => typeof v === "number").map(([k, v]) => [`data-${k.toLowerCase()}`, v]));
+  const line = part === "kids" ? null : (
+    <div data-testid="tree-row" data-key={t.key} data-parent={parent ? parent.key : ""} data-depth={depth} data-kind={t.kind} data-name={t.name}
+      data-merged={t.merged || undefined} {...attrs}
+      style={{ display: "flex", alignItems: "center", minHeight: 48, borderBottom: `1px solid ${C.border}`,
+        background: DEPTH_BG[Math.min(depth, DEPTH_BG.length - 1)], borderLeft: `3px solid ${LEVEL_TONE[t.kind]}` }}>
+      <button type="button" data-testid="tree-name" disabled={!clickable}
+        onClick={() => (t.hasKids ? onToggle(t.key) : isOutlet ? onOutlet(t.loc.id) : null)}
+        aria-expanded={t.hasKids ? open : undefined}
+        style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 6, padding: "10px 4px 10px 6px",
+          background: "none", border: "none", cursor: clickable ? "pointer" : "default", textAlign: "left", WebkitTapHighlightColor: "transparent" }}>
+        {t.hasKids
+          ? (open ? <ChevronDown size={12} color={C.faint} style={{ flexShrink: 0 }} />
+                  : <ChevronRight size={12} color={C.faint} style={{ flexShrink: 0 }} />)
+          : isOutlet ? <ChevronRight size={12} color={C.primary} style={{ flexShrink: 0 }} />
+          : <span style={{ width: 12, flexShrink: 0 }} />}
+        <Avatar t={t} size={depth === 0 ? 26 : 23} />
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontFamily: F, fontSize: 12.5, fontWeight: depth === 0 ? 800 : 600,
+            color: isOutlet ? C.primary : C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {displayName(t)}
+          </span>
+          <span style={{ display: "block", fontFamily: F, fontSize: 10, color: C.faint, marginTop: 1,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {subFull ? subFull(a, t) : (sub ? sub(a) + " · " : "") + rowSub(t, parent && parent.node ? shortName(parent.name).split(" ")[0] : null)}
+          </span>
+        </span>
+      </button>
+      {cols.map(c => <span key={c.key} style={{ width: c.w, flexShrink: 0, textAlign: c.align || "center",
+        paddingRight: c.align === "right" ? 4 : 0 }}>{c.cell(a, t)}</span>)}
+    </div>
+  );
+  if (part === "line") return line;
+  const kids = open && t.hasKids ? (collapse ? t.kids().map(collapsed) : t.kids()) : [];
   return (
     <>
-      <div data-testid="tree-row" data-key={t.key} data-parent={parent ? parent.key : ""} data-depth={depth} data-kind={t.kind} data-name={t.name} {...attrs}
-        style={{ display: "flex", alignItems: "center", minHeight: 48, borderBottom: `1px solid ${C.border}`,
-          background: DEPTH_BG[Math.min(depth, DEPTH_BG.length - 1)], borderLeft: `3px solid ${LEVEL_TONE[t.kind]}` }}>
-        <button type="button" data-testid="tree-name" disabled={!clickable}
-          onClick={() => (t.hasKids ? onToggle(t.key) : isOutlet ? onOutlet(t.loc.id) : null)}
-          aria-expanded={t.hasKids ? open : undefined}
-          style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 6, padding: "10px 4px 10px 6px",
-            background: "none", border: "none", cursor: clickable ? "pointer" : "default", textAlign: "left", WebkitTapHighlightColor: "transparent" }}>
-          {t.hasKids
-            ? (open ? <ChevronDown size={12} color={C.faint} style={{ flexShrink: 0 }} />
-                    : <ChevronRight size={12} color={C.faint} style={{ flexShrink: 0 }} />)
-            : isOutlet ? <ChevronRight size={12} color={C.primary} style={{ flexShrink: 0 }} />
-            : <span style={{ width: 12, flexShrink: 0 }} />}
-          <Avatar t={t} size={depth === 0 ? 26 : 23} />
-          <span style={{ minWidth: 0 }}>
-            <span style={{ display: "block", fontFamily: F, fontSize: 12.5, fontWeight: depth === 0 ? 800 : 600,
-              color: isOutlet ? C.primary : C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {t.node ? shortName(t.name) : t.name}
-            </span>
-            <span style={{ display: "block", fontFamily: F, fontSize: 10, color: C.faint, marginTop: 1,
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {(sub ? sub(a) + " · " : "") + rowSub(t, parent && parent.node ? shortName(parent.name).split(" ")[0] : null)}
-            </span>
-          </span>
-        </button>
-        {cols.map(c => <span key={c.key} style={{ width: c.w, flexShrink: 0, textAlign: c.align || "center",
-          paddingRight: c.align === "right" ? 4 : 0 }}>{c.cell(a, t)}</span>)}
-      </div>
-      {open && t.hasKids && (cmp ? [...t.kids()].sort(cmp) : t.kids()).map(ch => (
+      {line}
+      {(cmp ? [...kids].sort(cmp) : kids).map(ch => (
         <TreeRow key={ch.key} t={ch} depth={depth + 1} expanded={expanded} onToggle={onToggle} onOutlet={onOutlet}
-          parent={t} cols={cols} agg={agg} cmp={cmp} sub={sub} />
+          parent={t} cols={cols} agg={agg} cmp={cmp} sub={sub} subFull={subFull} collapse={collapse} />
       ))}
     </>
   );
 }
 /* Tap-to-sort: a header tap sorts siblings at every level of the tree (numbers high → low first,
-   Name A → Z first; tap again to flip). Rows without a value (no units → no ratio) go last. */
-const nextSort = (s, key) => (s.key === key ? { key, dir: s.dir === "desc" ? "asc" : "desc" } : { key, dir: key === "name" ? "asc" : "desc" });
-function makeCmp(sort, cols, agg) {
+   Name A → Z first; tap again to flip). Rows without a value (no units → no ratio) go last.
+   Finance screens pass `opts`: a metric tap sorts worst (lowest) first, and Name sorts by units. */
+const FI_SORT = { first: (key) => (key === "name" ? "desc" : "asc"), nameSort: (a) => a.retail };
+const nextSort = (s, key, opts) => (s.key === key ? { key, dir: s.dir === "desc" ? "asc" : "desc" }
+  : { key, dir: opts ? opts.first(key) : key === "name" ? "asc" : "desc" });
+function makeCmp(sort, cols, agg, opts) {
   const sgn = sort.dir === "asc" ? 1 : -1;
   const byName = (x, y) => x.name.localeCompare(y.name);
-  const col = cols.find(c => c.key === sort.key);
+  const col = sort.key === "name" && opts ? { sort: opts.nameSort } : cols.find(c => c.key === sort.key);
   if (!col) return (x, y) => sgn * byName(x, y) || (x.key < y.key ? -1 : 1);
   return (x, y) => {
     const a = col.sort(agg(x), x), b = col.sort(agg(y), y);
@@ -509,10 +595,10 @@ function makeCmp(sort, cols, agg) {
     return sgn * (a - b) || byName(x, y) || (x.key < y.key ? -1 : 1);
   };
 }
-function useSort(cols, agg, initial) {
+function useSort(cols, agg, initial, opts) {
   const [sort, setSort] = useState(initial);
-  const cmp = useMemo(() => makeCmp(sort, cols, agg), [sort, cols, agg]);
-  return [sort, (key) => setSort(s => nextSort(s, key)), cmp];
+  const cmp = useMemo(() => makeCmp(sort, cols, agg, opts), [sort, cols, agg, opts]);
+  return [sort, (key) => setSort(s => nextSort(s, key, opts)), cmp];
 }
 function TreeHead({ cols, sort, onSort }) {
   const h = { fontFamily: F, fontSize: 9, fontWeight: 800, color: C.sub, textTransform: "uppercase", letterSpacing: 0.2 };
@@ -575,55 +661,50 @@ const BOARD_COLS = [
     <span style={{ fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.ink, whiteSpace: "nowrap" }}>{inr(a.value)}</span>
   ) },
 ];
-// Better than the group by more than 5% → green; worse by more than 5% → red; ink otherwise.
-const vsTone = (x, g) => (!ok(x) || !ok(g) ? C.faint : x > g * 1.05 ? C.green : x < g * 0.95 ? C.hot : C.ink);
 const G = GROUP_AGG;
-// Same tone rule for a grey line under a number: faint unless it is 5%+ off the group.
-const subTone = (x, g) => { const t = vsTone(x, g); return t === C.ink ? C.faint : t; };
-const money = (v, tone = C.ink, size = 10.5) => (
-  <span style={{ fontFamily: F, fontSize: size, fontWeight: 700, color: tone, whiteSpace: "nowrap" }}>{v}</span>
-);
+/* Comparison vs group. Rates: ±5 percentage points; ₹ values: ±5% relative. A row is coloured
+   only with ≥ 20 units behind it, and an average (premium, loan, accessory bill) also needs
+   ≥ 10 policies / loans / buyers; otherwise ink. */
+const MIN_UNITS = 20, MIN_BASE = 10;
+const rateTone = (x, g, units) => (!ok(x) || !ok(g) ? C.faint : units < MIN_UNITS ? C.ink
+  : x > g + 0.05 ? C.green : x < g - 0.05 ? C.hot : C.ink);
+const rsTone = (x, g, units, base) => (!ok(x) || !ok(g) ? C.faint : units < MIN_UNITS || (base != null && base < MIN_BASE) ? C.ink
+  : x > g * 1.05 ? C.green : x < g * 0.95 ? C.hot : C.ink);
 const top2 = (v, sub, tone = C.ink, size = 12) => (
   <>
     <span style={{ display: "block", fontFamily: F, fontSize: size, fontWeight: 700, lineHeight: 1, color: tone, whiteSpace: "nowrap" }}>{v}</span>
     {sub}
   </>
 );
-const UNITS_COL = (w) => ({ key: "u", label: "Units", w, sort: (a) => a.retail, cell: (a) => num(nIN(a.retail), true, 12) });
-const pu = (key, label, w, f, align) => ({ key, label, w, align, sort: (a) => a[f], cell: (a) => money(rs(a[f]), vsTone(a[f], G[f])) });
+const grey = (v) => small(v, C.faint, 8.5);
+const rateCol = (key, label, w, f, subF, align) => ({ key, label, w, align, sort: (a) => a[f],
+  cell: (a) => top2(pctS(a[f]), subF ? grey(subF(a)) : null, rateTone(a[f], G[f], a.retail)) });
 
-// Finance · Overview — earnings per vehicle. Sales ₹ sits in the grey line under the name.
-const OVERVIEW_COLS = [
-  UNITS_COL(34),
-  { key: "s", label: "₹/unit", w: 46, sort: (a) => a.perUnit, cell: (a) => money(ok(a.perUnit) ? `₹${(a.perUnit / 1000).toFixed(1)}k` : "—", vsTone(a.perUnit, G.perUnit)) },
-  pu("i", "Ins", 42, "insPU"),
-  pu("a", "Acc", 38, "accPU"),
-  pu("rc", "RC", 40, "rcPU", "right"),
+// Finance · Insurance & Finance.
+const INSFIN_COLS = [
+  rateCol("ins", "Ins %", 36, "insPct"),
+  { key: "prem", label: two("Avg", "premium"), w: 50, sort: (a) => a.premAvg,
+    cell: (a) => top2(rs(a.premAvg), null, rsTone(a.premAvg, G.premAvg, a.retail, a.ins)) },
+  rateCol("fin", "Fin %", 56, "finPct", (a) => `${pctS(a.finShare)} of loans`),
+  { key: "loan", label: two("Avg", "loan"), w: 50, align: "right", sort: (a) => a.loanAvg,
+    cell: (a) => top2(lakh(a.loanAvg), grey(`${pctS(a.ltv)} LTV`), rsTone(a.loanAvg, G.loanAvg, a.retail, a.fin)) },
 ];
-const OVERVIEW_SUB = (a) => `${inr(a.value)} sales`;
-// Finance · Insurance — dealer-sold policies.
-const INS_COLS = [
-  UNITS_COL(34),
-  { key: "p", label: "Policies", w: 42, sort: (a) => a.ins, cell: (a) => top2(nIN(a.ins), small(pctS(a.insPen), subTone(a.insPen, G.insPen))) },
-  pu("pp", two("Prem.", "/policy"), 42, "premPP"),
-  pu("pv", two("₹ per", "vehicle"), 42, "insPU"),
-  { key: "t", label: "Total", w: 46, align: "right", sort: (a) => a.insPrem, cell: (a) => money(inr(a.insPrem)) },
+// Finance · Add-ons (revenue, not margin).
+const ADDON_COLS = [
+  rateCol("acc", "Acc %", 38, "accPct"),
+  { key: "bill", label: two("Avg acc", "bill"), w: 50, sort: (a) => a.accBill,
+    cell: (a) => top2(rs(a.accBill), null, rsTone(a.accBill, G.accBill, a.retail, a.accBuy)) },
+  rateCol("rc", two("River", "Care %"), 58, "rcPct", (a) => `${pctS(a.p5Sh)} Plus Five`),
+  { key: "pu", label: two("Add-ons", "₹/unit"), w: 48, align: "right", sort: (a) => a.addPU,
+    cell: (a) => top2(rs(a.addPU), null, rsTone(a.addPU, G.addPU, a.retail)) },
 ];
-// Finance · Accessories.
-const ACC_COLS = [
-  UNITS_COL(36),
-  { key: "t", label: two("Acc", "total"), w: 58, sort: (a) => a.acc, cell: (a) => money(inr(a.acc)) },
-  pu("pu", "₹/unit", 50, "accPU"),
-  { key: "at", label: "Attach", w: 48, align: "right", sort: (a) => a.accAttR, cell: (a) => top2(pctS(a.accAttR), null, vsTone(a.accAttR, G.accAttR)) },
-];
-// Finance · River Care.
-const RC_COLS = [
-  UNITS_COL(34),
-  { key: "p", label: "Plans", w: 40, sort: (a) => a.rc, cell: (a) => top2(nIN(a.rc), small(pctS(a.rcAtt), subTone(a.rcAtt, G.rcAtt))) },
-  { key: "p5", label: two("Plus", "Five %"), w: 38, sort: (a) => a.p5Sh, cell: (a) => top2(pctS(a.p5Sh), null, vsTone(a.p5Sh, G.p5Sh)) },
-  pu("pu", "₹/unit", 42, "rcPU"),
-  { key: "t", label: "Total", w: 46, align: "right", sort: (a) => a.rcVal, cell: (a) => money(inr(a.rcVal)) },
-];
+// Finance · Income per vehicle — ₹ per scooter sold, at the Admin rates (`gi` = group with income).
+const incomeCols = (gi) => {
+  const col = (key, label, w, f, align) => ({ key, label, w, align, sort: (a) => a[f],
+    cell: (a) => top2(rs(a[f]), null, rsTone(a[f], gi[f], a.retail)) });
+  return [col("ins", "Insurance", 56, "insPV"), col("fin", "Finance", 46, "finPV"), col("add", "Add-ons", 44, "addPV"),
+    col("tot", "Total", 48, "totPV", "right")];
+};
 const STOCK_COLS = [
   { key: "u", label: "Units", w: 46, sort: (s) => s.units, cell: (s) => num(nIN(s.units), true) },
   { key: "v", label: "Value", w: 62, sort: (s) => s.value, cell: (s) => <span style={{ fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.ink, whiteSpace: "nowrap" }}>{inr(s.value)}</span> },
@@ -633,22 +714,37 @@ const STOCK_COLS = [
 ];
 
 /* ============================ BOARD ============================ */
-function TreeCard({ title, Icon, testid, hintPeople, hintLoc, cols, open, top, mode, setMode, defSort, sub }) {
+/* `fi` (Finance screens): no legend, rows collapse single-child levels, sub-line "<kind> · N units",
+   worst-first sorting, and the header + group row stay pinned while the table scrolls. */
+function TreeCard({ title, Icon, testid, hintPeople, hintLoc, cols, open, top, mode, setMode, defSort, sub, agg = aggOf, fi }) {
   const [exP, toggleP] = useExpanded([PEOPLE_ROOT.key]);
   const [exL, toggleL] = useExpanded([LOC_ROOT.key]);
-  const [sort, onSort, cmp] = useSort(cols, aggOf, defSort);
+  const [sort, onSort, cmp] = useSort(cols, agg, defSort, fi ? FI_SORT : null);
   const people = mode === "people";
+  const root = people ? PEOPLE_ROOT : LOC_ROOT;
+  const rp = { t: root, depth: 0, expanded: people ? exP : exL, onToggle: people ? toggleP : toggleL, onOutlet: people ? undefined : open,
+    cols, agg, cmp, sub, subFull: fi ? fiSub : undefined, collapse: !!fi };
   return (
     <Card style={TABLE_CARD} data-testid={`${testid}-card`}>
       <CardHead Icon={Icon} title={title} testid={testid}
         right={setMode && <Seg value={mode} onChange={setMode} opts={MODES} testid={`${testid}-mode`} />}
         hint={people ? hintPeople : hintLoc} />
       {top}
-      {setMode && <Legend items={LEGEND[mode]} />}
-      <TreeHead cols={cols} sort={sort} onSort={onSort} />
-      {people
-        ? <TreeRow t={PEOPLE_ROOT} depth={0} expanded={exP} onToggle={toggleP} cols={cols} agg={aggOf} cmp={cmp} sub={sub} />
-        : <TreeRow t={LOC_ROOT} depth={0} expanded={exL} onToggle={toggleL} onOutlet={open} cols={cols} agg={aggOf} cmp={cmp} sub={sub} />}
+      {setMode && !fi && <Legend items={LEGEND[mode]} />}
+      {fi ? (
+        <>
+          <div data-testid="pinned" style={{ position: "sticky", top: 0, zIndex: 3, background: C.card }}>
+            <TreeHead cols={cols} sort={sort} onSort={onSort} />
+            <TreeRow key={root.key} {...rp} part="line" />
+          </div>
+          <TreeRow key={root.key + ":kids"} {...rp} part="kids" />
+        </>
+      ) : (
+        <>
+          <TreeHead cols={cols} sort={sort} onSort={onSort} />
+          <TreeRow {...rp} />
+        </>
+      )}
     </Card>
   );
 }
@@ -675,62 +771,52 @@ function Quiet({ k, v, sub }) {
     </div>
   );
 }
-const cr = (n) => `₹${(n / 1e7).toFixed(1)} Cr`;
+const FI_HINT = "Month to date · green/red = 5 pts (rates) or 5% (₹) better/worse than group";
 const FIN = {
-  overview: {
-    label: "Overview", title: "Earnings per vehicle", Icon: IndianRupee, cols: OVERVIEW_COLS, sub: OVERVIEW_SUB,
-    hint: "₹ per vehicle sold. Green / red: 5%+ better / worse than group.",
-    summary: [
-      ["Total sales", cr(G.value), `${nIN(G.retail)} units`],
-      ["Realisation", rs(G.perUnit), "per unit"],
-      ["Add-ons", rs(G.addPU), "ins + acc + RC / unit"],
+  insfin: {
+    label: "Insurance & Finance", title: "Insurance & Finance", Icon: ShieldCheck, hint: FI_HINT, cols: () => INSFIN_COLS,
+    summary: (g) => [
+      ["In-house insurance", pctS(g.insPct), `${nIN(g.ins)} of ${nIN(g.retail)} units`],
+      ["Avg premium", rs(g.premAvg), "per in-house policy"],
+      ["In-house finance", pctS(g.finPct), `${pctS(g.finShare)} of loans`],
+      ["Avg loan", lakh(g.loanAvg), `${pctS(g.ltv)} LTV`],
     ],
   },
-  insurance: {
-    label: "Insurance", title: "Insurance", Icon: ShieldCheck, cols: INS_COLS,
-    hint: "Dealer-sold policies: insurance + RSA, add-ons extra.",
-    summary: [
-      ["Total premium", inr(G.insPrem), `${nIN(G.ins)} policies`],
-      ["Penetration", pctS(G.insPen), "policies ÷ units"],
-      ["Premium / policy", rs(G.premPP), `zero dep ${pctS(G.zdSh)} · B&M ${pctS(G.bmpSh)}`],
-      ["Per vehicle", rs(G.insPU), "premium ÷ units"],
+  addons: {
+    label: "Add-ons", title: "Add-ons", Icon: ShoppingBag, hint: FI_HINT, cols: () => ADDON_COLS,
+    summary: (g) => [
+      ["Add-ons / scooter", rs(g.addPU), "acc + River Care"],
+      ["Accessory attach", pctS(g.accPct), `avg bill ${rs(g.accBill)}`],
+      ["River Care attach", pctS(g.rcPct), `${pctS(g.p5Sh)} Plus Five`],
     ],
   },
-  accessories: {
-    label: "Accessories", title: "Accessories", Icon: ShoppingBag, cols: ACC_COLS,
-    hint: "Attach = units sold with at least one accessory.",
-    summary: [
-      ["Accessories", inr(G.acc), `${nIN(G.retail)} units`],
-      ["Per unit", rs(G.accPU), "accessories ÷ units"],
-      ["Attach", pctS(G.accAttR), `${nIN(G.accAtt)} units`],
-      ["Items", ok(G.ipa) ? G.ipa.toFixed(1) : "—", "per attached unit"],
-    ],
-  },
-  rivercare: {
-    label: "River Care", title: "River Care", Icon: Wrench, cols: RC_COLS,
-    hint: `Plus Two ${rs(RC_PLUS2)} · Plus Five ${rs(RC_PLUS5)}. Grey = attach %.`,
-    summary: [
-      ["Plans sold", nIN(G.rc), `${inr(G.rcVal)} total`],
-      ["Attach", pctS(G.rcAtt), "plans ÷ units"],
-      ["Two · Five", `${nIN(G.p2)} · ${nIN(G.p5)}`, `Plus Five ${pctS(G.p5Sh)} of plans`],
-      ["Per unit", rs(G.rcPU), "River Care ÷ units"],
+  income: {
+    label: "Income per vehicle", title: "Income per vehicle", Icon: IndianRupee, cols: incomeCols,
+    hint: "Epic River's earnings per scooter sold, at the rates in Admin → Payout & margin rates.",
+    summary: (g) => [
+      ["F&I and add-on income", inr(g.incTot), "month to date"],
+      ["Income per scooter", rs(g.totPV), `${nIN(g.retail)} scooters sold`],
     ],
   },
 };
-function FinanceScreen({ which, open }) {
-  const d = FIN[which] || FIN.overview;
+function FinanceScreen({ which, open, rates }) {
+  const d = FIN[which] || FIN.insfin;
   const [mode, setMode] = useState("people");
-  const n = d.summary.length;
+  const agg = aggWith(rates);           // cached per rate set, so the reference is stable
+  const gi = agg(LOC_ROOT);             // the group, with income at these rates
+  const cols = useMemo(() => d.cols(gi), [d, gi]);
+  const summary = d.summary(gi);
+  const n = summary.length;
   const top = (
     <div data-testid="fin-summary" style={{ display: "grid", gridTemplateColumns: `repeat(${n === 3 ? 3 : 2}, minmax(0,1fr))`, gap: "10px 12px", padding: "6px 4px 12px" }}>
-      {d.summary.map(([k, v, sub]) => <Quiet key={k} k={k} v={v} sub={sub} />)}
+      {summary.map(([k, v, sub]) => <Quiet key={k} k={k} v={v} sub={sub} />)}
     </div>
   );
   return (
     <div style={{ padding: "14px 14px 90px" }}>
       <PeriodLine />
-      <TreeCard title={d.title} Icon={d.Icon} testid={`fin-${which}`} cols={d.cols} open={open} mode={mode} setMode={setMode} top={top}
-        defSort={{ key: "u", dir: "desc" }} hintPeople={d.hint} hintLoc={d.hint} sub={d.sub} />
+      <TreeCard title={d.title} Icon={d.Icon} testid={`fin-${which}`} cols={cols} open={open} mode={mode} setMode={setMode} top={top}
+        defSort={{ key: "name", dir: "desc" }} hintPeople={d.hint} hintLoc={d.hint} agg={agg} fi />
     </div>
   );
 }
@@ -799,13 +885,14 @@ function StockCard({ id }) {
 }
 
 /* ============================ OUTLET PAGE ============================ */
-function OutletScreen({ id, onBack }) {
+function OutletScreen({ id, onBack, rates }) {
   const l = LOC_BY_ID[id];
   const only = useMemo(() => Object.assign(new Set(l.ses), { tag: "o" + l.id }), [l]);
   const root = peopleNode(NODES[l.smId], only);
   const [ex, toggle] = useExpanded([root.key]);
   const [sort, onSort, cmp] = useSort(BOARD_COLS, aggOf, { key: "r", dir: "desc" });
-  const a = derive(sumIdx(l.ses));
+  const a = withIncome(derive(sumIdx(l.ses)), rates);
+  const gi = aggWith(rates)(LOC_ROOT);
   const line = (k, v, tone, gv, sub) => (
     <div key={k} data-testid="outlet-fin-row" style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "9px 4px", borderTop: `1px solid ${C.border}` }}>
       <span style={{ flex: 1, minWidth: 0, fontFamily: F, fontSize: 12.5, fontWeight: 600, color: C.ink }}>{k}
@@ -830,12 +917,14 @@ function OutletScreen({ id, onBack }) {
         <TreeRow t={root} depth={0} expanded={ex} onToggle={toggle} cols={BOARD_COLS} agg={aggOf} cmp={cmp} />
       </Card>
       <Card>
-        <CardHead Icon={IndianRupee} title="Finance" hint="This outlet, with the group in grey. Green / red = 5%+ better / worse." />
-        {line("Total sales", inr(a.value), C.ink, inr(G.value), `${nIN(a.retail)} units`)}
-        {line("Realisation", rs(a.perUnit), vsTone(a.perUnit, G.perUnit), rs(G.perUnit), "₹ per unit")}
-        {line("Insurance", rs(a.insPU), vsTone(a.insPU, G.insPU), rs(G.insPU), `₹ per vehicle · ${pctS(a.insPen)} penetration`)}
-        {line("Accessories", rs(a.accPU), vsTone(a.accPU, G.accPU), rs(G.accPU), "₹ per unit")}
-        {line("River Care attach", pctS(a.rcAtt), vsTone(a.rcAtt, G.rcAtt), pctS(G.rcAtt), `${rs(a.rcPU)} per unit · group ${rs(G.rcPU)}`)}
+        <CardHead Icon={IndianRupee} title="Finance" testid="outlet-fin"
+          hint={`This outlet, ${nIN(a.retail)} units, with the group in grey. Green / red = 5 pts or 5% better / worse.`} />
+        {line("In-house insurance", pctS(a.insPct), rateTone(a.insPct, G.insPct, a.retail), pctS(G.insPct), `${nIN(a.ins)} policies`)}
+        {line("Avg premium", rs(a.premAvg), rsTone(a.premAvg, G.premAvg, a.retail, a.ins), rs(G.premAvg), "per in-house policy")}
+        {line("In-house finance", pctS(a.finPct), rateTone(a.finPct, G.finPct, a.retail), pctS(G.finPct), `${pctS(a.finShare)} of loans · group ${pctS(G.finShare)}`)}
+        {line("Avg loan", lakh(a.loanAvg), rsTone(a.loanAvg, G.loanAvg, a.retail, a.fin), lakh(G.loanAvg), `${pctS(a.ltv)} LTV · group ${pctS(G.ltv)}`)}
+        {line("Add-ons ₹/scooter", rs(a.addPU), rsTone(a.addPU, G.addPU, a.retail), rs(G.addPU), "accessories + River Care")}
+        {line("Income per scooter", rs(a.totPV), rsTone(a.totPV, gi.totPV, a.retail), rs(gi.totPV), "at Admin → Payout & margin rates")}
       </Card>
       <StockCard id={l.id} />
     </div>
@@ -845,7 +934,7 @@ function OutletScreen({ id, onBack }) {
 /* ============================ REPORTS / ACCOUNT ============================ */
 function ReportsScreen({ showToast }) {
   const reps = [["Daily flash", "Retail, bookings and value by outlet — today and MTD"],
-    ["Finance MIS", "Sales, insurance, accessories and River Care by outlet"],
+    ["Finance MIS", "Insurance, finance, add-ons and dealer income by outlet"],
     ["Stock ageing", "Units and ₹ by age, variant and colour"],
     ["People roster", `${PEOPLE_COUNT} people on the reporting line`]];
   return (
@@ -1004,6 +1093,51 @@ function AdminFieldsScreen({ cfs, setCfs, showToast }) {
     </div>
   );
 }
+/* Payout & margin rates — what Epic River earns on each sale. In memory; Save recomputes
+   Finance → Income per vehicle and the outlet pages. */
+const RATE_PCT = ["ins", "pay", "acc", "rc"];
+function AdminRatesScreen({ rates, setRates, showToast }) {
+  const toDraft = (r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, String(v)]));
+  const [d, setD] = useState(() => toDraft(rates));
+  const parsed = Object.fromEntries(Object.entries(d).map(([k, v]) => [k, v.trim() === "" ? NaN : Number(v)]));
+  const valid = Object.entries(parsed).every(([k, v]) => Number.isFinite(v) && v >= 0 && (!RATE_PCT.includes(k) || v <= 100));
+  const changed = Object.keys(rates).some(k => parsed[k] !== rates[k]);
+  const gi = withIncome(G, valid ? parsed : rates);
+  const unit = (t) => <span style={{ fontFamily: F, fontSize: 12, color: C.sub, whiteSpace: "nowrap" }}>{t}</span>;
+  const box = (k, w = 76) => (
+    <input data-testid={`rate-${k}`} inputMode="decimal" value={d[k]} onChange={e => setD(x => ({ ...x, [k]: e.target.value.replace(/[^0-9.]/g, "") }))}
+      style={{ ...inputStyle, width: w, textAlign: "right", borderColor: Number.isFinite(parsed[k]) ? C.borderStrong : C.hot }} />
+  );
+  const row = (...xs) => <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>{xs.map((x, i) => <React.Fragment key={i}>{x}</React.Fragment>)}</div>;
+  return (
+    <div style={{ padding: "14px 14px 90px" }}>
+      <ScreenHead title="Payout & margin rates" blurb="What Epic River earns on each sale. Used by Finance → Income per vehicle." />
+      <Card>
+        <Field label="Insurance commission">{row(box("ins"), unit("% of premium"))}</Field>
+        <Field label="Lender payout">{row(
+          box("pay"), unit("% of loan  +  ₹"),
+          box("file"), unit("per file"))}</Field>
+        <Field label="Accessory margin">{row(box("acc"), unit("% of accessory sales"))}</Field>
+        <Field label="River Care margin">{row(box("rc"), unit("% of plan sales"))}</Field>
+        <div data-testid="rates-preview" data-value={gi.totPV} style={{ borderTop: `1px solid ${C.border}`, padding: "11px 0 12px", marginTop: 2 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+            <span style={{ flex: 1, fontFamily: F, fontSize: 12.5, fontWeight: 600, color: C.ink }}>Group income per scooter</span>
+            <span style={{ fontFamily: F, fontSize: 15, fontWeight: 800, color: valid ? C.ink : C.faint }}>{rs(gi.totPV)}</span>
+          </div>
+          <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, marginTop: 2 }}>
+            {valid ? `insurance ${rs(gi.insPV)} · finance ${rs(gi.finPV)} · add-ons ${rs(gi.addPV)}` : "Enter a number in every box (percentages up to 100)."}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <span data-testid="rates-save" style={{ flex: 1, display: "flex" }}>
+            <PrimaryBtn full disabled={!valid || !changed} onClick={() => { setRates(parsed); showToast("Rates saved — Income per vehicle updated"); }}>Save rates</PrimaryBtn>
+          </span>
+          <GhostBtn onClick={() => setD(toDraft(DEFAULT_RATES))}>Defaults</GhostBtn>
+        </div>
+      </Card>
+    </div>
+  );
+}
 function AdminLocationsScreen({ cfs, open }) {
   const locCfs = cfs.filter(c => c.applies === "Locations");
   return (
@@ -1036,6 +1170,7 @@ const NAV = [
   { key: "reports", label: "Reports", Icon: FileText, subs: [] },
   { key: "admin", label: "Admin", Icon: Settings, subs: [
     { key: "admin:fields", label: "Fields" }, { key: "admin:locations", label: "Locations" },
+    { key: "admin:rates", label: "Payout & margin rates" },
   ]},
   { key: "account", label: "My Account", Icon: User, subs: [] },
 ];
@@ -1045,6 +1180,7 @@ export default function CEOApp() {
   const [openGroup, setOpenGroup] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cfs, setCfs] = useState([]);
+  const [rates, setRates] = useState(DEFAULT_RATES);
   const [stack, setStack] = useState([]);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
@@ -1080,17 +1216,18 @@ export default function CEOApp() {
       <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
         <div ref={scrollRef} style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden" }}>
           {base === "board" && <BoardScreen open={open} />}
-          {base === "finance" && <FinanceScreen key={sub} which={sub} open={open} />}
+          {base === "finance" && <FinanceScreen key={sub} which={sub} open={open} rates={rates} />}
           {base === "stock" && <StockScreen open={open} />}
           {base === "reports" && <ReportsScreen showToast={showToast} />}
           {base === "account" && <MyAccountScreen showToast={showToast} />}
           {base === "admin" && (sub === "locations"
             ? <AdminLocationsScreen cfs={cfs} open={open} />
+            : sub === "rates" ? <AdminRatesScreen rates={rates} setRates={setRates} showToast={showToast} />
             : <AdminFieldsScreen cfs={cfs} setCfs={setCfs} showToast={showToast} />)}
         </div>
         {top && (
           <div key={stack.length} style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden", background: C.bg, zIndex: 10 }}>
-            <OutletScreen id={top} onBack={back} />
+            <OutletScreen id={top} onBack={back} rates={rates} />
           </div>
         )}
       </div>
