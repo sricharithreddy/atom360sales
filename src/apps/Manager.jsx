@@ -1048,7 +1048,9 @@ function ReportsScreen({ showToast }) {
 const PRODUCT_REF = [
   {
     model: "Indie 750W", segment: "Utility e-scooter · Gen 3", price: "₹1.67 – 1.77 L",
-    specs: ["4 kWh · 161 km IDC (~110–120 km real)", "750W charger — 0–80% in ~5 h", "43 L under-seat + 12 L glovebox", "14-inch wheels · 165 mm clearance"],
+    specs: ["4 kWh IP67 · 161 km IDC (~110–120 km real)", "6.7 kW · 26 Nm · 0–40 in 3.9 s · 90 km/h", "Eco · Ride · Rush modes + reverse",
+      "750W charger — 0–80% in ~5 h", "43 L under-seat + 12 L glovebox", "14-inch wheels · dual disc + CBS · 165 mm clearance",
+      "MH on-road ₹1,66,748 (₹1,59,799 ex-showroom − ₹5,000 PM E-DRIVE)", "River Care: Plus Two ₹5,899 (5 yr) · Plus Five ₹9,912 (8 yr)"],
     pitch: "The SUV of scooters. Put a full-face helmet under the seat in front of them — storage closes this sale.",
     rivals: [
       { name: "Ather Rizta",
@@ -2761,12 +2763,25 @@ const ADMIN_VEHICLES_SEED = [
 
 const ADMIN_ACCESSORIES_SEED = [
   { model: "Indie", items: [
-    { name: "Side Step", price: 1499, updated: "2 Sep 2026" },
-    { name: "Tubular Grab Rail", price: 849, updated: "2 Sep 2026" },
-    { name: "Pannier Slot Cover", price: 799, updated: "2 Sep 2026" },
+    { name: "Side Step", price: 1449, updated: "2 Sep 2026" },
+    { name: "Tubular Grab Rail", price: 1199, updated: "2 Sep 2026" },
     { name: "Back Rest", price: 2199, updated: "2 Sep 2026" },
-    { name: "Tinted Visor", price: 1600, updated: "2 Sep 2026" },
-    { name: "Accessory fitment", price: 118, updated: "2 Sep 2026" },
+    { name: "Visor (Clear)", price: 1499, updated: "2 Sep 2026" },
+    { name: "Visor (Tinted)", price: 1499, updated: "2 Sep 2026" },
+    { name: "Pannier Slot Cover", price: 799, updated: "2 Sep 2026" },
+    { name: "Top Rack", price: 1599, updated: "2 Sep 2026" },
+    { name: "Collar Bag", price: 1599, updated: "2 Sep 2026" },
+    { name: "Open Mobile Mount", price: 1399, updated: "2 Sep 2026" },
+    { name: "Weatherproof Mobile Mount", price: 1999, updated: "2 Sep 2026" },
+    { name: "Single Socket Charger Holder", price: 1499, updated: "2 Sep 2026" },
+    { name: "Vehicle Cover", price: 559, updated: "2 Sep 2026" },
+    { name: "Pop Floor Mat", price: 799, updated: "2 Sep 2026" },
+    { name: "All Black Floor Mat", price: 549, updated: "2 Sep 2026" },
+    { name: "Pop Seat Cover", price: 999, updated: "2 Sep 2026" },
+    { name: "Dual-Tone Seat Cover", price: 699, updated: "2 Sep 2026" },
+    { name: "Open Face Helmet", price: 1499, updated: "2 Sep 2026" },
+    { name: "Full-face Helmet", price: 1999, updated: "2 Sep 2026" },
+    { name: "Accessory fitment (River Store)", price: 118, updated: "2 Sep 2026" },
   ]},
 ];
 
@@ -3574,9 +3589,9 @@ const ADMIN_EXTRACT_MOCKS = {
     { model: "Indie", name: "480W + Plus Five", exShowroom: 150799, rto: 1060, insurance: 10889, handling: 9912 },
   ],
   accessories: [
-    { model: "Indie", name: "Plain Visor", price: 699 },
-    { model: "Indie", name: "Half-face Helmet", price: 1499 },
-    { model: "Indie", name: "Full-face Helmet", price: 1999 },
+    { model: "Indie", name: "Bungee Cord", price: 349 },
+    { model: "Indie", name: "Bungee Net", price: 399 },
+    { model: "Indie", name: "Storage Box Mat", price: 299 },
   ],
 };
 

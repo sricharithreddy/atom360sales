@@ -136,38 +136,38 @@ const MOCK_VOICE_TRANSCRIPTS = [
 // Each key is a UI string; each language is a variant. English is the canonical key.
 const LANG_STRINGS = {
   // Navigation / labels
-  "Leads":          { hi: "Leads",       te: "Leads",        kn: "Leads",       ta: "Leads"       },
-  "Profile":        { hi: "Profile",     te: "Profile",      kn: "Profile",     ta: "Profile"     },
-  "Today's Queue":  { hi: "Aaj ki Queue",te: "Nenu Queue",   kn: "Inna Queue",  ta: "Intha Queue" },
-  "Generate MIS":   { hi: "MIS banao",   te: "MIS cheyyandi",kn: "MIS maadi",   ta: "MIS podu"    },
-  "Do These First": { hi: "Pehle yeh karo",te: "Munduga ivvi",kn: "Mundha idu", ta: "Munnadi idu" },
-  "Today's Schedule":{ hi: "Aaj ka schedule",te: "Nenu schedule",kn: "Inna schedule",ta: "Intha schedule"},
+  "Leads":          { hi: "Leads",       te: "Leads",        mr: "Leads",       ta: "Leads"       },
+  "Profile":        { hi: "Profile",     te: "Profile",      mr: "Profile",     ta: "Profile"     },
+  "Today's Queue":  { hi: "Aaj ki Queue",te: "Nenu Queue",   mr: "Aajchi Queue",  ta: "Intha Queue" },
+  "Generate MIS":   { hi: "MIS banao",   te: "MIS cheyyandi",mr: "MIS kara",   ta: "MIS podu"    },
+  "Do These First": { hi: "Pehle yeh karo",te: "Munduga ivvi",mr: "He aadhi kara", ta: "Munnadi idu" },
+  "Today's Schedule":{ hi: "Aaj ka schedule",te: "Nenu schedule",mr: "Aajcha schedule",ta: "Intha schedule"},
   // Actions
-  "Call":           { hi: "Call karo",   te: "Call cheyyandi",kn: "Call maadi", ta: "Call pannu"  },
-  "WhatsApp":       { hi: "WhatsApp karo",te: "WhatsApp cheyyandi",kn: "WhatsApp maadi",ta: "WhatsApp pannu"},
-  "Test Ride":     { hi: "Test Ride",  te: "Test Ride",   kn: "Test Ride",  ta: "Test Ride"  },
-  "Quote":          { hi: "Quote",       te: "Quote",        kn: "Quote",       ta: "Quote"       },
-  "Log this call":  { hi: "Call log karo",te: "Call log cheyyandi",kn: "Call log maadi",ta: "Call log pannu"},
-  "Save Log":       { hi: "Save karo",   te: "Save cheyyandi",kn: "Save maadi", ta: "Save pannu"  },
-  "Cancel":         { hi: "Cancel",      te: "Cancel",       kn: "Cancel",      ta: "Cancel"      },
-  "Add Lead":       { hi: "Lead add karo",te: "Lead add cheyyandi",kn: "Lead add maadi",ta: "Lead seri pannu"},
+  "Call":           { hi: "Call karo",   te: "Call cheyyandi",mr: "Call kara", ta: "Call pannu"  },
+  "WhatsApp":       { hi: "WhatsApp karo",te: "WhatsApp cheyyandi",mr: "WhatsApp kara",ta: "WhatsApp pannu"},
+  "Test Ride":     { hi: "Test Ride",  te: "Test Ride",   mr: "Test Ride",  ta: "Test Ride"  },
+  "Quote":          { hi: "Quote",       te: "Quote",        mr: "Quote",       ta: "Quote"       },
+  "Log this call":  { hi: "Call log karo",te: "Call log cheyyandi",mr: "Call log kara",ta: "Call log pannu"},
+  "Save Log":       { hi: "Save karo",   te: "Save cheyyandi",mr: "Save kara", ta: "Save pannu"  },
+  "Cancel":         { hi: "Cancel",      te: "Cancel",       mr: "Cancel",      ta: "Cancel"      },
+  "Add Lead":       { hi: "Lead add karo",te: "Lead add cheyyandi",mr: "Lead add kara",ta: "Lead seri pannu"},
   // Status
-  "Contacted":      { hi: "Contact hua", te: "Contact ayyindi",kn: "Contact aaithu",ta: "Contact aachu"},
-  "Booking":        { hi: "Booking",     te: "Booking",      kn: "Booking",     ta: "Booking"     },
-  "Opportunity":    { hi: "Opportunity", te: "Opportunity",  kn: "Opportunity", ta: "Opportunity" },
+  "Contacted":      { hi: "Contact hua", te: "Contact ayyindi",mr: "Contact zhala",ta: "Contact aachu"},
+  "Booking":        { hi: "Booking",     te: "Booking",      mr: "Booking",     ta: "Booking"     },
+  "Opportunity":    { hi: "Opportunity", te: "Opportunity",  mr: "Opportunity", ta: "Opportunity" },
   // Search/filter
-  "Search or filter leads": { hi: "Search ya filter karo", te: "Search cheyyi", kn: "Search maadi", ta: "Search pannu" },
-  "Show results":   { hi: "Results dikhao", te: "Results chuppu", kn: "Results toro", ta: "Results kaatu" },
-  "Clear all":      { hi: "Sab clear karo", te: "Anni clear cheyyandi", kn: "Ella clear maadi", ta: "Ellam clear pannu" },
+  "Search or filter leads": { hi: "Search ya filter karo", te: "Search cheyyi", mr: "Search kara", ta: "Search pannu" },
+  "Show results":   { hi: "Results dikhao", te: "Results chuppu", mr: "Results dakhva", ta: "Results kaatu" },
+  "Clear all":      { hi: "Sab clear karo", te: "Anni clear cheyyandi", mr: "Sagla clear kara", ta: "Ellam clear pannu" },
   // Settings
-  "Voice-first logging": { hi: "Voice se log karo", te: "Voice tho log cheyyandi", kn: "Voice ninda log maadi", ta: "Voice moolam log pannu" },
-  "Language":       { hi: "Bhasha",      te: "Bhasha",       kn: "Bhasha",      ta: "Mozhi"       },
+  "Voice-first logging": { hi: "Voice se log karo", te: "Voice tho log cheyyandi", mr: "Voice ne log kara", ta: "Voice moolam log pannu" },
+  "Language":       { hi: "Bhasha",      te: "Bhasha",       mr: "Bhasha",      ta: "Mozhi"       },
 };
 const LANG_OPTIONS = [
   { code: "en", label: "English" },
   { code: "hi", label: "हिंदी (Hinglish)" },
   { code: "te", label: "Telugu (Mix)" },
-  { code: "kn", label: "Kannada (Mix)" },
+  { code: "mr", label: "मराठी (Marathi mix)" },
   { code: "ta", label: "Tamil (Mix)" },
 ];
 // t() is the translation function — returns English if no override exists for the language.
@@ -414,12 +414,24 @@ const PAYMENT_MODES = ["Cash", "Loan", "Exchange"];
 // everything except discount — that's the one lever the executive controls in a negotiation.
 // Official River accessory prices; fitment is charged once when any accessory is added.
 const ACCESSORY_OPTIONS = [
-  { key: "side_step", label: "Side Step", amount: 1499 },
-  { key: "grab_rail", label: "Tubular Grab Rail", amount: 849 },
+  { key: "side_step", label: "Side Step", amount: 1449 },
+  { key: "grab_rail", label: "Tubular Grab Rail", amount: 1199 },
   { key: "back_rest", label: "Back Rest", amount: 2199 },
-  { key: "tinted_visor", label: "Tinted Visor", amount: 1600 },
-  { key: "helmet_full", label: "Full-face Helmet", amount: 1999 },
+  { key: "visor_clear", label: "Visor (Clear)", amount: 1499 },
+  { key: "visor_tinted", label: "Visor (Tinted)", amount: 1499 },
   { key: "pannier_cover", label: "Pannier Slot Cover", amount: 799 },
+  { key: "top_rack", label: "Top Rack", amount: 1599 },
+  { key: "collar_bag", label: "Collar Bag", amount: 1599 },
+  { key: "mount_open", label: "Open Mobile Mount", amount: 1399 },
+  { key: "mount_wp", label: "Weatherproof Mobile Mount", amount: 1999 },
+  { key: "charger_holder", label: "Single Socket Charger Holder", amount: 1499 },
+  { key: "cover", label: "Vehicle Cover", amount: 559 },
+  { key: "mat_pop", label: "Pop Floor Mat", amount: 799 },
+  { key: "mat_black", label: "All Black Floor Mat", amount: 549 },
+  { key: "seat_pop", label: "Pop Seat Cover", amount: 999 },
+  { key: "seat_dual", label: "Dual-Tone Seat Cover", amount: 699 },
+  { key: "helmet_open", label: "Open Face Helmet", amount: 1499 },
+  { key: "helmet_full", label: "Full-face Helmet", amount: 1999 },
 ];
 const ACCESSORY_FITMENT = 118;
 // Official price sheet (Maharashtra, Sep 2026). listPrice is ex-showroom before the PM E-DRIVE
@@ -6426,7 +6438,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
             <button onClick={() => setTlFilter(null)} style={chipStyle(!tlFilter)}>All</button>
             {timelineTypes.map(ty => (
               <button key={ty} onClick={() => setTlFilter(ty === tlFilter ? null : ty)} style={chipStyle(tlFilter === ty, true)}>
-                {ty.charAt(0).toUpperCase() + ty.slice(1)}
+                {ty === "test-drive" ? "Test ride" : ty.charAt(0).toUpperCase() + ty.slice(1)}
               </button>
             ))}
           </div>
@@ -7910,7 +7922,13 @@ const LEARN_LOG = { video: 47, podcast: 63, article: 18, internal: 21 };
 const PRODUCT_REF = [
   {
     model: "Indie", segment: "Electric scooter", price: "₹1.63 – 1.77 L",
-    specs: ["4 kWh IP67 battery · 161 km IDC", "6.7 kW peak · 26 Nm · 90 km/h", "43 L + 12 L storage", "14-inch wheels · dual disc + CBS", "750W charger: 0–80% in ~5 h"],
+    specs: ["4 kWh IP67 battery · 161 km IDC (~110–120 km real)", "6.7 kW peak · 26 Nm · 0–40 in 3.9 s · 90 km/h",
+      "Ride modes: Eco · Ride · Rush · reverse/park assist", "43 L under-seat + 12 L lockable glovebox with USB",
+      "14-inch wheels · dual disc + CBS · 165 mm clearance", "Twin-beam LED · 6-inch digital display · connected app",
+      "750W charger 0–80% in ~5 h · 480W charger slower (~8 h)", "Battery warranty 5 yr · River Care Plus Two (5 yr) ₹5,899 · Plus Five (8 yr) ₹9,912",
+      "Colours: Monsoon Blue · Summer Red · Spring Yellow · Winter White · Storm Grey",
+      "MH price (750W): ex-showroom ₹1,59,799 − PM E-DRIVE ₹5,000 + insurance/RSA ₹10,889 + RTO ₹1,060 = ₹1,66,748 on-road",
+      "Accessories: Side Step ₹1,449 · Back Rest ₹2,199 · Top Rack ₹1,599 · Visor ₹1,499 · Grab Rail ₹1,199 · helmets from ₹1,499 (fitment ₹118)"],
     pitch: "The SUV of scooters — storage, stability and utility. Open the seat and the glovebox before you talk price.",
     rivals: [
       { name: "Ather Rizta",
@@ -8910,7 +8928,7 @@ export default function SalesExecutiveApp() {
   const [selectedLeadId, setSelectedLeadId] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
   const [voiceFirst, setVoiceFirst] = useState(true);
-  const [lang, setLang] = useState("en"); // "en" | "hi" | "te" | "kn" | "ta"
+  const [lang, setLang] = useState("en"); // "en" | "hi" | "te" | "mr" | "ta"
   const [leads, setLeads] = useState(RAW_LEADS);
   const [toast, setToast] = useState("");
   const toastTimer = useRef(null);

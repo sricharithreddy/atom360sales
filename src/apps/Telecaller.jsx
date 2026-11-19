@@ -403,14 +403,24 @@ const FEEDBACK_PENDING_ITEMS = [
 ];
 // Official River accessory prices (fitment ₹118 extra per job).
 const ACCESSORY_OPTIONS = [
-  { key: "side_step",     label: "Side Step",           amount: 1499 },
-  { key: "grab_rail",     label: "Tubular Grab Rail",   amount: 849 },
-  { key: "pannier_cover", label: "Pannier Slot Cover",  amount: 799 },
-  { key: "back_rest",     label: "Back Rest",           amount: 2199 },
-  { key: "tinted_visor",  label: "Tinted Visor",        amount: 1600 },
-  { key: "plain_visor",   label: "Plain Visor",         amount: 699 },
-  { key: "helmet_half",   label: "Half-face Helmet",    amount: 1499 },
-  { key: "helmet_full",   label: "Full-face Helmet",    amount: 1999 },
+  { key: "side_step", label: "Side Step", amount: 1449 },
+  { key: "grab_rail", label: "Tubular Grab Rail", amount: 1199 },
+  { key: "back_rest", label: "Back Rest", amount: 2199 },
+  { key: "visor_clear", label: "Visor (Clear)", amount: 1499 },
+  { key: "visor_tinted", label: "Visor (Tinted)", amount: 1499 },
+  { key: "pannier_cover", label: "Pannier Slot Cover", amount: 799 },
+  { key: "top_rack", label: "Top Rack", amount: 1599 },
+  { key: "collar_bag", label: "Collar Bag", amount: 1599 },
+  { key: "mount_open", label: "Open Mobile Mount", amount: 1399 },
+  { key: "mount_wp", label: "Weatherproof Mobile Mount", amount: 1999 },
+  { key: "charger_holder", label: "Single Socket Charger Holder", amount: 1499 },
+  { key: "cover", label: "Vehicle Cover", amount: 559 },
+  { key: "mat_pop", label: "Pop Floor Mat", amount: 799 },
+  { key: "mat_black", label: "All Black Floor Mat", amount: 549 },
+  { key: "seat_pop", label: "Pop Seat Cover", amount: 999 },
+  { key: "seat_dual", label: "Dual-Tone Seat Cover", amount: 699 },
+  { key: "helmet_open", label: "Open Face Helmet", amount: 1499 },
+  { key: "helmet_full", label: "Full-face Helmet", amount: 1999 },
 ];
 const DISCOUNT_LIMIT = 2500;
 // Periodic service pack (3 years) — dealer add-on, separate from the River Care warranty plans.
