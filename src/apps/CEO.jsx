@@ -114,7 +114,7 @@ const LOC_BY_ID = Object.fromEntries(LOCS.map(l => [l.id, l]));
     // Finance & insurance (own seed). Outlet-level rates; per-SE numbers are split from them.
     const f = rngFor("fi4:" + l.id);
     l.fi = {
-      ins: f() < 0.1 ? rr(f, 0.86, 0.895) : rr(f, 0.94, 0.99),        // in-house policies ÷ units
+      ins: f() < 0.06 ? rr(f, 0.86, 0.895) : rr(f, 0.94, 0.985),       // in-house policies ÷ units
       prem: rr(f, 10350, 11450),                                       // ₹ per in-house policy
       any: rr(f, 0.39, 0.72),                                          // any finance (in-house + self-arranged) ÷ units
       share: rr(f, 0.67, 0.94),                                        // in-house ÷ all loans
@@ -702,8 +702,8 @@ const ADDON_COLS = [
 const incomeCols = (gi) => {
   const col = (key, label, w, f, align) => ({ key, label, w, align, sort: (a) => a[f],
     cell: (a) => top2(rs(a[f]), null, rsTone(a[f], gi[f], a.retail)) });
-  return [col("ins", "Insurance", 56, "insPV"), col("fin", "Finance", 46, "finPV"), col("add", "Add-ons", 44, "addPV"),
-    col("tot", "Total", 48, "totPV", "right")];
+  return [col("ins", "Insurance", 56, "insPV"), col("fin", "Finance", 48, "finPV"), col("add", "Add-ons", 48, "addPV"),
+    col("tot", "Total", 46, "totPV", "right")];
 };
 const STOCK_COLS = [
   { key: "u", label: "Units", w: 46, sort: (s) => s.units, cell: (s) => num(nIN(s.units), true) },
