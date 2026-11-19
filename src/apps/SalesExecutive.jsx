@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   AlertTriangle, PlayCircle, Headphones, MessageSquare, Flame, TrendingDown, TrendingUp, Settings, Wind, Eye, User, Calendar, MessageCircle, IndianRupee, Heart, RefreshCw,
-  Phone, Car, FileText, ChevronLeft, ChevronRight,
+  Phone, Bike as ScooterIcon, FileText, ChevronLeft, ChevronRight,
   Search, X, ChevronDown, ChevronUp, Check,
   Clock, Mail, MapPin, Users, Target,
   Bell, Globe, HelpCircle, LogOut, Lock, Trophy, Package,
-  CalendarClock, ClipboardList, CarFront,
+  CalendarClock, ClipboardList, Bike as CarFront,
   Activity as PulseSignal, Scale, SplitSquareHorizontal, Landmark,
   Hourglass, VolumeX, UserPlus, Mic, Store, Camera, ShieldCheck,
   Navigation, BarChart3, Share2, Plus, Flag, SlidersHorizontal, CheckSquare, Square, Link2, Copy, Sparkles, CheckCircle2, AlertCircle, Pencil, Star, GraduationCap, ThumbsUp, ArrowRight, Award, Menu
@@ -60,10 +60,10 @@ const F = `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
 // Single-role app: the person is always viewing as a Sales Executive. The other Sales
 // Executives are kept only so the Leaderboard has peers to rank against.
 const USERS = [
-  { id: 7, name: "Vikram Singh", role: "Sales Executive", reportsTo: null, email: "vikram.singh@autoprism.in", phone: "+91 98450 77889", branch: "Whitefield Showroom", target: 8, achieved: 7, monthlyStats: { calls: 52, whatsapp: 38 }, testDrives: 17, bookings: 9, leads: 44, respHrs: 2.9, streak: 6,  prevAchieved: 6, warrantyAttach: 6, addOns: 14, tdShowroom: 11, tdHome: 6, opportunity: 28 },
-  { id: 8, name: "Ananya Rao", role: "Sales Executive", reportsTo: null, email: "ananya.rao@autoprism.in", phone: "+91 98450 88990", branch: "Whitefield Showroom", target: 7, achieved: 3, monthlyStats: { calls: 24, whatsapp: 19 }, testDrives: 12, bookings: 4, leads: 38, respHrs: 1.1, streak: 4,  prevAchieved: 4, warrantyAttach: 1, addOns: 5, tdShowroom: 10, tdHome: 2, opportunity: 19 },
-  { id: 9, name: "Karthik Menon", role: "Sales Executive", reportsTo: null, email: "karthik.menon@autoprism.in", phone: "+91 98450 99001", branch: "Indiranagar Showroom", target: 5, achieved: 1, monthlyStats: { calls: 11, whatsapp: 7 }, testDrives: 6,  bookings: 2, leads: 33, respHrs: 5.8, streak: 19, prevAchieved: 0, warrantyAttach: 0, addOns: 2, tdShowroom: 6, tdHome: 0, opportunity: 11 },
-  { id: 10, name: "Rahul Kumar", role: "Sales Executive", reportsTo: null, email: "rahul.kumar@autoprism.in", phone: "+91 98450 10112", branch: "Indiranagar Showroom", target: 6, achieved: 4, monthlyStats: { calls: 48, whatsapp: 26 }, testDrives: 23, bookings: 7, leads: 41, respHrs: 2.4, streak: 9,  prevAchieved: 2, warrantyAttach: 3, addOns: 11, tdShowroom: 20, tdHome: 3, opportunity: 31 },
+  { id: 7, name: "Vikram Singh", role: "Sales Executive", reportsTo: null, email: "vikram.singh@autoprism.in", phone: "+91 98450 77889", branch: "Vashi Showroom", target: 18, achieved: 16, monthlyStats: { calls: 52, whatsapp: 38 }, testDrives: 38, bookings: 20, leads: 96, respHrs: 2.9, streak: 6,  prevAchieved: 14, warrantyAttach: 13, addOns: 30, tdShowroom: 24, tdHome: 14, opportunity: 60 },
+  { id: 8, name: "Ananya Rao", role: "Sales Executive", reportsTo: null, email: "ananya.rao@autoprism.in", phone: "+91 98450 88990", branch: "Vashi Showroom", target: 16, achieved: 7, monthlyStats: { calls: 24, whatsapp: 19 }, testDrives: 27, bookings: 9, leads: 84, respHrs: 1.1, streak: 4,  prevAchieved: 9, warrantyAttach: 2, addOns: 11, tdShowroom: 22, tdHome: 5, opportunity: 42 },
+  { id: 9, name: "Karthik Menon", role: "Sales Executive", reportsTo: null, email: "karthik.menon@autoprism.in", phone: "+91 98450 99001", branch: "Baner Showroom", target: 12, achieved: 2, monthlyStats: { calls: 11, whatsapp: 7 }, testDrives: 13, bookings: 4, leads: 72, respHrs: 5.8, streak: 19, prevAchieved: 0, warrantyAttach: 0, addOns: 4, tdShowroom: 13, tdHome: 0, opportunity: 24 },
+  { id: 10, name: "Rahul Kumar", role: "Sales Executive", reportsTo: null, email: "rahul.kumar@autoprism.in", phone: "+91 98450 10112", branch: "Baner Showroom", target: 14, achieved: 9, monthlyStats: { calls: 48, whatsapp: 26 }, testDrives: 50, bookings: 15, leads: 90, respHrs: 2.4, streak: 9,  prevAchieved: 5, warrantyAttach: 7, addOns: 24, tdShowroom: 44, tdHome: 6, opportunity: 68 },
 ];
 const DEFAULT_USER_ID = 10;
 
@@ -179,11 +179,11 @@ function t(key, lang) {
 }
 
 const MOCK_CALL_DICTATIONS = [
-  "Spoke to him just now, he wants to bring his wife and do the test drive on Saturday at the showroom. He also has an old i10 to exchange, around 2016 model. Said he'll need a loan for about twelve lakhs. Seemed quite keen on the top variant.",
+  "Spoke to him just now, he wants to bring his wife and do the test ride on Saturday at the showroom. He also has an old Activa to exchange, around 2016 model. Said he'll need a loan for about one point two lakhs. Seemed quite keen on the Plus Five plan.",
   "Called, he picked up but was driving. Asked me to call back tomorrow evening. Nothing else discussed.",
-  "He's ready to book. Wants to pay twenty five thousand as token today itself, delivery he's asking for before month end. Very positive, said his brother also bought from us last year.",
+  "He's ready to book. Wants to pay five thousand as token today itself, delivery he's asking for before month end. Very positive, said his brother also bought from us last year.",
   "No answer, phone just rang out. Third time now.",
-  "He's gone quiet on price, says Nexon is giving him a better deal. Asked me for a discount, I said I'd check with the manager and revert. Worth escalating.",
+  "He's gone quiet on price, says Ather is giving him a better deal on the Rizta. Asked me for a discount, I said I'd check with the manager and revert. Worth escalating.",
   "Not interested anymore, he's decided to postpone the purchase. Said maybe after Diwali he'll think again.",
 ];
 
@@ -220,19 +220,19 @@ function parseCallTranscript(text, lead) {
     if (out.callback.window) out.confidence.push(["Best time", out.callback.window]);
   } else if (has("not interested", "postpone", "dropped", "decided against")) {
     out.outcome = "not_interested";
-    out.subReason = has("competitor", "nexon", "creta", "brezza", "better deal") ? "competitor" : "not_now";
+    out.subReason = has("competitor", "ather", "rizta", "ola", "iqube", "chetak", "vida", "better deal") ? "competitor" : "not_now";
     out.confidence.push(["Outcome", "Not Interested"]);
     out.confidence.push(["Reason", out.subReason === "competitor" ? "Preferring Competitor" : "Not Interested Now"]);
   } else if (has("ready to book", "wants to book", "token", "booking amount")) {
     out.outcome = "ready";
     out.confidence.push(["Outcome", "Ready to Book"]);
-    const amt = t.match(/(\d[\d,]*)\s*(?:thousand|k\b)/) || t.match(/twenty five thousand/);
-    if (t.includes("twenty five thousand")) out.booking = { advance: "25000" };
+    const amt = t.match(/(\d[\d,]*)\s*(?:thousand|k\b)/) || t.match(/five thousand/);
+    if (t.includes("five thousand")) out.booking = { advance: "5000" };
     else if (amt) out.booking = { advance: amt[1].replace(/,/g, "") };
     if (out.booking) out.confidence.push(["Token amount", "₹" + out.booking.advance]);
-  } else if (has("test drive", "testdrive")) {
+  } else if (has("test ride", "testride", "trial ride")) {
     out.outcome = "test_drive";
-    out.confidence.push(["Outcome", "Wants Test Drive"]);
+    out.confidence.push(["Outcome", "Wants Test Ride"]);
     out.testDrive.mode = has("at home", "his place", "her place", "their location") ? "location" : "showroom";
     out.confidence.push(["Location", out.testDrive.mode === "location" ? "Customer's Location" : "Showroom"]);
     const dayMap = { saturday: 6, sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5 };
@@ -241,7 +241,7 @@ function parseCallTranscript(text, lead) {
         const now = new Date(today);
         let delta = (dow - now.getDay() + 7) % 7; if (delta === 0) delta = 7;
         out.testDrive.date = toDateInputValue(d(delta));
-        out.confidence.push(["Test drive", fmt(parseDateInput(out.testDrive.date))]);
+        out.confidence.push(["Test ride", fmt(parseDateInput(out.testDrive.date))]);
         break;
       }
     }
@@ -252,7 +252,7 @@ function parseCallTranscript(text, lead) {
   }
 
   // --- signals, independent of outcome ---
-  if (has("exchange", "old car", "trade in", "trade-in", "his old", "her old", " i10", "swift", "alto")) {
+  if (has("exchange", "old scooter", "old bike", "trade in", "trade-in", "his old", "her old", "activa", "jupiter", "access", "splendor", "pulsar")) {
     out.signals.push("Exchange");
     const yr = t.match(/\b(20[0-2]\d)\b/);
     out.exchange = { year: yr ? yr[1] : "" };
@@ -260,8 +260,8 @@ function parseCallTranscript(text, lead) {
   }
   if (has("loan", "finance", "emi", "lakhs", "lakh")) {
     out.signals.push("Finance");
-    const lk = t.match(/(\w+|\d+)\s*lakh/);
-    const words = { twelve: "12", ten: "10", eight: "8", fifteen: "15", twenty: "20" };
+    const lk = t.match(/(one point \w+|one|\d+(?:\.\d+)?)\s*lakh/);
+    const words = { "one": "1", "one point two": "1.2", "one point three": "1.3", "one point five": "1.5", "one point one": "1.1" };
     let amt = lk ? (words[lk[1]] || lk[1]) : "";
     out.finance = { loanAmount: amt };
     out.signals.push("Finance");
@@ -278,7 +278,7 @@ function parseCallTranscript(text, lead) {
 // Call-log presets, grouped by whether the call actually connected.
 const CONTACTED_OUTCOMES = [
   { key: "callback", label: "Call Back" },
-  { key: "test_drive", label: "Wants Test Drive" },
+  { key: "test_drive", label: "Wants Test Ride" },
   { key: "discount", label: "Asked for Discount" },
   { key: "ready", label: "Ready to Book" },
   { key: "not_interested", label: "Not Interested" },
@@ -307,65 +307,64 @@ const WHATSAPP_OUTCOMES = [
 // Competitor battle cards — three sharp, factual points each. Brief by design — meant to be
 // scanned mid-conversation, not read as an essay.
 const COMPETITOR_BATTLE_CARDS = {
-  "Seltos": {
-    ourCar: "Creta",
+  "Ather Rizta": {
+    ourCar: "Indie",
     points: [
-      "Panoramic sunroof (Creta) vs single-pane (Seltos) — customers notice it instantly on the test drive.",
-      "Rear-seat headroom is 15mm more in Creta — meaningful for taller families and longer journeys.",
-      "Creta holds resale value ~8% higher than Seltos after 3 years — a strong long-term ownership story.",
+      "Storage: Indie gives 43 L under the seat plus a 12 L lockable glovebox — customers notice the difference the moment they open both on the test ride.",
+      "14-inch wheels front and rear with wide tyres and 165 mm ground clearance — noticeably more planted over potholes and speed breakers than Rizta's smaller wheels.",
+      "Be honest: Ather's brand and service network are bigger. Pivot to utility — twin pannier mounts, footpegs front and rear, a scooter built for loads and family use.",
     ],
   },
-  "Brezza": {
-    ourCar: "Venue / Exter",
+  "Ather 450X": {
+    ourCar: "Indie",
     points: [
-      "Venue's turbo engine delivers punchier highway performance vs Brezza's naturally-aspirated unit.",
-      "Exter's sunroof is a segment-first at this price point — Brezza doesn't offer one below ₹12L.",
-      "Hyundai's BlueLink connected suite has broader remote features than Suzuki's SmartPlay at the same tier.",
+      "450X is a sporty scooter; Indie is the practical one — 43 L + 12 L storage versus a much smaller under-seat space.",
+      "Indie's wider stance, 14-inch wheels and dual disc brakes with CBS make it the calmer ride with a pillion and luggage.",
+      "4 kWh battery with ~110–120 km real-world range — enough for a week of city commuting for most riders.",
     ],
   },
-  "Nexon": {
-    ourCar: "Creta / Venue",
+  "Ola S1 Pro": {
+    ourCar: "Indie",
     points: [
-      "Creta cabin quality is consistently rated higher in owner surveys — materials feel more premium in person.",
-      "Hyundai's service network is 200+ outlets stronger, especially in Tier 2/3 — less waiting.",
-      "Creta's CNG and hybrid options give better total cost of ownership for mixed city/highway use.",
+      "Ola wins on headline price and feature list — don't argue it. Ask what the customer will actually carry and where they'll ride.",
+      "Indie's IP67 battery, 165 mm ground clearance and 14-inch wheels are built for bad roads and monsoon water-logging.",
+      "Walk them through our service and delivery promise — Indie waiting is 1–3 weeks, and the Baner / Vashi workshops are on site.",
     ],
   },
-  "Compass": {
-    ourCar: "Tucson",
+  "TVS iQube": {
+    ourCar: "Indie",
     points: [
-      "Tucson Hybrid AWD is the only hybrid SUV in this segment — meaningfully lower fuel cost over 3 years.",
-      "Tucson's Level 2 ADAS suite is more comprehensive than Compass's safety package at the same price.",
-      "Hyundai's warranty (3yr standard, extendable to 5yr) outlasts Jeep's standard 2-year package.",
+      "iQube wins on brand familiarity and service network — acknowledge it directly.",
+      "Indie counters on practicality: 43 L under-seat storage, 12 L glovebox with USB charging and integrated pannier mounts.",
+      "6.7 kW peak motor and 26 Nm — 0–40 km/h in 3.9 s, so it doesn't feel underpowered with a pillion.",
     ],
   },
-  "City": {
-    ourCar: "Verna",
+  "Bajaj Chetak": {
+    ourCar: "Indie",
     points: [
-      "Verna's turbo petrol has better low-end torque than City's unit — customers feel the difference immediately.",
-      "Verna's 10.25\" infotainment and 360-camera are standard on SX; City charges extra for comparable spec.",
-      "Hyundai resale is 5–6% stronger than Honda City in most metro markets based on recent auction data.",
+      "Chetak sells on its metal body and the Bajaj badge — respect that, then show Indie's storage and wheel size side by side.",
+      "Indie's 14-inch wheels and 165 mm ground clearance handle broken roads better than Chetak's smaller wheels.",
+      "River Care Plus Five extends warranty to 8 years — a strong answer to 'is a new brand safe to buy?'.",
     ],
   },
   "Other": {
-    ourCar: "Our Model",
+    ourCar: "Indie",
     points: [
       "Ask what specifically attracted them — it's often one feature you can match or exceed.",
-      "Highlight Hyundai's warranty and BlueLink suite — consistently underestimated by first-time buyers.",
-      "Check competitor delivery timelines — if they're waiting 2+ months, you may be able to deliver faster.",
+      "Highlight the River Care plans (warranty up to 8 years) and the connected app — consistently underestimated by first-time EV buyers.",
+      "Check competitor delivery timelines — Indie is usually 1–3 weeks, often faster than the customer expects.",
     ],
   },
 };
 const COMPETITOR_OPTIONS = Object.keys(COMPETITOR_BATTLE_CARDS);
 
-// Shared demo fleet — physical cars all reps book from the same pool.
+// Shared demo fleet — physical demo scooters all reps book from the same pool.
 const DEMO_FLEET = [
-  { id: "demo1", model: "Creta", variant: "SX(O) Turbo DCT", color: "Atlas White", regNo: "KA01 AA 1234" },
-  { id: "demo2", model: "Creta", variant: "SX Diesel AT", color: "Titan Grey", regNo: "KA01 AA 1235" },
-  { id: "demo3", model: "Venue", variant: "SX Dual Tone", color: "Titan Grey", regNo: "KA01 AA 1236" },
-  { id: "demo4", model: "Verna", variant: "SX(O)", color: "Fiery Red", regNo: "KA01 AA 1237" },
-  { id: "demo5", model: "Tucson", variant: "Signature AWD", color: "Amazon Grey", regNo: "KA01 AA 1238" },
-  { id: "demo6", model: "Ioniq 5", variant: "AWD Long Range", color: "Gravity Gold", regNo: "KA01 AA 1239" },
+  { id: "demo1", model: "Indie", variant: "750W", color: "Monsoon Blue", regNo: "MH12 RV 4421" },
+  { id: "demo2", model: "Indie", variant: "750W", color: "Summer Red", regNo: "MH12 RV 4422" },
+  { id: "demo3", model: "Indie", variant: "480W", color: "Storm Grey", regNo: "MH12 RV 4423" },
+  { id: "demo4", model: "Indie", variant: "750W", color: "Winter White", regNo: "MH43 RV 1187" },
+  { id: "demo5", model: "Indie", variant: "480W", color: "Spring Yellow", regNo: "MH43 RV 1188" },
 ];
 const CALL_WINDOWS = [
   { key: "morning", label: "Morning" },
@@ -381,7 +380,7 @@ const TEST_DRIVE_RESPONSES = [
   { key: "positive_comparing", label: "Positive, Still Comparing" },
   { key: "neutral", label: "Neutral" },
   { key: "not_liked", label: "Didn't Like It" },
-  { key: "wants_second", label: "Wants a Second Test Drive" },
+  { key: "wants_second", label: "Wants a Second Test Ride" },
 ];
 
 // SE → Team Leader → Manager. Both escalation steps are actions the SE takes themselves — the
@@ -411,28 +410,69 @@ const TEST_DRIVE_CANCEL_REASONS = [
 ];
 const PAYMENT_MODES = ["Cash", "Loan", "Exchange"];
 
-// On-road price breakup, modeled on how CarWale/CarDekho split it. System computes everything
-// except discount — that's the one lever the executive controls in a negotiation.
+// On-road price breakup, modeled on River's official Maharashtra price sheet. System computes
+// everything except discount — that's the one lever the executive controls in a negotiation.
+// Official River accessory prices; fitment is charged once when any accessory is added.
 const ACCESSORY_OPTIONS = [
-  { key: "mats", label: "Floor Mats", amount: 3000 },
-  { key: "covers", label: "Seat Covers", amount: 5000 },
-  { key: "warranty", label: "Extended Warranty", amount: 25000 },
-  { key: "care", label: "Care Package (3yr)", amount: 12000 },
+  { key: "side_step", label: "Side Step", amount: 1499 },
+  { key: "grab_rail", label: "Tubular Grab Rail", amount: 849 },
+  { key: "back_rest", label: "Back Rest", amount: 2199 },
+  { key: "tinted_visor", label: "Tinted Visor", amount: 1600 },
+  { key: "helmet_full", label: "Full-face Helmet", amount: 1999 },
+  { key: "pannier_cover", label: "Pannier Slot Cover", amount: 799 },
 ];
+const ACCESSORY_FITMENT = 118;
+// Official price sheet (Maharashtra, Sep 2026). listPrice is ex-showroom before the PM E-DRIVE
+// subsidy; warranty is the River Care plan bundled into the variant. 480W rows are estimates.
+const PM_EDRIVE_SUBSIDY = 5000;
+const RIVER_PRICE_SHEET = {
+  "750W":             { listPrice: 159799, insurance: 10889, rto: 1060, warranty: 0 },
+  "750W + Plus Two":  { listPrice: 159799, insurance: 10889, rto: 1060, warranty: 5899 },
+  "750W + Plus Five": { listPrice: 159799, insurance: 10889, rto: 1060, warranty: 9912 },
+  "480W":             { listPrice: 155799, insurance: 10889, rto: 1060, warranty: 0 },
+  "480W + Plus Two":  { listPrice: 155799, insurance: 10889, rto: 1060, warranty: 5899 },
+  "480W + Plus Five": { listPrice: 155799, insurance: 10889, rto: 1060, warranty: 9912 },
+};
+// Finds the price-sheet row for a variant; when only an on-road lakh figure is known, picks the
+// variant whose on-road price rounds to it.
+function priceSheetRow(variant, priceLakh) {
+  if (variant && RIVER_PRICE_SHEET[variant]) return RIVER_PRICE_SHEET[variant];
+  const onRoadLakh = (r) => Math.round((r.listPrice - PM_EDRIVE_SUBSIDY + r.insurance + r.rto + r.warranty) / 1000) / 100;
+  const hit = Object.values(RIVER_PRICE_SHEET).find(r => Math.abs(onRoadLakh(r) - (priceLakh || 0)) < 0.006);
+  return hit || RIVER_PRICE_SHEET["750W"];
+}
 function formatINR(amount) {
   return "₹" + Math.round(amount || 0).toLocaleString("en-IN");
 }
-function computeQuoteBreakup(priceLakh, discountRupees, accessoriesRupees) {
-  const exShowroom = Math.round((priceLakh || 0) * 100000);
-  const rto = Math.round(exShowroom * 0.09);
-  const insurance = Math.round(exShowroom * 0.035);
-  const tcs = exShowroom > 1000000 ? Math.round(exShowroom * 0.01) : 0;
-  const handling = 15000;
+function computeQuoteBreakup(priceLakh, discountRupees, accessoriesRupees, variant) {
+  const row = priceSheetRow(variant, priceLakh);
+  const exShowroom = row.listPrice;
+  const subsidy = PM_EDRIVE_SUBSIDY;
+  const rto = row.rto;
+  const insurance = row.insurance;
+  const warranty = row.warranty;
+  const tcs = 0;
   const accessories = accessoriesRupees || 0;
-  const subtotal = exShowroom + rto + insurance + tcs + handling + accessories;
+  const handling = accessories > 0 ? ACCESSORY_FITMENT : 0;
+  const subtotal = exShowroom - subsidy + insurance + rto + warranty + handling + accessories;
   const discount = discountRupees || 0;
   const total = Math.max(10000, subtotal - discount);
-  return { exShowroom, rto, insurance, tcs, handling, accessories, discount, subtotal, total };
+  return { exShowroom, subsidy, rto, insurance, warranty, tcs, handling, accessories, discount, subtotal, total };
+}
+// Quote rows shared by the quote form and the quote detail sheet, in price-sheet order.
+function quoteBreakupRows(q) {
+  return [
+    ["Ex-Showroom Price", q.exShowroom],
+    ...(q.subsidy > 0 ? [["PM E-DRIVE Subsidy", -q.subsidy]] : []),
+    ["Insurance + RSA (1st year)", q.insurance],
+    ["RTO + Road Tax", q.rto],
+    ...(q.warranty > 0 ? [[q.warranty >= 9912 ? "River Care Plus Five (8-yr warranty)" : "River Care Plus Two (5-yr warranty)", q.warranty]] : []),
+    ...(q.tcs > 0 ? [["TCS", q.tcs]] : []),
+    ...(q.handling > 0 ? [["Accessory Fitment", q.handling]] : []),
+  ];
+}
+function formatSignedINR(amount) {
+  return amount < 0 ? "−" + formatINR(-amount) : formatINR(amount);
 }
 // ---- Required-field highlighting -------------------------------------------------
 // A disabled CTA with no explanation is a dead end, so every form marks which fields are
@@ -474,7 +514,7 @@ const LEAD_SUBTYPE = {
   RETAILED: "retailed",
 };
 
-// Shared step used after a positive test drive and after a "ready to book" call outcome.
+// Shared step used after a positive test ride and after a "ready to book" call outcome.
 // It refuses to let the lead go quiet: either the money is in, or we book the call that chases it.
 function BookingAmountStep({ value, onChange, attempted }) {
   const v = value || { received: null, amount: "", mode: "", promiseDate: "", promiseWindow: "" };
@@ -553,7 +593,7 @@ function bookingStepComplete(v) {
   return !!(v.promiseDate && v.promiseWindow);
 }
 
-const COLOR_OPTIONS = ["Atlas White", "Titan Grey", "Fiery Red", "Abyss Black", "Amazon Grey", "Starry Night", "Gravity Gold", "Ranger Khaki"];
+const COLOR_OPTIONS = ["Monsoon Blue", "Summer Red", "Spring Yellow", "Winter White", "Storm Grey"];
 // Customer-stated contact preference. Not a nicety — DPDP purpose-limitation and TRAI's DND
 // framework both mean continuing to call/message someone who's restricted a channel is a real
 // compliance exposure, so this is treated as a hard restriction, not a soft suggestion.
@@ -658,167 +698,133 @@ function mkLead(o) {
 
 const RAW_LEADS = [
   // Rahul Kumar (10)
-  mkLead({ owner: 10, name: "Ravi Teja", phone: "98765 43210", location: "Indiranagar", model: "Creta", variant: "SX(O) Turbo DCT", bucket: "ready", propensity: 82, stage: "Test Drive",
-    budget: "₹18–20 L", targetDate: fmt(d(10)), created: d(-6), followUp: { date: d(0), window: null }, source: "Website",
-    summary: "Loved the sunroof on test drive — bringing spouse for a second look", flag: "positive",
+  mkLead({ owner: 10, name: "Ravi Teja", phone: "98765 43210", location: "Kothrud", model: "Indie", variant: "750W + Plus Five", bucket: "ready", propensity: 82, stage: "Test Ride",
+    budget: "₹1.7–1.8 L", targetDate: fmt(d(10)), created: d(-6), followUp: { date: d(0), window: null }, source: "Website",
+    summary: "Loved the storage on the test ride — bringing spouse for a second look", flag: "positive",
     nextAction: "Call today — confirm booking before spouse's visit",
     labels: ["Family Approval"],
-    suggestedSignals: [{ signal: "Exchange", reason: "From yesterday's call: customer mentioned trading in their current i10. Add the Exchange signal to start booking an evaluation?" }],
+    suggestedSignals: [{ signal: "Exchange", reason: "From yesterday's call: customer mentioned trading in their current Activa. Add the Exchange signal to start booking an evaluation?" }],
     hasRecording: true,
-    recordingTranscript: "Spoke to him just now, he wants to bring his wife and do the test drive on Saturday at the showroom. He also has an old i10 to exchange, around 2016 model. Said he'll need a loan for about twelve lakhs.",
+    recordingTranscript: "Spoke to him just now, he wants to bring his wife and do the test ride on Saturday at the showroom. He also has an old Activa to exchange, around 2016 model. Said he'll need a loan for about one point two lakhs.",
     channelUsage: { call: 2, whatsapp: 0 },
     testDrive: { mode: "showroom", date: d(0), time: "17:00", location: null },
-    notes: ["Compared with Seltos, prefers Creta's ride quality.", "Wants sunroof + ADAS variant only.", "Bringing spouse for 2nd test drive."],
+    notes: ["Compared with Ather Rizta, prefers the Indie's 14-inch wheels and storage.", "Wants the 750W charger + River Care Plus Five only.", "Bringing spouse for 2nd test ride."],
     timeline: [
-      { type: "test-drive", text: "Test drive completed — loved the panoramic sunroof", date: d(-1) },
+      { type: "test-drive", text: "Test ride completed — loved the 43 L under-seat storage", date: d(-1) },
       { type: "call", text: "Discussed finance options, sent EMI breakup", date: d(-3) },
-      { type: "visit", text: "Walked in, browsed Creta & Seltos", date: d(-6) },
+      { type: "visit", text: "Walked in, browsed Indie & compared with Ather Rizta", date: d(-6) },
     ] }),
-  mkLead({ owner: 10, name: "Sneha Kulkarni", phone: "98765 43211", location: "Koramangala", model: "Venue", variant: "SX Dual Tone", bucket: "quiet", propensity: 55,
-    budget: "₹11–12 L", targetDate: fmt(d(15)), created: d(-12), followUp: { date: d(2), window: "evening" }, source: "CarDekho", stage: "Opportunity",
+  mkLead({ owner: 10, name: "Sneha Kulkarni", phone: "98765 43211", location: "Aundh", model: "Indie", variant: "480W + Plus Two", bucket: "quiet", propensity: 55,
+    budget: "₹1.6–1.7 L", targetDate: fmt(d(15)), created: d(-12), followUp: { date: d(2), window: "evening" }, source: "BikeDekho", stage: "Opportunity",
     summary: "Last 2 calls unanswered · earlier said okay to proceed with added discount", flag: "attention",
     nextAction: "Switch to WhatsApp — 2 calls missed, put the discount offer in writing",
     labels: ["Opportunity", "Exchange"],
     channelUsage: { call: 1, whatsapp: 2 },
-    exchange: { model: "Hyundai i10", variant: "Magna", year: "2016", odometer: "62000", condition: "bad", photos: 2, appraisalScheduled: true, appraisedValue: null },
-    notes: ["Negotiating on accessories package.", "Exchange car: 2016 i10, awaiting valuation."],
+    exchange: { model: "Honda Activa 4G", variant: "STD", year: "2016", odometer: "42000", condition: "bad", photos: 2, appraisalScheduled: true, appraisedValue: null },
+    notes: ["Negotiating on accessories package.", "Exchange scooter: 2016 Activa, awaiting valuation."],
     timeline: [
       { type: "call", text: "Call unanswered, follow-up SMS sent", date: d(-1) },
       { type: "call", text: "Call unanswered", date: d(-3) },
       { type: "call", text: "Said will proceed if additional discount is offered", date: d(-5) },
-      { type: "quote", text: `Quote #2 generated — ${formatINR(computeQuoteBreakup(11.6, 15000, 8000).total)}`, date: d(-3), quoteDetails: computeQuoteBreakup(11.6, 15000, 8000) },
-      { type: "quote", text: `Quote #1 generated — ${formatINR(computeQuoteBreakup(11.6, 0, 0).total)}`, date: d(-6), quoteDetails: computeQuoteBreakup(11.6, 0, 0) },
-      { type: "test-drive", text: "Test drive done, liked the dual-tone exterior", date: d(-9) },
+      { type: "quote", text: `Quote #2 generated — ${formatINR(computeQuoteBreakup(1.69, 2000, 2348, "480W + Plus Two").total)}`, date: d(-3), quoteDetails: computeQuoteBreakup(1.69, 2000, 2348, "480W + Plus Two") },
+      { type: "quote", text: `Quote #1 generated — ${formatINR(computeQuoteBreakup(1.69, 0, 0, "480W + Plus Two").total)}`, date: d(-6), quoteDetails: computeQuoteBreakup(1.69, 0, 0, "480W + Plus Two") },
+      { type: "test-drive", text: "Test ride done, liked the Spring Yellow colour", date: d(-9) },
     ] }),
-  mkLead({ owner: 10, name: "Amit Joshi", phone: "98765 43212", location: "Whitefield", model: "Verna", variant: "S Turbo", bucket: "nurture", propensity: 25, stage: "Contacted",
-    budget: "₹14–15 L", targetDate: fmt(d(40)), created: d(-20), followUp: { date: d(6), window: null }, source: "Walk-in",
+  mkLead({ owner: 10, name: "Amit Joshi", phone: "98765 43212", location: "Wakad", model: "Indie", variant: "480W", bucket: "nurture", propensity: 25, stage: "Contacted",
+    budget: "₹1.6 L", targetDate: fmt(d(40)), created: d(-20), followUp: { date: d(6), window: null }, source: "Walk-in",
     summary: "Low response rate — said will decide after Diwali, no urgency yet", flag: "attention",
     nextAction: "Light touch only — check in closer to Diwali",
     labels: ["Needs Time"],
-    notes: ["Still comparing with Honda City.", "Not in a hurry — budget approval pending from family."],
+    notes: ["Still comparing with TVS iQube.", "Not in a hurry — budget approval pending from family."],
     timeline: [
       { type: "call", text: "Follow-up call, said will decide after Diwali", date: d(-8) },
       { type: "visit", text: "Walked in for brochure and pricing", date: d(-20) },
     ] }),
-  mkLead({ owner: 10, name: "Lakshmi Narayan", phone: "98765 43213", location: "Jayanagar", model: "Alcazar", variant: "Platinum 7-str", bucket: "ready", propensity: 88, stage: "Contacted",
-    budget: "₹22–24 L", targetDate: fmt(d(7)), created: d(-9), followUp: { date: d(-1), window: "morning" }, source: "Referral",
-    summary: "Budget & seating confirmed, ready to move — follow-up is overdue", flag: "attention",
+  mkLead({ owner: 10, name: "Lakshmi Narayan", phone: "98765 43213", location: "Viman Nagar", model: "Indie", variant: "750W + Plus Two", bucket: "ready", propensity: 88, stage: "Contacted",
+    budget: "₹1.7–1.75 L", targetDate: fmt(d(7)), created: d(-9), followUp: { date: d(-1), window: "morning" }, source: "Referral",
+    summary: "Budget & colour confirmed, ready to move — follow-up is overdue", flag: "attention",
     nextAction: "Call today — she's ready, don't lose momentum",
     escalation: {
-      level: "manager", reason: "stuck", note: "Team Leader didn't respond after 2 days — pushing to manager for special allocation given the urgent 7-seater need.",
+      level: "manager", reason: "stuck", note: "Team Leader didn't respond after 2 days — pushing to manager for special allocation given the urgent college-commute need.",
       date: d(-1), history: [{ level: "tl", date: d(-3) }, { level: "manager", date: d(-1) }],
     },
-    notes: ["Referred by existing customer Suresh Pillai.", "Needs 7-seater for joint family, urgent requirement."],
+    notes: ["Referred by existing customer Suresh Pillai.", "Needs a scooter for her daughter's college commute, urgent — wants Summer Red."],
     timeline: [
-      { type: "call", text: "Confirmed budget and seating requirement", date: d(-2) },
+      { type: "call", text: "Confirmed budget and colour preference", date: d(-2) },
       { type: "visit", text: "Referral walk-in, met at showroom", date: d(-9) },
     ] }),
-  mkLead({ owner: 10, name: "Farhan Khan", phone: "98765 43214", location: "Frazer Town", model: "i20", variant: "Asta (O)", bucket: "new", propensity: 40, stage: "New",
-    budget: "₹9–10 L", targetDate: fmt(d(30)), created: d(-2), followUp: { date: d(1), window: null }, source: "Website",
+  mkLead({ owner: 10, name: "Farhan Khan", phone: "98765 43214", location: "Hinjewadi", model: "Indie", variant: "480W", bucket: "new", propensity: 40, stage: "New",
+    budget: "₹1.6–1.65 L", targetDate: fmt(d(30)), created: d(-2), followUp: { date: d(1), window: null }, source: "Website",
     summary: "First-time buyer, engaged well on intro call — needs variant guidance", flag: "neutral",
     nextAction: "Send variant comparison — help narrow down the choice",
     labels: ["Variant Confusion"],
-    notes: ["Enquired via website chatbot, first car buyer."],
+    notes: ["Enquired via website chatbot, first EV buyer."],
     timeline: [
       { type: "call", text: "Introductory call, explained variant lineup", date: d(-1) },
     ] }),
-  mkLead({ owner: 10, name: "Deepika Rao", phone: "98765 43215", location: "HSR Layout", model: "Tucson", variant: "Signature AWD", bucket: "ready", propensity: 95, stage: "Booking",
-    budget: "₹32 L", targetDate: fmt(d(20)), created: d(-30), followUp: null, source: "Website",
+  mkLead({ owner: 10, name: "Deepika Rao", phone: "98765 43215", location: "Kharadi", model: "Indie", variant: "750W + Plus Five", bucket: "ready", propensity: 95, stage: "Booking",
+    budget: "₹1.77 L", targetDate: fmt(d(20)), created: d(-30), followUp: null, source: "Website",
     expectedDeliveryDate: d(2),
     documents: {
       ...defaultDocuments(),
       aadhaar: { done: true, via: "customer" },
       pan: { done: true, via: "customer" },
     },
-    summary: "Booking confirmed, advance received — awaiting delivery in 3 weeks", flag: "positive",
+    summary: "Booking confirmed, advance received — awaiting delivery this week", flag: "positive",
     nextAction: "Keep customer updated on delivery timeline",
-    notes: ["Booking confirmed, advance paid.", "Delivery expected in 3 weeks."],
+    notes: ["Booking confirmed, advance paid.", "Delivery expected this week."],
     timeline: [
-      { type: "booking", text: "Booking confirmed — ₹1,00,000 advance received", date: d(-4) },
+      { type: "booking", text: "Booking confirmed — ₹5,000 advance received", date: d(-4) },
       { type: "quote", text: "Final quote approved by customer", date: d(-10) },
     ] }),
-  mkLead({ owner: 10, name: "Suresh Pillai", phone: "98765 43216", location: "CV Raman Nagar", model: "Exter", variant: "SX Knight", bucket: "ready", propensity: 100, stage: "Delivered",
-    budget: "₹11 L", targetDate: fmt(d(-5)), created: d(-45), followUp: null, source: "Referral",
+  mkLead({ owner: 10, name: "Suresh Pillai", phone: "98765 43216", location: "Pashan", model: "Indie", variant: "750W", bucket: "ready", propensity: 100, stage: "Delivered",
+    budget: "₹1.67 L", targetDate: fmt(d(-5)), created: d(-45), followUp: null, source: "Referral",
     summary: "Delivered and happy — already referred one new lead", flag: "neutral",
     nextAction: "Ask for a review / further referrals",
-    notes: ["Delivered successfully, very happy customer.", "Referred Lakshmi Narayan for Alcazar."],
+    notes: ["Delivered successfully, very happy customer.", "Referred Lakshmi Narayan for an Indie."],
     timeline: [
       { type: "delivery", text: "Vehicle delivered, customer delighted", date: d(-5) },
       { type: "booking", text: "Booking confirmed", date: d(-25) },
     ] }),
-  mkLead({ owner: 10, name: "Neha Verma", phone: "98765 43220", location: "HSR Layout", model: "Ioniq 5", variant: "AWD Long Range", bucket: "ready", propensity: 80, stage: "Opportunity",
-    budget: "₹48 L", targetDate: fmt(d(5)), created: d(-14), followUp: { date: d(0), window: "afternoon" }, source: "Website", commPref: "whatsapp",
-    summary: "Keen on charger setup details — wants delivery before month-end", flag: "positive",
-    nextAction: "Confirm charger installation slot to lock month-end delivery",
+  mkLead({ owner: 10, name: "Neha Verma", phone: "98765 43220", location: "Bavdhan", model: "Indie", variant: "750W + Plus Two", bucket: "ready", propensity: 80, stage: "Opportunity",
+    budget: "₹1.73 L", targetDate: fmt(d(5)), created: d(-14), followUp: { date: d(0), window: "afternoon" }, source: "Website", commPref: "whatsapp",
+    summary: "Keen on home-charging details — wants delivery before month-end", flag: "positive",
+    nextAction: "Confirm the home-charging point check to lock month-end delivery",
     labels: ["Exchange", "Finance"],
-    exchange: { model: "Hyundai Verna", variant: "SX", year: "2019", odometer: "45000", condition: "very_good", photos: 3, appraisalScheduled: true, appraisedValue: 3.5 },
-    finance: { loanAmount: "40", bank: "HDFC Bank", status: "approved" },
-    testDrive: { mode: "location", date: d(0), time: "11:30", location: { text: "HSR Layout, Bengaluru", mapsLink: "" } },
-    notes: ["EV enthusiast, comparing with home-charging setup cost.", "Wants delivery before month-end for tax benefit."],
-    timeline: [{ type: "call", text: "Discussed charger installation & subsidy", date: d(-1) }] }),
+    exchange: { model: "TVS Jupiter", variant: "ZX", year: "2019", odometer: "24000", condition: "very_good", photos: 3, appraisalScheduled: true, appraisedValue: 0.32 },
+    finance: { loanAmount: "1.2", bank: "HDFC Bank", status: "approved" },
+    testDrive: { mode: "location", date: d(0), time: "11:30", location: { text: "Bavdhan, Pune", mapsLink: "" } },
+    notes: ["First EV — checking a charging point in her society parking.", "Wants delivery before month-end for the festive offer."],
+    timeline: [{ type: "call", text: "Discussed home charging & PM E-DRIVE subsidy", date: d(-1) }] }),
 ];
 
 /* ============================== MOCK INVENTORY (flat variants — grouped by model for display) ============================== */
 const INVENTORY = [
-  // Creta — full ladder, base to top, petrol/diesel, manual/automatic
-  { id: 1, model: "Creta", variant: "E", color: "Atlas White", fuel: "Petrol", transmission: "Manual", priceLakh: 11.2, status: "In Stock", units: 5, restock: 6 },
-  { id: 2, model: "Creta", variant: "EX", color: "Titan Grey", fuel: "Petrol", transmission: "Manual", priceLakh: 12.8, status: "In Stock", units: 4, restock: 7 },
-  { id: 3, model: "Creta", variant: "S", color: "Fiery Red", fuel: "Petrol", transmission: "Manual", priceLakh: 14.5, status: "In Stock", units: 3, restock: 8 },
-  { id: 4, model: "Creta", variant: "SX", color: "Abyss Black", fuel: "Petrol", transmission: "Manual", priceLakh: 16.9, status: "Low Stock", units: 2, restock: 10 },
-  { id: 5, model: "Creta", variant: "SX(O) Diesel AT", color: "Amazon Grey", fuel: "Diesel", transmission: "Automatic", priceLakh: 18.4, status: "In Stock", units: 4, restock: 9 },
-  { id: 6, model: "Creta", variant: "SX(O) Turbo DCT", color: "Atlas White", fuel: "Petrol", transmission: "Automatic", priceLakh: 19.8, status: "In Stock", units: 6, restock: 7 },
-  { id: 7, model: "Creta", variant: "N Line N8", color: "Starry Night", fuel: "Petrol", transmission: "Manual", priceLakh: 17.5, status: "In Transit", units: 0, restock: 25 },
+  // Indie 750W — the volume seller; River Care plans ride on the same physical scooter
+  { id: 1, model: "Indie", variant: "750W", color: "Monsoon Blue", fuel: "Electric", transmission: "Automatic", priceLakh: 1.67, status: "In Stock", units: 6, restock: 7 },
+  { id: 2, model: "Indie", variant: "750W", color: "Summer Red", fuel: "Electric", transmission: "Automatic", priceLakh: 1.67, status: "In Stock", units: 4, restock: 7 },
+  { id: 3, model: "Indie", variant: "750W", color: "Spring Yellow", fuel: "Electric", transmission: "Automatic", priceLakh: 1.67, status: "Low Stock", units: 2, restock: 10 },
+  { id: 4, model: "Indie", variant: "750W", color: "Winter White", fuel: "Electric", transmission: "Automatic", priceLakh: 1.67, status: "In Stock", units: 5, restock: 7 },
+  { id: 5, model: "Indie", variant: "750W", color: "Storm Grey", fuel: "Electric", transmission: "Automatic", priceLakh: 1.67, status: "In Transit", units: 0, restock: 14 },
+  { id: 6, model: "Indie", variant: "750W + Plus Two", color: "Monsoon Blue", fuel: "Electric", transmission: "Automatic", priceLakh: 1.73, status: "In Stock", units: 3, restock: 8 },
+  { id: 7, model: "Indie", variant: "750W + Plus Two", color: "Storm Grey", fuel: "Electric", transmission: "Automatic", priceLakh: 1.73, status: "Low Stock", units: 2, restock: 10 },
+  { id: 8, model: "Indie", variant: "750W + Plus Five", color: "Winter White", fuel: "Electric", transmission: "Automatic", priceLakh: 1.77, status: "Low Stock", units: 1, restock: 12 },
+  { id: 9, model: "Indie", variant: "750W + Plus Five", color: "Summer Red", fuel: "Electric", transmission: "Automatic", priceLakh: 1.77, status: "In Stock", units: 3, restock: 8 },
 
-  // Venue
-  { id: 8, model: "Venue", variant: "E", color: "Titan Grey", fuel: "Petrol", transmission: "Manual", priceLakh: 7.9, status: "In Stock", units: 5, restock: 6 },
-  { id: 9, model: "Venue", variant: "S", color: "Atlas White", fuel: "Petrol", transmission: "Manual", priceLakh: 9.2, status: "In Stock", units: 4, restock: 7 },
-  { id: 10, model: "Venue", variant: "SX Dual Tone", color: "Titan Grey", fuel: "Petrol", transmission: "Manual", priceLakh: 11.6, status: "Low Stock", units: 2, restock: 12 },
-  { id: 11, model: "Venue", variant: "S Turbo DCT", color: "Atlas White", fuel: "Petrol", transmission: "Automatic", priceLakh: 10.9, status: "In Stock", units: 5, restock: 8 },
-  { id: 12, model: "Venue", variant: "SX(O) Turbo", color: "Fiery Red", fuel: "Petrol", transmission: "Manual", priceLakh: 12.9, status: "In Transit", units: 0, restock: 20 },
-
-  // Verna
-  { id: 13, model: "Verna", variant: "E", color: "Titan Grey", fuel: "Petrol", transmission: "Manual", priceLakh: 10.9, status: "In Stock", units: 4, restock: 7 },
-  { id: 14, model: "Verna", variant: "S", color: "Fiery Red", fuel: "Petrol", transmission: "Manual", priceLakh: 12.8, status: "In Stock", units: 5, restock: 6 },
-  { id: 15, model: "Verna", variant: "SX", color: "Abyss Black", fuel: "Petrol", transmission: "Manual", priceLakh: 14.5, status: "In Stock", units: 7, restock: 6 },
-  { id: 16, model: "Verna", variant: "SX(O)", color: "Fiery Red", fuel: "Petrol", transmission: "Manual", priceLakh: 16.4, status: "In Stock", units: 5, restock: 9 },
-  { id: 17, model: "Verna", variant: "SX(O) Turbo DCT", color: "Starry Night", fuel: "Petrol", transmission: "Automatic", priceLakh: 17.9, status: "Low Stock", units: 1, restock: 14 },
-
-  // Tucson — smaller real-world lineup, diesel-heavy
-  { id: 18, model: "Tucson", variant: "Signature", color: "Titan Grey", fuel: "Diesel", transmission: "Automatic", priceLakh: 28.5, status: "In Stock", units: 3, restock: 12 },
-  { id: 19, model: "Tucson", variant: "Signature AWD", color: "Amazon Grey", fuel: "Diesel", transmission: "Automatic", priceLakh: 32.2, status: "In Transit", units: 0, restock: 21 },
-  { id: 20, model: "Tucson", variant: "Platinum", color: "Abyss Black", fuel: "Diesel", transmission: "Automatic", priceLakh: 30.5, status: "Low Stock", units: 1, restock: 18 },
-  { id: 21, model: "Tucson", variant: "Hybrid AWD", color: "Titan Grey", fuel: "Hybrid", transmission: "Automatic", priceLakh: 34.5, status: "In Stock", units: 2, restock: 15 },
-
-  // Exter
-  { id: 22, model: "Exter", variant: "E", color: "Atlas White", fuel: "Petrol", transmission: "Manual", priceLakh: 6.1, status: "In Stock", units: 6, restock: 5 },
-  { id: 23, model: "Exter", variant: "EX", color: "Titan Grey", fuel: "Petrol", transmission: "Manual", priceLakh: 7.5, status: "In Stock", units: 5, restock: 5 },
-  { id: 24, model: "Exter", variant: "S", color: "Fiery Red", fuel: "Petrol", transmission: "Manual", priceLakh: 8.8, status: "In Stock", units: 4, restock: 6 },
-  { id: 25, model: "Exter", variant: "SX Knight", color: "Abyss Black", fuel: "Petrol", transmission: "Manual", priceLakh: 11.1, status: "In Stock", units: 8, restock: 5 },
-  { id: 26, model: "Exter", variant: "SX(O) CNG", color: "Titan Grey", fuel: "CNG", transmission: "Manual", priceLakh: 10.2, status: "In Stock", units: 3, restock: 10 },
-
-  // i20
-  { id: 27, model: "i20", variant: "Era", color: "Atlas White", fuel: "Petrol", transmission: "Manual", priceLakh: 7.2, status: "In Stock", units: 5, restock: 6 },
-  { id: 28, model: "i20", variant: "Magna", color: "Titan Grey", fuel: "Petrol", transmission: "Manual", priceLakh: 8.0, status: "In Stock", units: 4, restock: 6 },
-  { id: 29, model: "i20", variant: "Sportz", color: "Atlas White", fuel: "Petrol", transmission: "Automatic", priceLakh: 8.6, status: "In Stock", units: 6, restock: 6 },
-  { id: 30, model: "i20", variant: "Asta (O)", color: "Fiery Red", fuel: "Petrol", transmission: "Manual", priceLakh: 9.9, status: "In Stock", units: 4, restock: 8 },
-  { id: 31, model: "i20", variant: "N Line", color: "Starry Night", fuel: "Petrol", transmission: "Manual", priceLakh: 11.4, status: "In Transit", units: 0, restock: 22 },
-
-  // Ioniq 5 — smaller EV lineup
-  { id: 32, model: "Ioniq 5", variant: "RWD Standard", color: "Abyss Black", fuel: "Electric", transmission: "Automatic", priceLakh: 44.6, status: "In Transit", units: 0, restock: 35 },
-  { id: 33, model: "Ioniq 5", variant: "RWD Long Range", color: "Gravity Gold", fuel: "Electric", transmission: "Automatic", priceLakh: 46.6, status: "Low Stock", units: 1, restock: 32 },
-  { id: 34, model: "Ioniq 5", variant: "AWD Long Range", color: "Gravity Gold", fuel: "Electric", transmission: "Automatic", priceLakh: 48.2, status: "Low Stock", units: 1, restock: 30 },
-
-  // Alcazar
-  { id: 35, model: "Alcazar", variant: "Prestige 6-str", color: "Titan Grey", fuel: "Petrol", transmission: "Manual", priceLakh: 19.9, status: "In Stock", units: 2, restock: 11 },
-  { id: 36, model: "Alcazar", variant: "Platinum 7-str", color: "Abyss Black", fuel: "Diesel", transmission: "Automatic", priceLakh: 22.9, status: "In Stock", units: 3, restock: 14 },
-  { id: 37, model: "Alcazar", variant: "Signature 6-str", color: "Ranger Khaki", fuel: "Diesel", transmission: "Automatic", priceLakh: 24.5, status: "Low Stock", units: 1, restock: 16 },
-  { id: 38, model: "Alcazar", variant: "Signature(O) 7-str", color: "Amazon Grey", fuel: "Diesel", transmission: "Automatic", priceLakh: 25.8, status: "In Transit", units: 0, restock: 24 },
+  // Indie 480W — slower charger, lower on-road price
+  { id: 10, model: "Indie", variant: "480W", color: "Monsoon Blue", fuel: "Electric", transmission: "Automatic", priceLakh: 1.63, status: "In Stock", units: 4, restock: 7 },
+  { id: 11, model: "Indie", variant: "480W", color: "Storm Grey", fuel: "Electric", transmission: "Automatic", priceLakh: 1.63, status: "In Stock", units: 3, restock: 8 },
+  { id: 12, model: "Indie", variant: "480W", color: "Spring Yellow", fuel: "Electric", transmission: "Automatic", priceLakh: 1.63, status: "In Transit", units: 0, restock: 18 },
+  { id: 13, model: "Indie", variant: "480W + Plus Two", color: "Winter White", fuel: "Electric", transmission: "Automatic", priceLakh: 1.69, status: "In Stock", units: 2, restock: 9 },
+  { id: 14, model: "Indie", variant: "480W + Plus Two", color: "Spring Yellow", fuel: "Electric", transmission: "Automatic", priceLakh: 1.69, status: "In Stock", units: 3, restock: 9 },
+  { id: 15, model: "Indie", variant: "480W + Plus Five", color: "Summer Red", fuel: "Electric", transmission: "Automatic", priceLakh: 1.73, status: "Low Stock", units: 1, restock: 21 },
 ];
 
-// Fuel/Transmission are distinct attributes shown as separate filter groups; Color options are
-// derived from real inventory data so they never go stale if inventory changes.
-const FUEL_FILTER_OPTIONS = ["Petrol", "Diesel", "Hybrid", "Electric", "CNG"];
-const TRANSMISSION_FILTER_OPTIONS = ["Automatic", "Manual"];
+// Powertrain attributes kept as filter groups for parity with the shared inventory schema — every
+// Indie is electric and twist-and-go. Color options are derived from real inventory data so they
+// never go stale if inventory changes.
+const FUEL_FILTER_OPTIONS = ["Electric"];
+const TRANSMISSION_FILTER_OPTIONS = ["Automatic"];
 const COLOR_FILTER_OPTIONS = [...new Set(INVENTORY.map(v => v.color))].sort();
 
 function matchesInventoryFilters(v, filters) {
@@ -854,13 +860,13 @@ const FLAG_META = {
 function daysAgo(dt) { return Math.round((today - dt) / 86400000); }
 function daysUntil(dt) { return Math.round((dt - today) / 86400000); }
 
-const COUNTER_LABELS = ["Leads", "Contacted", "Test Drives", "Bookings", "Delivery"];
+const COUNTER_LABELS = ["Leads", "Contacted", "Test Rides", "Bookings", "Delivery"];
 // Shared by the performance-strip counts and the filtered screen those numbers open into.
 function filterLeadsByCounter(leads, label) {
   switch (label) {
     case "Leads": return leads;
     case "Contacted": return leads.filter(l => l.stage !== "New");
-    case "Test Drives": return leads.filter(l => l.stage === "Test Drive" || l.timeline.some(t => t.type === "test-drive"));
+    case "Test Rides": return leads.filter(l => l.stage === "Test Ride" || l.timeline.some(t => t.type === "test-drive"));
     case "Bookings": return leads.filter(l => ["Booking", "Retailed", "Delivered"].includes(l.stage));
     case "Delivery": return leads.filter(l => l.stage === "Delivered");
     default: return leads;
@@ -875,13 +881,13 @@ function directionsUrl(location) {
 }
 
 // Mock trade-in estimator — illustrative only, not a real valuation model.
-// Base value assumes a generic compact hatchback; depreciates with age & mileage.
+// Base value (in lakh) assumes a generic 110cc petrol scooter; depreciates with age & mileage.
 function exchangeBaseValue(year, odometer) {
   const y = parseInt(year, 10);
   const km = parseInt(odometer, 10);
   if (!y || !km) return null;
   const age = Math.max(0, today.getFullYear() - y);
-  return Math.max(0.8, 7.5 - age * 0.55 - (km / 10000) * 0.12);
+  return Math.max(0.1, 0.5 - age * 0.03 - (km / 10000) * 0.02);
 }
 // Range spans one condition level below to one above the selected condition.
 function exchangeRange(year, odometer, conditionKey) {
@@ -891,8 +897,8 @@ function exchangeRange(year, odometer, conditionKey) {
   const lowIdx = Math.max(0, idx - 1);
   const highIdx = Math.min(CONDITION_LEVELS.length - 1, idx + 1);
   return {
-    low: +(base * CONDITION_LEVELS[lowIdx].multiplier).toFixed(1),
-    high: +(base * CONDITION_LEVELS[highIdx].multiplier).toFixed(1),
+    low: +(base * CONDITION_LEVELS[lowIdx].multiplier).toFixed(2),
+    high: +(base * CONDITION_LEVELS[highIdx].multiplier).toFixed(2),
   };
 }
 
@@ -972,7 +978,7 @@ function getAttentionItems(leads) {
       items.push({ lead: l, icon: Phone, color: C.hot, text: `Follow-up overdue — ${l.name}` });
     }
     if (l.testDrive?.date && isSameDay(l.testDrive.date, today)) {
-      items.push({ lead: l, icon: Car, color: C.purple, text: `Test drive today — ${l.name}` });
+      items.push({ lead: l, icon: ScooterIcon, color: C.purple, text: `Test drive today — ${l.name}` });
     }
     if (l.expectedDeliveryDate && daysUntil(l.expectedDeliveryDate) >= 0 && daysUntil(l.expectedDeliveryDate) <= 1) {
       items.push({ lead: l, icon: CarFront, color: C.green, text: `Delivery due soon — ${l.name}` });
@@ -1449,7 +1455,7 @@ function TestDriveFields({ value, onChange, model, leads, excludeLeadId }) {
       {availability && availability.conflicts.length > 0 && (
         <div style={{ background: C.warmSoft, borderRadius: 9, padding: 9, marginTop: 9 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <Car size={12} color={C.warm} />
+            <ScooterIcon size={12} color={C.warm} />
             <span style={{ fontFamily: F, fontSize: 10, fontWeight: 800, color: C.warm, textTransform: "uppercase", letterSpacing: .3 }}>
               TD car may be unavailable
             </span>
@@ -2042,7 +2048,7 @@ function FilterSheet({ open, onClose, groups, draft, setDraft, onApply, onClearA
 
 // ---- WhatsApp templates -------------------------------------------------------
 // A library of openers. Which three surface is decided by where the lead actually is —
-// there's no point offering a test drive to someone who took one last week, or asking
+// there's no point offering a test ride to someone who took one last week, or asking
 // for a booking amount from a lead that hasn't been qualified yet.
 const WA_LIB = {
   intro: {
@@ -2050,38 +2056,38 @@ const WA_LIB = {
     Icon: User, tone: "#25D366",
     build: ({ first, model, rep, dealership }) =>
       `Hello ${first}, this is ${rep} from ${dealership}. 🙏\n\n` +
-      `Thank you for your enquiry about the ${model}. I'll be your point of contact for anything you need — pricing, variants, test drive or exchange.\n\n` +
+      `Thank you for your enquiry about the ${model}. I'll be your point of contact for anything you need — pricing, variants, test ride or exchange.\n\n` +
       `Is this a good time to share the details?`,
   },
   quote: {
     title: "Share on-road price", brief: "Full price breakup for their model",
     Icon: FileText, tone: "#0F766E",
     build: ({ first, model, variant, rep, dealership }) =>
-      `Hi ${first}, as promised — here is the on-road price for the ${model}${variant ? ` ${variant}` : ""}. 🚗\n\n` +
-      `• Ex-showroom, RTO, insurance and handling included\n• Current offers already applied\n• Exchange and finance options available\n\n` +
+      `Hi ${first}, as promised — here is the on-road price for the ${model}${variant ? ` ${variant}` : ""}. 🛵\n\n` +
+      `• Ex-showroom, PM E-DRIVE subsidy, RTO and insurance + RSA included\n• Current offers already applied\n• Exchange and finance options available\n\n` +
       `Shall I send the detailed quote PDF?\n\n— ${rep}, ${dealership}`,
   },
   testdrive: {
-    title: "Invite for a test drive", brief: "Offer slots, bring them to the showroom",
+    title: "Invite for a test ride", brief: "Offer slots, bring them to the showroom",
     Icon: CarFront, tone: "#D97706",
     build: ({ first, model, rep, dealership }) =>
       `Hi ${first}, would you like to experience the ${model} before deciding? 🙂\n\n` +
-      `I can arrange a test drive at the showroom, or bring the car to your place — whichever is easier.\n\n` +
+      `I can arrange a test ride at the showroom, or bring a demo scooter to your place — whichever is easier.\n\n` +
       `Which works better — this weekend or a weekday evening?\n\n— ${rep}, ${dealership}`,
   },
   td_confirm: {
-    title: "Confirm the test drive", brief: "Slot, location and what to carry",
+    title: "Confirm the test ride", brief: "Slot, location and what to carry",
     Icon: Calendar, tone: "#D97706",
     build: ({ first, model, rep, dealership }) =>
-      `Hi ${first}, confirming your test drive of the ${model}. 🚗\n\n` +
-      `Please carry your driving licence — it's required before the drive.\n\n` +
+      `Hi ${first}, confirming your test ride of the ${model}. 🛵\n\n` +
+      `Please carry your two-wheeler driving licence and a helmet — the licence is required before the ride.\n\n` +
       `If the timing needs to change, just message me here.\n\n— ${rep}, ${dealership}`,
   },
   td_feedback: {
-    title: "Follow up after the drive", brief: "Ask how it went, move to next step",
+    title: "Follow up after the ride", brief: "Ask how it went, move to next step",
     Icon: MessageCircle, tone: "#0F766E",
     build: ({ first, model, rep }) =>
-      `Hi ${first}, hope you enjoyed driving the ${model}! 😊\n\n` +
+      `Hi ${first}, hope you enjoyed riding the ${model}! 😊\n\n` +
       `How did it feel — anything you'd like to know before taking it forward?\n\n` +
       `Happy to share the best offer running right now.\n\n— ${rep}`,
   },
@@ -2102,10 +2108,10 @@ const WA_LIB = {
       `No rush at all, happy to help whenever you're ready.\n\n— ${rep}, ${dealership}`,
   },
   booking_amount: {
-    title: "Request booking amount", brief: "Payment details to block the car",
+    title: "Request booking amount", brief: "Payment details to block the scooter",
     Icon: IndianRupee, tone: "#2E7D32",
     build: ({ first, model, rep, dealership }) =>
-      `Hi ${first}, to block your ${model} I'll need the booking amount. 🚗\n\n` +
+      `Hi ${first}, to block your ${model} I'll need the booking amount. 🛵\n\n` +
       `Once received, I'll confirm your allotment and share the expected delivery date.\n\n` +
       `Shall I send the payment details?\n\n— ${rep}, ${dealership}`,
   },
@@ -2118,27 +2124,27 @@ const WA_LIB = {
       `You can send photos right here on WhatsApp.\n\n— ${rep}, ${dealership}`,
   },
   delivery_update: {
-    title: "Delivery update", brief: "Where the car is and what's next",
+    title: "Delivery update", brief: "Where the scooter is and what's next",
     Icon: Package, tone: "#2E7D32",
     build: ({ first, model, rep, dealership }) =>
       `Hi ${first}, an update on your ${model}. 🎉\n\n` +
       `We're preparing everything for your delivery. I'll confirm the exact slot shortly.\n\n` +
-      `Anything you'd like arranged on the day — accessories, photos?\n\n— ${rep}, ${dealership}`,
+      `Anything you'd like arranged on the day — accessories, helmet, photos?\n\n— ${rep}, ${dealership}`,
   },
   psf: {
-    title: "Post-delivery check-in", brief: "How the car is treating them",
+    title: "Post-delivery check-in", brief: "How the scooter is treating them",
     Icon: Heart, tone: "#2E7D32",
     build: ({ first, model, rep, dealership }) =>
       `Hi ${first}, congratulations again on your ${model}! 🎉\n\n` +
-      `How has the first drive been? Any questions on features or the first service?\n\n` +
+      `How have the first rides been? Any questions on charging, the app or the first service?\n\n` +
       `I'm always here on this number.\n\n— ${rep}, ${dealership}`,
   },
   referral: {
     title: "Ask for a referral", brief: "Friends or family in the market",
     Icon: Users, tone: "#6D28D9",
     build: ({ first, rep, dealership }) =>
-      `Hi ${first}, hope you're enjoying the new car! 😊\n\n` +
-      `If any friend or family member is looking at a new car, do point them my way — I'll personally make sure they're looked after.\n\n— ${rep}, ${dealership}`,
+      `Hi ${first}, hope you're enjoying the new scooter! 😊\n\n` +
+      `If any friend or family member is looking at a new scooter, do point them my way — I'll personally make sure they're looked after.\n\n— ${rep}, ${dealership}`,
   },
   reengage: {
     title: "Re-open the conversation", brief: "New offer for a cold lead",
@@ -2176,10 +2182,10 @@ function WhatsAppTemplateSheet({ lead, user, onSend, onClose }) {
 
   const vars = {
     first: (lead.name || "there").split(" ")[0],
-    model: lead.model || "the car",
+    model: lead.model ? `River ${lead.model}` : "the scooter",
     variant: lead.variant || "",
     rep: (user?.name || "your sales executive").split(" ")[0],
-    dealership: user?.branch ? user.branch.replace(" Showroom", "") + " Hyundai" : "Autoprism Hyundai",
+    dealership: user?.branch ? "Autoprism River — " + user.branch.replace(" Showroom", "") : "Autoprism River",
   };
   const textFor = (t) => drafts[t.id] !== undefined ? drafts[t.id] : t.build(vars);
 
@@ -2265,24 +2271,10 @@ function WhatsAppTemplateSheet({ lead, user, onSend, onClose }) {
 
 // Model/variant vocabulary for the inventory screen, derived from INVENTORY above.
 const MODEL_VARIANTS = {
-  "Alcazar": ["Prestige 6-str", "Platinum 7-str", "Signature 6-str", "Signature(O) 7-str"],
-  "Creta": ["E", "EX", "S", "SX", "SX(O) Diesel AT", "SX(O) Turbo DCT", "N Line N8"],
-  "Exter": ["E", "EX", "S", "SX Knight", "SX(O) CNG"],
-  "Ioniq 5": ["RWD Standard", "RWD Long Range", "AWD Long Range"],
-  "Tucson": ["Signature", "Signature AWD", "Platinum", "Hybrid AWD"],
-  "Venue": ["E", "S", "SX Dual Tone", "S Turbo DCT", "SX(O) Turbo"],
-  "Verna": ["E", "S", "SX", "SX(O)", "SX(O) Turbo DCT"],
-  "i20": ["Era", "Magna", "Sportz", "Asta (O)", "N Line"],
+  "Indie": ["750W", "750W + Plus Two", "750W + Plus Five", "480W", "480W + Plus Two", "480W + Plus Five"],
 };
 const VARIANT_PRICES = {
-  "Alcazar": { "Prestige 6-str": 19.9, "Platinum 7-str": 22.9, "Signature 6-str": 24.5, "Signature(O) 7-str": 25.8 },
-  "Creta": { "E": 11.2, "EX": 12.8, "S": 14.5, "SX": 16.9, "SX(O) Diesel AT": 18.4, "SX(O) Turbo DCT": 19.8, "N Line N8": 17.5 },
-  "Exter": { "E": 6.1, "EX": 7.5, "S": 8.8, "SX Knight": 11.1, "SX(O) CNG": 10.2 },
-  "Ioniq 5": { "RWD Standard": 44.6, "RWD Long Range": 46.6, "AWD Long Range": 48.2 },
-  "Tucson": { "Signature": 28.5, "Signature AWD": 32.2, "Platinum": 30.5, "Hybrid AWD": 34.5 },
-  "Venue": { "E": 7.9, "S": 9.2, "SX Dual Tone": 11.6, "S Turbo DCT": 10.9, "SX(O) Turbo": 12.9 },
-  "Verna": { "E": 10.9, "S": 12.8, "SX": 14.5, "SX(O)": 16.4, "SX(O) Turbo DCT": 17.9 },
-  "i20": { "Era": 7.2, "Magna": 8.0, "Sportz": 8.6, "Asta (O)": 9.9, "N Line": 11.4 },
+  "Indie": { "750W": 1.67, "750W + Plus Two": 1.73, "750W + Plus Five": 1.77, "480W": 1.63, "480W + Plus Two": 1.69, "480W + Plus Five": 1.73 },
 };
 
 // Stable hash so generated inventory is identical across renders.
@@ -2293,13 +2285,13 @@ function hashStr(str) {
 }
 function genActivityId() { return `act_${Date.now()}_${Math.floor(Math.random() * 1000)}`; }
 
-const EV_MODELS = ["Ioniq 5"];
+const EV_MODELS = ["Indie"];
 const isEV = (model) => EV_MODELS.includes(model);
 
 // Waiting period when nothing is in stock or in transit for a combination. Real dealerships
 // quote these off the OEM allocation cycle; here they're per-model so a rep can still give
 // the customer an honest answer instead of "let me check".
-const WAITING_WEEKS = { "Creta": 6, "Alcazar": 8, "Tucson": 10, "Ioniq 5": 12, "Venue": 4, "Verna": 5, "Exter": 3, "i20": 4 };
+const WAITING_WEEKS = { "Indie": 2 };
 
 const UNIT_STATUS = {
   in_stock:   { label: "In Stock",   color: C.green,  soft: C.greenSoft },
@@ -2314,7 +2306,7 @@ const UNIT_STATUS = {
 function buildInventoryUnits() {
   const units = [];
   let seq = 0;
-  const branches = ["Indiranagar", "Whitefield"];
+  const branches = ["Baner", "Vashi"];
   Object.entries(MODEL_VARIANTS).forEach(([model, variants]) => {
     variants.forEach((variant, vi) => {
       COLOR_OPTIONS.forEach((color, ci) => {
@@ -2329,7 +2321,7 @@ function buildInventoryUnits() {
             id: `U${seq}`,
             category: "new",
             model, variant, color,
-            vin: `MA1${String(h % 900 + 100)}${model.slice(0, 2).toUpperCase()}${String(seq).padStart(5, "0")}`,
+            vin: `MD9RIV${String(h % 900 + 100)}${model.slice(0, 2).toUpperCase()}${String(seq).padStart(5, "0")}`,
             chassis: `CH${String(h % 90000 + 10000)}${seq}`,
             engineNo: ev ? null : `EN${String((h * 7) % 90000 + 10000)}${seq}`,
             motorNo: ev ? `MT${String((h * 7) % 90000 + 10000)}${seq}` : null,
@@ -2339,10 +2331,10 @@ function buildInventoryUnits() {
             mfgMonth: ["Jan 2026", "Feb 2026", "Mar 2026", "Apr 2026"][(h + n) % 4],
             priceLakh: (VARIANT_PRICES[model] || {})[variant] || null,
             ev: ev ? {
-              batteryKwh: variant.includes("Long Range") ? 72.6 : 58,
-              rangeKm: variant.includes("Long Range") ? 631 : 481,
-              charger: "CCS2 · 350 kW DC",
-              batteryWarranty: "8 yrs / 1,60,000 km",
+              batteryKwh: 4,
+              rangeKm: 161,
+              charger: variant.startsWith("480W") ? "480W portable · full charge in ~8 h" : "750W portable · 0–80% in ~5 h",
+              batteryWarranty: variant.includes("Plus Five") ? "8 yrs (River Care Plus Five)" : variant.includes("Plus Two") ? "5 yrs + River Care Plus Two" : "5 yrs standard",
             } : null,
             blockedFor: null,
           });
@@ -2353,29 +2345,31 @@ function buildInventoryUnits() {
   return units;
 }
 
-// Demo and used cars are a much smaller, hand-listed set — they're individual assets, not
+// Demo and used scooters are a much smaller, hand-listed set — they're individual assets, not
 // allocations off a production line, so they carry odometer and ownership instead of ETA.
 const DEMO_USED_UNITS = [
-  { id: "D1", category: "demo", model: "Creta", variant: "SX(O) Turbo DCT", color: "Atlas White",
-    vin: "MA1DEMO00001", chassis: "CHD10001", engineNo: "END10001", status: "in_stock",
-    branch: "Indiranagar", odometer: "4,120 km", mfgMonth: "Nov 2025", priceLakh: 18.4, ev: null, blockedFor: null },
-  { id: "D2", category: "demo", model: "Ioniq 5", variant: "AWD Long Range", color: "Titan Grey",
-    vin: "MA1DEMO00002", chassis: "CHD10002", engineNo: null, motorNo: "MTD10002", status: "in_stock",
-    branch: "Whitefield", odometer: "2,860 km", mfgMonth: "Dec 2025", priceLakh: 45.9,
-    ev: { batteryKwh: 72.6, rangeKm: 631, charger: "CCS2 · 350 kW DC", batteryWarranty: "8 yrs / 1,60,000 km" }, blockedFor: null },
-  { id: "D3", category: "demo", model: "Venue", variant: "SX Dual Tone", color: "Fiery Red",
-    vin: "MA1DEMO00003", chassis: "CHD10003", engineNo: "END10003", status: "in_stock",
-    branch: "Indiranagar", odometer: "6,540 km", mfgMonth: "Oct 2025", priceLakh: 11.2, ev: null, blockedFor: null },
+  { id: "D1", category: "demo", model: "Indie", variant: "750W", color: "Monsoon Blue",
+    vin: "MD9RIVDEMO00001", chassis: "CHD10001", engineNo: null, motorNo: "MTD10001", status: "in_stock",
+    branch: "Baner", odometer: "4,120 km", mfgMonth: "Nov 2025", priceLakh: 1.49,
+    ev: { batteryKwh: 4, rangeKm: 161, charger: "750W portable · 0–80% in ~5 h", batteryWarranty: "5 yrs (extendable to 8 with River Care)" }, blockedFor: null },
+  { id: "D2", category: "demo", model: "Indie", variant: "750W", color: "Winter White",
+    vin: "MD9RIVDEMO00002", chassis: "CHD10002", engineNo: null, motorNo: "MTD10002", status: "in_stock",
+    branch: "Vashi", odometer: "2,860 km", mfgMonth: "Dec 2025", priceLakh: 1.52,
+    ev: { batteryKwh: 4, rangeKm: 161, charger: "750W portable · 0–80% in ~5 h", batteryWarranty: "5 yrs (extendable to 8 with River Care)" }, blockedFor: null },
+  { id: "D3", category: "demo", model: "Indie", variant: "480W", color: "Storm Grey",
+    vin: "MD9RIVDEMO00003", chassis: "CHD10003", engineNo: null, motorNo: "MTD10003", status: "in_stock",
+    branch: "Baner", odometer: "6,540 km", mfgMonth: "Oct 2025", priceLakh: 1.39,
+    ev: { batteryKwh: 4, rangeKm: 161, charger: "480W portable · full charge in ~8 h", batteryWarranty: "5 yrs (extendable to 8 with River Care)" }, blockedFor: null },
 
-  { id: "P1", category: "used", model: "Creta", variant: "SX", color: "Abyss Black",
-    vin: "MA1USED00001", chassis: "CHU10001", engineNo: "ENU10001", status: "in_stock",
-    branch: "Indiranagar", odometer: "38,200 km", mfgMonth: "2022", owners: 1, priceLakh: 13.4, ev: null, blockedFor: null },
-  { id: "P2", category: "used", model: "i20", variant: "Asta (O)", color: "Titan Grey",
-    vin: "MA1USED00002", chassis: "CHU10002", engineNo: "ENU10002", status: "in_stock",
-    branch: "Whitefield", odometer: "51,700 km", mfgMonth: "2021", owners: 2, priceLakh: 7.1, ev: null, blockedFor: null },
-  { id: "P3", category: "used", model: "Verna", variant: "SX Turbo", color: "Atlas White",
-    vin: "MA1USED00003", chassis: "CHU10003", engineNo: "ENU10003", status: "in_stock",
-    branch: "Indiranagar", odometer: "22,400 km", mfgMonth: "2023", owners: 1, priceLakh: 12.8, ev: null, blockedFor: null },
+  { id: "P1", category: "used", model: "450X", variant: "2.9 kWh", color: "Space Grey",
+    vin: "MD9USED00001", chassis: "CHU10001", engineNo: null, motorNo: "MTU10001", status: "in_stock",
+    branch: "Baner", odometer: "18,200 km", mfgMonth: "2023", owners: 1, priceLakh: 0.82, ev: null, blockedFor: null },
+  { id: "P2", category: "used", model: "Activa 6G", variant: "DLX", color: "Pearl Siren Blue",
+    vin: "MD9USED00002", chassis: "CHU10002", engineNo: "ENU10002", status: "in_stock",
+    branch: "Vashi", odometer: "31,700 km", mfgMonth: "2021", owners: 2, priceLakh: 0.48, ev: null, blockedFor: null },
+  { id: "P3", category: "used", model: "Jupiter", variant: "ZX", color: "Starlight Blue",
+    vin: "MD9USED00003", chassis: "CHU10003", engineNo: "ENU10003", status: "in_stock",
+    branch: "Baner", odometer: "12,400 km", mfgMonth: "2023", owners: 1, priceLakh: 0.61, ev: null, blockedFor: null },
 ];
 
 // Rolls a set of units up into the status shown on a collapsed row.
@@ -2600,7 +2594,7 @@ function UnitRow({ unit, onBlock, onRelease, onArrived }) {
               [unit.ev ? "Motor no." : "Engine no.", unit.ev ? unit.motorNo : unit.engineNo],
               ["Manufactured", unit.mfgMonth],
               ["Location", unit.branch],
-              unit.priceLakh ? ["Ex-showroom", `₹${unit.priceLakh} L`] : null,
+              unit.priceLakh ? ["On-road", `₹${unit.priceLakh} L`] : null,
             ].filter(Boolean).map(([k, v]) => (
               <div key={k} style={{ display: "flex", gap: 8, marginBottom: 4 }}>
                 <span style={{ fontFamily: F, fontSize: 10.5, color: C.faint, width: 92, flexShrink: 0 }}>{k}</span>
@@ -2616,8 +2610,8 @@ function UnitRow({ unit, onBlock, onRelease, onArrived }) {
               <div style={{ fontFamily: F, fontSize: 9.5, fontWeight: 800, color: C.teal, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Electric vehicle</div>
               {[
                 ["Battery", `${unit.ev.batteryKwh} kWh`],
-                ["Certified range", `${unit.ev.rangeKm} km`],
-                ["Fast charging", unit.ev.charger],
+                ["Certified range (IDC)", `${unit.ev.rangeKm} km`],
+                ["Charger", unit.ev.charger],
                 ["Battery warranty", unit.ev.batteryWarranty],
               ].map(([k, v]) => (
                 <div key={k} style={{ display: "flex", gap: 8, marginBottom: 4 }}>
@@ -2662,26 +2656,26 @@ function UnitRow({ unit, onBlock, onRelease, onArrived }) {
 }
 
 // `canAllocate` separates what a telecaller needs from what a Sales Executive needs.
-// A telecaller answers "is there a white Creta and how soon" — availability, not identity.
-// Only the SE, who owns the deal, sees which physical car it is and can hold one.
-/* ============================== USED CAR STOCK ==============================
-   Consumer marketplaces (CarWale, Cars24, Spinny) answer "is this car good and can I
-   trust it". A sales rep needs the answer to a different question: can I sell this car,
+// A telecaller answers "is there a white Indie and how soon" — availability, not identity.
+// Only the SE, who owns the deal, sees which physical scooter it is and can hold one.
+/* ============================== USED SCOOTER STOCK ==============================
+   Consumer marketplaces (BikeWale, OLX, BikeDekho) answer "is this scooter good and can I
+   trust it". A sales rep needs the answer to a different question: can I sell this scooter,
    to whom, at what price, and how fast. So alongside the consumer-facing material —
    photos, inspection scores, spec — this carries the things a marketplace deliberately
    hides from buyers: what we paid, what we've spent, what the floor price is, how long
    it's been sitting, and who's asked about it.
 
-   Structural note: used cars are NOT rendered through the model→variant→colour tree the
-   way new stock is. Every used car is a unique asset with its own history, so each gets
+   Structural note: used two-wheelers are NOT rendered through the model→variant→colour tree the
+   way new stock is. Every used scooter or bike is a unique asset with its own history, so each gets
    its own card. */
 
 const INSPECTION_AREAS = [
-  { key: "engine",    label: "Engine & transmission", Icon: Settings },
-  { key: "ac",        label: "Air conditioning",      Icon: Wind },
-  { key: "steering",  label: "Steering, suspension & brakes", Icon: Navigation },
-  { key: "exterior",  label: "Exterior & tyres",      Icon: Car },
-  { key: "interior",  label: "Interior & electricals", Icon: Sparkles },
+  { key: "engine",    label: "Motor / engine & drivetrain", Icon: Settings },
+  { key: "ac",        label: "Battery & charging system",   Icon: PulseSignal },
+  { key: "steering",  label: "Handling, suspension & brakes", Icon: Navigation },
+  { key: "exterior",  label: "Body panels & tyres",         Icon: ScooterIcon },
+  { key: "interior",  label: "Seat, storage & electricals", Icon: Sparkles },
 ];
 
 const DOC_CHECKLIST = [
@@ -2692,7 +2686,7 @@ const DOC_CHECKLIST = [
   { key: "duplicate", label: "Duplicate key" },
 ];
 
-// Retail readiness — a rep should never promise a delivery date on a car that hasn't
+// Retail readiness — a rep should never promise a delivery date on a scooter that hasn't
 // finished refurb or photography.
 const READINESS = {
   retail_ready: { label: "Retail ready",   color: C.green,  soft: C.greenSoft },
@@ -2703,28 +2697,29 @@ const READINESS = {
 
 const USED_STOCK = [
   {
-    id: "D1", kind: "demo", brand: "Hyundai",
-    model: "Creta", variant: "SX(O) Turbo DCT", year: 2025, color: "Atlas White",
-    vin: "MA1DEMO00001", chassis: "CHD10001", engineNo: "END10001",
-    regNo: "TS09 DM 0011", regCity: "Hyderabad", odometer: 4120, fuel: "Petrol",
-    transmission: "Automatic", owners: 1, branch: "Indiranagar",
-    cost: { purchase: 1720000, refurb: 12000 }, ask: 1840000, floor: 1780000,
+    id: "D1", kind: "demo", brand: "River",
+    model: "Indie", variant: "750W", year: 2026, color: "Monsoon Blue",
+    vin: "MD9RIVDEMO00001", chassis: "CHD10001", engineNo: null, motorNo: "MTD10001",
+    regNo: "MH12 RV 4421", regCity: "Pune", odometer: 4120, fuel: "Electric",
+    transmission: "Automatic", owners: 1, branch: "Baner",
+    cost: { purchase: 138000, refurb: 1200 }, ask: 149000, floor: 144000,
     daysInStock: 41, enquiries: 4, testDrives: 11,
     readiness: "retail_ready",
     inspection: { engine: 5, ac: 5, steering: 5, exterior: 4.5, interior: 4.5 },
-    defects: ["Light wear on driver seat bolster from test drives"],
+    defects: ["Light wear on seat edge from test rides"],
     docs: { rc: true, insurance: true, noc: true, service: true, duplicate: true },
     insuranceTill: "Jan 2028", photos: 24,
     highlights: ["Dealership demo", "Full service history", "Under warranty", "Non-accidental"],
+    ev: { batteryKwh: 4, rangeKm: 161, charger: "750W portable · 0–80% in ~5 h", batteryWarranty: "5 yrs (extendable to 8 with River Care)" },
     blockedFor: null,
   },
   {
-    id: "D2", kind: "demo", brand: "Hyundai",
-    model: "Ioniq 5", variant: "AWD Long Range", year: 2025, color: "Titan Grey",
-    vin: "MA1DEMO00002", chassis: "CHD10002", engineNo: null, motorNo: "MTD10002",
-    regNo: "TS07 DM 0022", regCity: "Hyderabad", odometer: 2860, fuel: "Electric",
-    transmission: "Automatic", owners: 1, branch: "Whitefield",
-    cost: { purchase: 4320000, refurb: 8000 }, ask: 4590000, floor: 4460000,
+    id: "D2", kind: "demo", brand: "River",
+    model: "Indie", variant: "750W", year: 2026, color: "Winter White",
+    vin: "MD9RIVDEMO00002", chassis: "CHD10002", engineNo: null, motorNo: "MTD10002",
+    regNo: "MH43 RV 1187", regCity: "Navi Mumbai", odometer: 2860, fuel: "Electric",
+    transmission: "Automatic", owners: 1, branch: "Vashi",
+    cost: { purchase: 141000, refurb: 800 }, ask: 152000, floor: 147000,
     daysInStock: 27, enquiries: 7, testDrives: 14,
     readiness: "retail_ready",
     inspection: { engine: 5, ac: 5, steering: 5, exterior: 5, interior: 5 },
@@ -2732,62 +2727,64 @@ const USED_STOCK = [
     docs: { rc: true, insurance: true, noc: true, service: true, duplicate: true },
     insuranceTill: "Feb 2028", photos: 26,
     highlights: ["Dealership demo", "Battery health 98%", "Under warranty", "Non-accidental"],
-    ev: { batteryKwh: 72.6, rangeKm: 631, charger: "CCS2 · 350 kW DC", batteryWarranty: "8 yrs / 1,60,000 km" },
+    ev: { batteryKwh: 4, rangeKm: 161, charger: "750W portable · 0–80% in ~5 h", batteryWarranty: "5 yrs (extendable to 8 with River Care)" },
     blockedFor: null,
   },
   {
-    id: "D3", kind: "demo", brand: "Hyundai",
-    model: "Venue", variant: "SX Dual Tone", year: 2024, color: "Fiery Red",
-    vin: "MA1DEMO00003", chassis: "CHD10003", engineNo: "END10003",
-    regNo: "TS09 DM 0033", regCity: "Hyderabad", odometer: 6540, fuel: "Petrol",
-    transmission: "Manual", owners: 1, branch: "Indiranagar",
-    cost: { purchase: 1010000, refurb: 18000 }, ask: 1120000, floor: 1065000,
+    id: "D3", kind: "demo", brand: "River",
+    model: "Indie", variant: "480W", year: 2025, color: "Storm Grey",
+    vin: "MD9RIVDEMO00003", chassis: "CHD10003", engineNo: null, motorNo: "MTD10003",
+    regNo: "MH12 RV 4423", regCity: "Pune", odometer: 6540, fuel: "Electric",
+    transmission: "Automatic", owners: 1, branch: "Baner",
+    cost: { purchase: 126000, refurb: 2400 }, ask: 139000, floor: 133000,
     daysInStock: 88, enquiries: 2, testDrives: 9,
     readiness: "retail_ready",
     inspection: { engine: 4.5, ac: 5, steering: 4.5, exterior: 4, interior: 4 },
-    defects: ["Minor stone chips on bonnet", "Rear parcel tray scuffed"],
+    defects: ["Minor scratches on front apron", "Glovebox latch scuffed"],
     docs: { rc: true, insurance: true, noc: true, service: true, duplicate: true },
     insuranceTill: "Jun 2027", photos: 19,
     highlights: ["Dealership demo", "Full service history", "Under warranty"],
+    ev: { batteryKwh: 4, rangeKm: 161, charger: "480W portable · full charge in ~8 h", batteryWarranty: "5 yrs (extendable to 8 with River Care)" },
     blockedFor: null,
   },
   {
-    id: "P1", kind: "used", brand: "Hyundai", model: "Creta", variant: "SX", year: 2022, color: "Abyss Black",
-    vin: "MA1USED00001", chassis: "CHU10001", engineNo: "ENU10001",
-    regNo: "TS09 EA 4471", regCity: "Hyderabad", odometer: 38200, fuel: "Petrol",
-    transmission: "Manual", owners: 1, branch: "Indiranagar",
+    id: "P1", kind: "used", brand: "Ather", model: "450X", variant: "2.9 kWh", year: 2023, color: "Space Grey",
+    vin: "MD9USED00001", chassis: "CHU10001", engineNo: null, motorNo: "MTU10001",
+    regNo: "MH12 TK 4471", regCity: "Pune", odometer: 18200, fuel: "Electric",
+    transmission: "Automatic", owners: 1, branch: "Baner",
     // Money the customer never sees.
-    cost: { purchase: 1080000, refurb: 46000 }, ask: 1340000, floor: 1265000,
+    cost: { purchase: 62000, refurb: 4500 }, ask: 82000, floor: 76000,
     daysInStock: 18, enquiries: 6, testDrives: 2,
     readiness: "retail_ready",
-    inspection: { engine: 4.5, ac: 5, steering: 4, exterior: 4, interior: 4.5 },
-    defects: ["Minor scuff on rear bumper", "Both front tyres at ~40% tread"],
+    inspection: { engine: 4.5, ac: 4.5, steering: 4, exterior: 4, interior: 4.5 },
+    defects: ["Minor scuff on rear panel", "Front tyre at ~40% tread"],
     docs: { rc: true, insurance: true, noc: true, service: true, duplicate: true },
     insuranceTill: "Mar 2027", photos: 21,
-    highlights: ["Single owner", "Full service history", "Non-accidental", "Original paint"],
+    highlights: ["Single owner", "Full service history", "Exchange intake", "Battery health 91%"],
+    ev: { batteryKwh: 2.9, rangeKm: 111, charger: "Home charger · 0–80% in ~4 h", batteryWarranty: "Till Apr 2026 — expired" },
     blockedFor: null,
   },
   {
-    id: "P2", kind: "used", brand: "Hyundai", model: "i20", variant: "Asta (O)", year: 2021, color: "Titan Grey",
-    vin: "MA1USED00002", chassis: "CHU10002", engineNo: "ENU10002",
-    regNo: "TS07 FB 9902", regCity: "Hyderabad", odometer: 51700, fuel: "Petrol",
-    transmission: "Manual", owners: 2, branch: "Whitefield",
-    cost: { purchase: 560000, refurb: 38000 }, ask: 710000, floor: 662000,
+    id: "P2", kind: "used", brand: "Honda", model: "Activa 6G", variant: "DLX", year: 2021, color: "Pearl Siren Blue",
+    vin: "MD9USED00002", chassis: "CHU10002", engineNo: "ENU10002",
+    regNo: "MH12 SJ 9902", regCity: "Pune", odometer: 31700, fuel: "Petrol",
+    transmission: "Automatic", owners: 2, branch: "Vashi",
+    cost: { purchase: 34000, refurb: 3800 }, ask: 48000, floor: 44000,
     daysInStock: 63, enquiries: 2, testDrives: 0,
     readiness: "retail_ready",
     inspection: { engine: 4, ac: 3.5, steering: 4, exterior: 3.5, interior: 4 },
-    defects: ["AC cooling weak — gas top-up done, monitor", "Windscreen chip, driver side", "Alloy kerb rash x2"],
+    defects: ["Self-start weak — battery replaced, monitor", "Visor cracked", "Side panel scratches x2"],
     docs: { rc: true, insurance: true, noc: true, service: false, duplicate: false },
     insuranceTill: "Nov 2026", photos: 18,
     highlights: ["Second owner", "Accident-free", "New battery"],
     blockedFor: null,
   },
   {
-    id: "P3", kind: "used", brand: "Hyundai", model: "Verna", variant: "SX Turbo", year: 2023, color: "Atlas White",
-    vin: "MA1USED00003", chassis: "CHU10003", engineNo: "ENU10003",
-    regNo: "TS10 GC 1188", regCity: "Hyderabad", odometer: 22400, fuel: "Petrol",
-    transmission: "Automatic", owners: 1, branch: "Indiranagar",
-    cost: { purchase: 1040000, refurb: 22000 }, ask: 1280000, floor: 1195000,
+    id: "P3", kind: "used", brand: "TVS", model: "Jupiter", variant: "ZX", year: 2023, color: "Starlight Blue",
+    vin: "MD9USED00003", chassis: "CHU10003", engineNo: "ENU10003",
+    regNo: "MH12 UC 1188", regCity: "Pune", odometer: 12400, fuel: "Petrol",
+    transmission: "Automatic", owners: 1, branch: "Baner",
+    cost: { purchase: 46000, refurb: 2200 }, ask: 61000, floor: 56500,
     daysInStock: 6, enquiries: 9, testDrives: 4,
     readiness: "photos",
     inspection: { engine: 5, ac: 5, steering: 4.5, exterior: 4.5, interior: 5 },
@@ -2798,47 +2795,47 @@ const USED_STOCK = [
     blockedFor: null,
   },
   {
-    id: "P5", kind: "used", brand: "Maruti Suzuki",
-    model: "Baleno", variant: "Zeta", year: 2021, color: "Titan Grey",
-    vin: "MA1USED00005", chassis: "CHU10005", engineNo: "ENU10005",
-    regNo: "TS08 JK 5521", regCity: "Hyderabad", odometer: 44300, fuel: "Petrol",
-    transmission: "Manual", owners: 1, branch: "Whitefield",
-    cost: { purchase: 585000, refurb: 29000 }, ask: 725000, floor: 678000,
+    id: "P5", kind: "used", brand: "Suzuki",
+    model: "Access 125", variant: "Special Edition", year: 2021, color: "Metallic Matte Grey",
+    vin: "MD9USED00005", chassis: "CHU10005", engineNo: "ENU10005",
+    regNo: "MH43 AK 5521", regCity: "Navi Mumbai", odometer: 24300, fuel: "Petrol",
+    transmission: "Automatic", owners: 1, branch: "Vashi",
+    cost: { purchase: 38000, refurb: 2900 }, ask: 52000, floor: 47500,
     daysInStock: 31, enquiries: 3, testDrives: 1,
     readiness: "retail_ready",
     inspection: { engine: 4, ac: 4.5, steering: 4, exterior: 4, interior: 4 },
-    defects: ["Rear bumper repainted"],
+    defects: ["Front panel repainted"],
     docs: { rc: true, insurance: true, noc: true, service: true, duplicate: true },
     insuranceTill: "Sep 2026", photos: 17,
     highlights: ["Single owner", "Exchange intake", "Full service history"],
     blockedFor: null,
   },
   {
-    id: "P6", kind: "used", brand: "Tata",
-    model: "Nexon", variant: "XZ+", year: 2022, color: "Abyss Black",
-    vin: "MA1USED00006", chassis: "CHU10006", engineNo: "ENU10006",
-    regNo: "TS10 LM 7734", regCity: "Hyderabad", odometer: 33900, fuel: "Petrol",
-    transmission: "Manual", owners: 1, branch: "Indiranagar",
-    cost: { purchase: 790000, refurb: 34000 }, ask: 965000, floor: 902000,
+    id: "P6", kind: "used", brand: "Bajaj",
+    model: "Pulsar 150", variant: "Twin Disc", year: 2022, color: "Black Red",
+    vin: "MD9USED00006", chassis: "CHU10006", engineNo: "ENU10006",
+    regNo: "MH12 LM 7734", regCity: "Pune", odometer: 21900, fuel: "Petrol",
+    transmission: "Manual", owners: 1, branch: "Baner",
+    cost: { purchase: 52000, refurb: 3400 }, ask: 69000, floor: 64000,
     daysInStock: 12, enquiries: 5, testDrives: 2,
     readiness: "photos",
     inspection: { engine: 4.5, ac: 4, steering: 4, exterior: 4, interior: 4.5 },
-    defects: ["Front left alloy kerb rash"],
+    defects: ["Rear tyre needs replacing soon"],
     docs: { rc: true, insurance: true, noc: true, service: false, duplicate: true },
     insuranceTill: "Dec 2026", photos: 9,
-    highlights: ["Single owner", "Exchange intake", "5-star safety"],
+    highlights: ["Single owner", "Exchange intake", "Twin disc brakes"],
     blockedFor: null,
   },
   {
-    id: "P4", kind: "used", brand: "Hyundai", model: "Venue", variant: "S Turbo", year: 2020, color: "Fiery Red",
-    vin: "MA1USED00004", chassis: "CHU10004", engineNo: "ENU10004",
-    regNo: "AP28 HD 3390", regCity: "Vijayawada", odometer: 74800, fuel: "Petrol",
-    transmission: "Manual", owners: 2, branch: "Whitefield",
-    cost: { purchase: 520000, refurb: 71000 }, ask: 690000, floor: 640000,
+    id: "P4", kind: "used", brand: "Hero", model: "Splendor Plus", variant: "i3S", year: 2019, color: "Heavy Grey",
+    vin: "MD9USED00004", chassis: "CHU10004", engineNo: "ENU10004",
+    regNo: "GA07 HD 3390", regCity: "Panaji", odometer: 54800, fuel: "Petrol",
+    transmission: "Manual", owners: 2, branch: "Vashi",
+    cost: { purchase: 22000, refurb: 5100 }, ask: 34000, floor: 30000,
     daysInStock: 104, enquiries: 1, testDrives: 0,
     readiness: "docs_pending",
     inspection: { engine: 3.5, ac: 4, steering: 3, exterior: 3, interior: 3.5 },
-    defects: ["Clutch nearing replacement", "Rear-left door repainted", "Suspension noise over bumps", "Other-state registration — NOC pending"],
+    defects: ["Clutch plates nearing replacement", "Fuel tank repainted", "Front fork seal leaking", "Other-state registration — NOC pending"],
     docs: { rc: true, insurance: false, noc: false, service: false, duplicate: true },
     insuranceTill: "Expired", photos: 14,
     highlights: ["Priced to move"],
@@ -2856,7 +2853,7 @@ const inspectionAvg = (u) => {
   return (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1);
 };
 // Ageing is the number that should make a rep act. Floor-plan interest and depreciation
-// run whether or not anyone is looking at the car.
+// run whether or not anyone is looking at the scooter.
 const ageBand = (d) =>
   d <= 30 ? { label: "Fresh stock",   color: C.green } :
   d <= 60 ? { label: "Watch",          color: C.warm } :
@@ -2879,7 +2876,7 @@ function ScoreStars({ score, size = 11 }) {
 // Photo strip. Real listings carry 15–25 shots; what a rep needs to know at a glance is
 // whether the set is complete enough to send to a customer.
 function PhotoStrip({ unit, onAddPhotos }) {
-  const cats = ["Exterior", "Interior", "Tyres", "Engine", "Damage"];
+  const cats = ["Left side", "Right side", "Tyres", "Storage", "Damage"];
   const enough = unit.photos >= 15;
   return (
     <div>
@@ -2941,7 +2938,7 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
             background: `linear-gradient(135deg, ${C.bg} 0%, ${C.border} 100%)`,
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            <Car size={24} color={C.ghost} />
+            <ScooterIcon size={24} color={C.ghost} />
             <span style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(0,0,0,0.6)",
               borderRadius: 4, padding: "1px 5px", fontFamily: F, fontSize: 8.5, color: "#fff", fontWeight: 700 }}>
               {unit.photos} 📷
@@ -3139,7 +3136,7 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
                 <div style={{ marginTop: 11 }}>
                   {[["Registration", `${unit.regNo} · ${unit.regCity}`],
                     ["Insurance valid till", unit.insuranceTill],
-                    ["VIN", unit.vin], ["Chassis no.", unit.chassis], ["Engine no.", unit.engineNo],
+                    ["VIN", unit.vin], ["Chassis no.", unit.chassis], unit.engineNo ? ["Engine no.", unit.engineNo] : ["Motor no.", unit.motorNo],
                     ["At branch", unit.branch]].map(([k, v]) => (
                     <div key={k} style={{ display: "flex", gap: 8, marginBottom: 4 }}>
                       <span style={{ fontFamily: F, fontSize: 10.5, color: C.faint, width: 108, flexShrink: 0 }}>{k}</span>
@@ -3203,10 +3200,10 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
               </>
             ) : (
               <>
-                <button onClick={() => showToast && showToast("Test drive request sent to the branch")}
+                <button onClick={() => showToast && showToast("Test ride request sent to the branch")}
                   style={{ flex: 1, background: C.card, border: `1.5px solid ${C.borderStrong}`, borderRadius: 9,
                     padding: "10px 0", cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.sub }}>
-                  Book test drive
+                  Book test ride
                 </button>
                 <button onClick={() => onBlock(unit)} style={{
                   flex: 1, background: C.primary, border: "none", borderRadius: 9, padding: "10px 0",
@@ -3424,7 +3421,7 @@ function DeclineAllotmentSheet({ allotment, onClose, onConfirm }) {
 // Photo capture for a car whose set is incomplete. Real capture is a device concern; what
 // matters in the UI is that the rep can see which categories are thin and act on it.
 function AddPhotosSheet({ unit, onClose, onAdd }) {
-  const CATS = ["Exterior", "Interior", "Tyres", "Engine bay", "Damage / wear", "Documents"];
+  const CATS = ["Left side", "Right side", "Tyres", "Storage / battery bay", "Damage / wear", "Documents"];
   const [picked, setPicked] = useState([]);
   const toggle = (c) => setPicked(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c]);
   return (
@@ -3564,19 +3561,19 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
 
   const [waitlist, setWaitlist] = useState([
     // Seeded so the queue mechanic is visible without having to build one up first.
-    { id: "w1", model: "Creta", variant: "SX(O) Turbo DCT", color: "Fiery Red",
+    { id: "w1", model: "Indie", variant: "750W", color: "Storm Grey",
       leadId: 3, name: "Ajay Pillai", phone: "+91 9000000003",
       by: "Divya Pillai", at: d(-9), status: "waiting" },
-    { id: "w2", model: "Creta", variant: "SX(O) Turbo DCT", color: "Fiery Red",
+    { id: "w2", model: "Indie", variant: "750W", color: "Storm Grey",
       leadId: 5, name: "Sunita Gupta", phone: "+91 9000000005",
       by: "Rahul Kumar", at: d(-4), status: "waiting" },
     // Queued against a colour that has a car in transit — this is the entry that gets
     // auto-allotted when the car is marked arrived.
-    { id: "w3", model: "Creta", variant: "SX(O) Turbo DCT", color: "Titan Grey",
+    { id: "w3", model: "Indie", variant: "750W", color: "Summer Red",
       leadId: 4, name: "Meena Rao", phone: "+91 9000000004",
       by: "Rahul Kumar", at: d(-6), status: "waiting" },
     // Second in line for the same colour — proves the cascade on release/cancel.
-    { id: "w4", model: "Creta", variant: "SX(O) Turbo DCT", color: "Titan Grey",
+    { id: "w4", model: "Indie", variant: "750W", color: "Summer Red",
       leadId: 6, name: "Rahul Mehta", phone: "+91 9000000001",
       by: "Rahul Kumar", at: d(-2), status: "waiting" },
   ]);
@@ -4153,7 +4150,7 @@ function MISReport({ leads, user }) {
 
   const stats = [
     { label: "Calls Made", value: callsMade, icon: Phone },
-    { label: "Test Drives", value: testDrivesDone, icon: Car },
+    { label: "Test Drives", value: testDrivesDone, icon: ScooterIcon },
     { label: "Bookings", value: bookingsMade, icon: Package },
     { label: "Deliveries", value: deliveriesDone, icon: CarFront },
     { label: "New Leads", value: newLeads, icon: UserPlus },
@@ -4585,10 +4582,10 @@ function ExchangeCard({ lead, onUpdateField, onAddPhoto, onAppraise }) {
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "9px 4%" }}>
         {[
-          ["Car Model", "model", "e.g. Hyundai i10"],
-          ["Variant", "variant", "e.g. Magna"],
+          ["Two-wheeler Model", "model", "e.g. Honda Activa 5G"],
+          ["Variant", "variant", "e.g. DLX"],
           ["Year", "year", "e.g. 2016"],
-          ["Odometer (km)", "odometer", "e.g. 62000"],
+          ["Odometer (km)", "odometer", "e.g. 38000"],
         ].map(([label, field, placeholder]) => (
           <div key={field} style={{ width: "48%" }}>
             <span style={labelStyle}>{label}</span>
@@ -4828,7 +4825,7 @@ function StatusTimeline({ currentStatus, pendingStatus, onSelect }) {
 /* ============================== QUOTE GENERATION ============================== */
 function QuoteForm({ lead, onCancel, onSubmit, onViewQuote }) {
   const variant = INVENTORY.find(v => v.model === lead.model && v.variant === lead.variant);
-  const priceLakh = variant?.priceLakh || 12;
+  const priceLakh = variant?.priceLakh || (VARIANT_PRICES[lead.model] || {})[lead.variant] || 1.67;
   const [selectedAccessories, setSelectedAccessories] = useState([]);
   const [discount, setDiscount] = useState("");
   const [note, setNote] = useState("");
@@ -4840,7 +4837,7 @@ function QuoteForm({ lead, onCancel, onSubmit, onViewQuote }) {
     const a = ACCESSORY_OPTIONS.find(x => x.key === key);
     return sum + (a?.amount || 0);
   }, 0);
-  const breakup = computeQuoteBreakup(priceLakh, parseInt(discount) || 0, accessoriesTotal);
+  const breakup = computeQuoteBreakup(priceLakh, parseInt(discount) || 0, accessoriesTotal, lead.variant);
   const toggleAccessory = (key) => setSelectedAccessories(s => s.includes(key) ? s.filter(x => x !== key) : [...s, key]);
 
   const handleVoice = () => {
@@ -4873,16 +4870,10 @@ function QuoteForm({ lead, onCancel, onSubmit, onViewQuote }) {
         <div style={{ fontFamily: F, fontSize: 9.5, fontWeight: 800, color: C.faint, textTransform: "uppercase", letterSpacing: .4, marginBottom: 6 }}>
           System-calculated
         </div>
-        {[
-          ["Ex-Showroom Price", breakup.exShowroom],
-          ["RTO (Registration)", breakup.rto],
-          ["Insurance (1st year)", breakup.insurance],
-          ...(breakup.tcs > 0 ? [["TCS", breakup.tcs]] : []),
-          ["Handling & Logistics", breakup.handling],
-        ].map(([label, amt]) => (
+        {quoteBreakupRows(breakup).map(([label, amt]) => (
           <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0" }}>
             <span style={{ fontFamily: F, fontSize: 11, color: C.sub }}>{label}</span>
-            <span style={{ fontFamily: F, fontSize: 11, color: C.ink, fontWeight: 600 }}>{formatINR(amt)}</span>
+            <span style={{ fontFamily: F, fontSize: 11, color: amt < 0 ? C.green : C.ink, fontWeight: 600 }}>{formatSignedINR(amt)}</span>
           </div>
         ))}
       </div>
@@ -4897,7 +4888,7 @@ function QuoteForm({ lead, onCancel, onSubmit, onViewQuote }) {
       </div>
 
       <div style={{ fontFamily: F, fontSize: 10.5, color: C.sub, fontWeight: 600, marginBottom: 6 }}>Discount (₹) — your call</div>
-      <input type="number" min="0" step="1000" placeholder="e.g. 15000" value={discount}
+      <input type="number" min="0" step="500" placeholder="e.g. 2000" value={discount}
         onChange={e => setDiscount(e.target.value)} style={{ ...formInputStyle, width: "100%", marginBottom: 10 }} />
 
       <div style={{ background: C.primarySoft, borderRadius: 10, padding: 11, marginBottom: 10 }}>
@@ -4941,11 +4932,7 @@ function QuoteForm({ lead, onCancel, onSubmit, onViewQuote }) {
 
 function QuoteDetailSheet({ quote, onClose }) {
   const rows = [
-    ["Ex-Showroom Price", quote.exShowroom],
-    ["RTO (Registration)", quote.rto],
-    ["Insurance (1st year)", quote.insurance],
-    ...(quote.tcs > 0 ? [["TCS", quote.tcs]] : []),
-    ["Handling & Logistics", quote.handling],
+    ...quoteBreakupRows(quote),
     ...(quote.accessories > 0 ? [["Accessories", quote.accessories]] : []),
   ];
   return (
@@ -4953,7 +4940,7 @@ function QuoteDetailSheet({ quote, onClose }) {
       {rows.map(([label, amt]) => (
         <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderTop: `1px solid ${C.border}` }}>
           <span style={{ fontFamily: F, fontSize: 12, color: C.sub }}>{label}</span>
-          <span style={{ fontFamily: F, fontSize: 12.5, color: C.ink, fontWeight: 600 }}>{formatINR(amt)}</span>
+          <span style={{ fontFamily: F, fontSize: 12.5, color: amt < 0 ? C.green : C.ink, fontWeight: 600 }}>{formatSignedINR(amt)}</span>
         </div>
       ))}
       {quote.discount > 0 && (
@@ -5957,7 +5944,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
   };
 
   const timelineIcon = {
-    call: Phone, visit: MapPin, "test-drive": Car, quote: FileText, booking: Package, delivery: CarFront,
+    call: Phone, visit: MapPin, "test-drive": ScooterIcon, quote: FileText, booking: Package, delivery: CarFront,
     escalation: Flag, "escalation-response": CheckCircle2, whatsapp: WhatsAppIcon,
   };
 
@@ -6152,7 +6139,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
           if (channelBlocked(lead, "whatsapp")) { setContactWarning("whatsapp"); return; }
           setWaTemplateOpen(true); setCallLogExpanded(false); setTestDriveExpanded(false); setQuoteFormOpen(false);
         }} />
-        <IconBtn icon={Car} label="Test Drive" onClick={() => {
+        <IconBtn icon={ScooterIcon} label="Test Drive" onClick={() => {
           if (lead.testDrive && !testDriveExpanded) {
             setTdForm({ mode: lead.testDrive.mode, date: toDateInputValue(lead.testDrive.date), time: lead.testDrive.time, locationText: lead.testDrive.location?.text || lead.testDrive.location?.mapsLink || "" });
           }
@@ -6226,7 +6213,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
                 {lead.testDrive.mode === "location" ? "Customer's Location" : "Showroom"} · {fmt(lead.testDrive.date)} at {fmtTime(lead.testDrive.time)}
               </div>
             </div>
-            <Car size={17} color={C.purple} />
+            <ScooterIcon size={17} color={C.purple} />
           </div>
 
           <DrivingLicenseBlock lead={lead} onToggle={onToggleDrivingLicense} onShareLink={onShareDLLink} />
@@ -6395,7 +6382,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
               background: "none", border: "none", cursor: "pointer", padding: "0 0 13px", textAlign: "left",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
-                <Car size={14} color={C.faint} style={{ flexShrink: 0 }} />
+                <ScooterIcon size={14} color={C.faint} style={{ flexShrink: 0 }} />
                 <span style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink, flexShrink: 0 }}>Details</span>
                 <span style={{ fontFamily: F, fontSize: 11.5, color: C.sub, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {lead.model} · {lead.variant}{lead.color ? ` · ${lead.color}` : ""}
@@ -7697,7 +7684,7 @@ function ActivityScreen({ leads, onOpenLead }) {
 
   const tabs = [
     { key: "calls", label: "Calls", data: calls, icon: Phone },
-    { key: "testdrives", label: "Test Drives", data: testDrives, icon: Car },
+    { key: "testdrives", label: "Test Drives", data: testDrives, icon: ScooterIcon },
     { key: "bookings", label: "Bookings", data: bookings, icon: Package },
     { key: "delivery", label: "Delivery", data: deliveries, icon: CarFront },
   ];
