@@ -3,18 +3,22 @@ import { stockFor, unitsOf, PUNE_STORES, INVENTORY_AS_OF } from "../data/epicRiv
 import {
   AlertTriangle, BarChart3, Calendar, Camera, Bike as Car, Check, CheckCircle2, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, Clock, Copy, Download, Eye, FileText, Filter, GraduationCap, Headphones, Image, Link2, Lock, LogOut, Mail, MapPin, Menu, MessageSquare, Mic, MoreHorizontal, Navigation, Package, Pause, Pencil, Phone, Play, PlayCircle, Plus, Search, Settings, Sparkles, Square, Star, Store, Tag, TrendingUp, User, UserPlus, Users, Wind, X, Zap,
 } from "lucide-react";
-import { C as RG, FONT, FONT_DISPLAY, RIVER, TINTS, TONE, BOX_SUB, RiverGlassStyles, TintedBox, Metric, MetricGrid } from "../theme/riverGlass.jsx";
+import { C as RG, FONT, FONT_DISPLAY, RIVER, TINTS, TONE, BOX_SUB, ACCENT, LINK_DECO, mixVar, ThemeRoot, TintedBox, Metric, MetricGrid } from "../theme/riverGlass.jsx";
 
 /* ============================== TOKENS ==============================
    River Glass: neutral surfaces are translucent so the River mesh shows through; neutral
-   text colours come from the shared theme (src/theme/riverGlass.jsx). Indigo stays the
-   Telecaller's interactive colour. */
+   text colours come from the shared theme (src/theme/riverGlass.jsx). The interactive accent is
+   the dealer theme (River ink + yellow / Autoprism indigo): the primary* tokens are ACCENT
+   var() strings, so never suffix them with hex alpha — use withA(). */
 const C = {
   bg: "rgba(241,243,249,0.66)", card: "rgba(255,255,255,0.62)", border: "rgba(15,23,42,0.08)", borderStrong: "rgba(15,23,42,0.15)",
   // faint / hot / warm sit one step darker than the shared theme: this app puts a lot of small
   // text on soft-tinted pills over the glass, and they need the extra margin to keep 4.5:1.
   ink: RG.ink, sub: RG.sub, faint: "#535B6E", ghost: "#AEB4CB",
-  primary: RG.primary, primaryDark: "#2F3CC4", primarySoft: "rgba(59,75,232,0.10)",
+  // accent fill / text on light (ink in River, indigo in Autoprism), selected-item fill (solid
+  // yellow in River), a faint accent wash for larger panels, and the first data-series colour.
+  primary: ACCENT.primary, primaryInk: ACCENT.ink, primaryDark: ACCENT.strong, primarySoft: ACCENT.soft, primaryOnSoft: ACCENT.onSoft,
+  primaryWash: ACCENT.rowOn, data: ACCENT.level,
   hot: "#B71C1C", hotSoft: "rgba(198,40,40,0.08)",
   warm: "#9A4A0A", warmSoft: "rgba(245,158,11,0.10)",
   cold: "#1565C0", coldSoft: "rgba(21,101,192,0.08)",
@@ -25,6 +29,8 @@ const C = {
   teal: "#00695C", tealSoft: "rgba(0,105,92,0.08)",
   gold: "#92400E",
 };
+// Hex colour + two-digit hex alpha ("#B71C1C" + "35"); var() strings go through color-mix.
+const withA = (c, aa) => (typeof c === "string" && c.startsWith("var(") ? mixVar(c, Math.round(parseInt(aa, 16) / 2.55)) : c + aa);
 const FONTS = `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');`;
 const F = FONT;
 const ini = n => n.split(" ").map(p => p[0]).join("").slice(0, 2).toUpperCase();
@@ -318,7 +324,7 @@ const TEAM_ROSTER = [
   { name: "Sunil Mathur",  branch: "Aundh",       role: "Team Leader" },
   { name: "Priya Sharma",  branch: "Shivaji Nagar",       role: "Team Leader" },
 ];
-const ROLE_COLOR_2 = { "Sales Executive": C.primary, "Team Leader": C.purple, "Manager": C.teal };
+const ROLE_COLOR_2 = { "Sales Executive": C.data, "Team Leader": C.purple, "Manager": C.teal };
 const SOURCE_COLOR = {
   "Website": C.cold, "Facebook Ad": C.purple, "Google": C.cold, "OLX": C.warm, "Referral": C.green,
   "Instagram Ad": C.purple, "YouTube Ad": C.purple, "SMS Campaign": C.cold, "Email Campaign": C.cold,
@@ -681,10 +687,10 @@ function VoiceNoteField({ value, onChange, recording, onRecordingChange, placeho
         <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, padding: 10, marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
             <span style={{ width: 26, height: 26, borderRadius: "50%", background: C.primary, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <Play size={11} color="#fff" />
+              <Play size={11} color={C.primaryInk} />
             </span>
-            <div style={{ flex: 1, height: 3, background: C.borderStrong, borderRadius: 999 }}>
-              <div style={{ width: "0%", height: "100%", background: C.primary, borderRadius: 999 }} />
+            <div style={{ flex: 1, height: 3, background: "var(--bar-track)", borderRadius: 999 }}>
+              <div style={{ width: "0%", height: "100%", background: "var(--bar-fill)", boxShadow: "inset 0 0 0 1px var(--bar-edge)", borderRadius: 999 }} />
             </div>
             <span style={{ fontFamily: F, fontSize: 10.5, color: C.sub, fontWeight: 700, flexShrink: 0 }}>{recording.duration}</span>
             <button onClick={() => onRecordingChange(null)} title="Delete recording"
@@ -698,13 +704,13 @@ function VoiceNoteField({ value, onChange, recording, onRecordingChange, placeho
       ) : (
         <button onClick={state === "recording" ? stop : start} disabled={state === "processing"} style={{
           display: "flex", alignItems: "center", justifyContent: "center", gap: 7, width: "100%",
-          background: state === "recording" ? C.hotSoft : C.primarySoft,
-          border: `1.5px solid ${state === "recording" ? C.hot : C.primary}44`,
+          background: state === "recording" ? C.hotSoft : C.primaryWash,
+          border: `1.5px solid ${withA(state === "recording" ? C.hot : C.primary, "44")}`,
           borderRadius: 10, padding: "9px 0", marginBottom: 8,
           cursor: state === "processing" ? "default" : "pointer",
         }}>
           <Mic size={14} color={state === "recording" ? C.hot : C.primary} />
-          <span style={{ fontFamily: F, fontSize: 11.5, fontWeight: 700, color: state === "recording" ? C.hot : C.primary }}>
+          <span style={{ fontFamily: F, fontSize: 11.5, fontWeight: 700, color: state === "recording" ? C.hot : C.primaryDark }}>
             {state === "recording" ? `Recording — tap to stop (${elapsed}s)`
               : state === "processing" ? "Summarising…"
               : "Record a voice note"}
@@ -724,7 +730,7 @@ function chipStyle(on, small) {
   return {
     padding: small ? "5px 9px" : "6px 11px", borderRadius: 8, cursor: "pointer",
     border: `1.5px solid ${on ? C.primary : C.borderStrong}`,
-    background: on ? C.primarySoft : C.card, color: on ? C.primary : C.sub,
+    background: on ? C.primarySoft : C.card, color: on ? C.primaryDark : C.sub,
     fontFamily: F, fontWeight: 700, fontSize: small ? 10.5 : 11.5, whiteSpace: "nowrap",
   };
 }
@@ -767,7 +773,7 @@ function leadFieldMatchesTerm(lead, term) {
 function FilterChip({ label, onRemove }) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: C.primarySoft, borderRadius: 999, padding: "5px 8px 5px 10px" }}>
-      <span style={{ fontFamily: F, fontSize: 11, fontWeight: 700, color: C.primary }}>{label}</span>
+      <span style={{ fontFamily: F, fontSize: 11, fontWeight: 700, color: C.primaryDark }}>{label}</span>
       <button onClick={onRemove} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
         <X size={11} color={C.primary} />
       </button>
@@ -817,8 +823,8 @@ function FilterSheet({ open, onClose, groups, draft, setDraft, onApply, onClearA
                     padding: "14px 12px", background: on ? C.card : "none", border: "none", cursor: "pointer", textAlign: "left",
                     borderLeft: `3px solid ${on ? C.primary : "transparent"}`,
                   }}>
-                    <span style={{ fontFamily: F, fontSize: 12.5, fontWeight: on ? 800 : 500, color: on ? C.primary : C.sub, lineHeight: 1.25 }}>{g.label}</span>
-                    {n > 0 && <span style={{ background: C.primary, color: "#fff", fontFamily: F, fontSize: 9.5, fontWeight: 800, borderRadius: 999, padding: "1px 6px", flexShrink: 0 }}>{n}</span>}
+                    <span style={{ fontFamily: F, fontSize: 12.5, fontWeight: on ? 800 : 500, color: on ? C.primaryDark : C.sub, lineHeight: 1.25 }}>{g.label}</span>
+                    {n > 0 && <span style={{ background: C.primary, color: C.primaryInk, fontFamily: F, fontSize: 9.5, fontWeight: 800, borderRadius: 999, padding: "1px 6px", flexShrink: 0 }}>{n}</span>}
                   </button>
                 );
               })}
@@ -849,7 +855,7 @@ function FilterSheet({ open, onClose, groups, draft, setDraft, onApply, onClearA
                     width: 20, height: 20, borderRadius: 5, flexShrink: 0,
                     border: `2px solid ${sel ? C.primary : C.borderStrong}`, background: sel ? C.primary : "transparent",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>{sel && <Check size={13} color="#fff" strokeWidth={3} />}</span>
+                  }}>{sel && <Check size={13} color={C.primaryInk} strokeWidth={3} />}</span>
                 </button>
               );
             })}
@@ -857,14 +863,13 @@ function FilterSheet({ open, onClose, groups, draft, setDraft, onApply, onClearA
         </div>
 
         <div style={{ display: "flex", gap: 10, padding: 14, borderTop: `1px solid ${C.border}` }}>
-          <button onClick={onClearAll} disabled={draftCount === 0} style={{
+          <button onClick={onClearAll} disabled={draftCount === 0} className="rg-btn rg-press" style={{
             flex: 1, padding: "13px 0", borderRadius: 10, cursor: draftCount ? "pointer" : "default",
-            border: `1.5px solid ${draftCount ? C.primary : C.border}`, background: "none",
-            color: draftCount ? C.primary : C.ghost, fontFamily: F, fontWeight: 700, fontSize: 13.5,
+            color: draftCount ? C.primaryDark : C.faint, fontFamily: F, fontWeight: 700, fontSize: 13.5,
           }}>Clear Filter</button>
-          <button onClick={onApply} style={{
+          <button onClick={onApply} className="rg-btn-primary rg-press" style={{
             flex: 1.4, padding: "13px 0", borderRadius: 10, border: "none", cursor: "pointer",
-            background: C.primary, color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 13.5,
+            fontFamily: F, fontWeight: 800, fontSize: 13.5,
           }}>Show {resultCount} lead{resultCount === 1 ? "" : "s"}</button>
         </div>
       </div>
@@ -1136,7 +1141,7 @@ function Pill({ label, color, soft }) {
   fontWeight: 700,
   color,
   background: soft,
-  border: `1px solid ${color}35`,
+  border: `1px solid ${withA(color, "35")}`,
   padding: "2px 8px",
   borderRadius: 6,
   whiteSpace: "nowrap",
@@ -1160,7 +1165,7 @@ function Toast({ text }) {
   fontFamily: F,
   zIndex: 90,
   whiteSpace: "nowrap",
-  borderLeft: `3px solid ${C.primary}`
+  borderLeft: `3px solid ${ACCENT.dot}`
 }}>
   {text}
 </div>;
@@ -1172,7 +1177,8 @@ function Header({ screenName, onBack, onMenuClick }) {
   alignItems: "center",
   justifyContent: "space-between",
   padding: "0 16px",
-  height: 52,
+  height: 58,
+  boxSizing: "border-box",
   flexShrink: 0,
   position: "sticky",
   top: 0,
@@ -1190,7 +1196,7 @@ function Header({ screenName, onBack, onMenuClick }) {
   padding: 0,
   display: "flex"
 }}>
-  <ChevronLeft size={22} color={C.ink} />
+  <ChevronLeft size={22} color={ACCENT.hdrInk} />
 </button>}
     {onMenuClick && !onBack && <button onClick={onMenuClick} className="rm-menu-btn" style={{
   background: "none",
@@ -1199,13 +1205,13 @@ function Header({ screenName, onBack, onMenuClick }) {
   padding: 0,
   display: "flex"
 }}>
-  <Menu size={21} color={C.ink} />
+  <Menu size={21} color={ACCENT.hdrInk} />
 </button>}
     <span style={{
   fontFamily: F,
   fontWeight: 900,
   fontSize: 16,
-  color: C.ink,
+  color: ACCENT.hdrInk,
   letterSpacing: -0.8,
   textTransform: "uppercase"
 }}>
@@ -1215,18 +1221,17 @@ function Header({ screenName, onBack, onMenuClick }) {
   width: 5,
   height: 5,
   borderRadius: "50%",
-  background: C.primary,
+  background: ACCENT.dot,
   marginLeft: 1,
   marginBottom: 8
 }} />
     </span>
-    {screenName && <span style={{ fontFamily: F, fontWeight: 500, fontSize: 13, color: C.faint }}>/ {screenName}</span>}
+    {screenName && <span style={{ fontFamily: F, fontWeight: 500, fontSize: 13, color: ACCENT.hdrInk }}>/ {screenName}</span>}
   </div>
-  <div className="rg-btn" style={{
+  <div className="rg-bar-chip" style={{
   width: 32,
   height: 32,
   borderRadius: "50%",
-  color: C.ink,
   fontFamily: F,
   fontWeight: 700,
   fontSize: 11.5,
@@ -1280,7 +1285,8 @@ function MenuDrawer({ active, onChange, onClose }) {
   width: 5,
   height: 5,
   borderRadius: "50%",
-  background: C.primary,
+  background: ACCENT.dot,
+  boxShadow: `0 0 0 1px ${ACCENT.level}`,
   marginLeft: 1,
   marginBottom: 7
 }} />
@@ -1312,7 +1318,7 @@ function MenuDrawer({ active, onChange, onClose }) {
     }}>
       <t.Icon size={18} color={groupActive ? C.primary : C.faint} strokeWidth={groupActive ? 2.4 : 1.8} />
       <span style={{ flex: 1, fontFamily: F, fontWeight: groupActive ? 700 : 500, fontSize: 14,
-        color: groupActive ? C.primary : C.ink }}>{t.label}</span>
+        color: groupActive ? C.primaryDark : C.ink }}>{t.label}</span>
       {t.subs.length > 0 && <ChevronDown size={15} color={C.ghost} style={{
         transform: expanded ? "rotate(180deg)" : "none", transition: "transform .18s" }} />}
     </button>
@@ -1324,7 +1330,7 @@ function MenuDrawer({ active, onChange, onClose }) {
         cursor: "pointer", textAlign: "left",
       }}>
         <span style={{ fontFamily: F, fontWeight: on ? 700 : 500, fontSize: 13,
-          color: on ? C.primary : C.sub }}>{sub.label}</span>
+          color: on ? C.primaryDark : C.sub }}>{sub.label}</span>
       </button>;
     })}
   </div>;
@@ -1392,24 +1398,22 @@ function MenuDrawer({ active, onChange, onClose }) {
   }
 
 function QuickAction({ icon: Icon, label, onClick, tone }) {
+    // One primary per row (Call); everything else is a glass secondary.
     const tones = {
-      primary: { bg: C.primary, fg: "#fff", border: "none" },
-      // Charcoal, not pure black — a second filled action alongside the orange primary,
-      // warm enough to sit with the rest of the palette.
-      dark: { bg: "#0B1946", fg: "#fff", border: "none" },
-      soft: { bg: C.primarySoft, fg: C.primary, border: `1.5px solid ${C.primary}35` }
+      primary: { cls: "rg-btn-primary rg-press" },
+      dark: { cls: "rg-btn rg-press", fg: C.ink },
+      soft: { cls: "rg-btn rg-press", fg: C.primaryDark }
     };
     const t = tones[tone] || tones.soft;
-    return <button onClick={onClick} style={{
+    return <button onClick={onClick} className={t.cls} style={{
   flex: 1,
   minWidth: 0,
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
   gap: 2,
-  background: t.bg,
   color: t.fg,
-  border: t.border,
+  border: tone === "primary" ? "none" : undefined,
   borderRadius: 8,
   padding: "5px 3px",
   cursor: "pointer"
@@ -1535,7 +1539,7 @@ function DropdownChecklist({ options, selected, onToggle, placeholder, renderLab
   fontFamily: F,
   fontSize: 12,
   fontWeight: on ? 700 : 500,
-  color: on ? C.primary : C.ink
+  color: on ? C.primaryDark : C.ink
 }}>
     {renderLabel ? renderLabel(opt) : opt.label}
   </span>
@@ -1576,7 +1580,7 @@ function SourcePicker({ value, onChange, customSources, onAddCustomSource }) {
       fontFamily: F,
       fontSize: 11.5,
       fontWeight: on ? 700 : 500,
-      color: on ? C.primary : C.ink
+      color: on ? C.primaryDark : C.ink
     });
     const RadioDot = ({ on }) => <span style={{
   width: 13,
@@ -1698,13 +1702,13 @@ function SourcePicker({ value, onChange, customSources, onAddCustomSource }) {
   boxSizing: "border-box",
   marginBottom: 5
 }} />
-  <button onClick={submitOther} disabled={!otherText.trim()} style={{
+  <button className="rg-btn-primary rg-press" onClick={submitOther} disabled={!otherText.trim()} style={{
   width: "100%",
   padding: "6px 0",
   borderRadius: 7,
   border: "none",
-  background: otherText.trim() ? C.primary : "rgba(15,23,42,0.10)",
-  color: otherText.trim() ? "#fff" : C.sub,
+  background: otherText.trim() ? undefined : "rgba(15,23,42,0.10)",
+  color: otherText.trim() ? undefined : C.sub, boxShadow: otherText.trim() ? undefined : "none",
   fontFamily: F,
   fontWeight: 700,
   fontSize: 11,
@@ -1744,7 +1748,7 @@ function TimeSlotPicker({ mode, date, slot, onChange, allLeads, excludeLeadId })
   borderRadius: 7,
   border: `1.5px solid ${on ? C.primary : "transparent"}`,
   background: on ? C.primarySoft : C.card,
-  color: on ? C.primary : C.ink,
+  color: on ? C.primaryDark : C.ink,
   fontFamily: F,
   fontWeight: on ? 700 : 500,
   fontSize: 12,
@@ -1863,7 +1867,7 @@ function PhoneNumberPicker({ lead, onPick, onCancel }) {
   justifyContent: "center",
   flexShrink: 0
 }}>
-    <Phone size={13} color="#fff" />
+    <Phone size={13} color={C.primaryInk} />
   </div>
 </button>)}
   <button onClick={onCancel} style={{
@@ -1910,7 +1914,7 @@ function SERosterPicker({ selectedSE, onSelect }) {
   width: 26,
   height: 26,
   borderRadius: "50%",
-  background: (ROLE_COLOR_2[selectedSE.role] || C.primary) + "18",
+  background: withA((ROLE_COLOR_2[selectedSE.role] || C.primary), "18"),
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -1920,7 +1924,7 @@ function SERosterPicker({ selectedSE, onSelect }) {
   fontFamily: F,
   fontWeight: 700,
   fontSize: 10,
-  color: ROLE_COLOR_2[selectedSE.role] || C.primary
+  color: ROLE_COLOR_2[selectedSE.role] || C.primaryDark
 }}>
       {ini(selectedSE.name)}
     </span>
@@ -2024,7 +2028,7 @@ function SERosterPicker({ selectedSE, onSelect }) {
   width: 30,
   height: 30,
   borderRadius: "50%",
-  background: (ROLE_COLOR_2[se.role] || C.primary) + "18",
+  background: withA((ROLE_COLOR_2[se.role] || C.primary), "18"),
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -2034,7 +2038,7 @@ function SERosterPicker({ selectedSE, onSelect }) {
   fontFamily: F,
   fontWeight: 700,
   fontSize: 11,
-  color: ROLE_COLOR_2[se.role] || C.primary
+  color: ROLE_COLOR_2[se.role] || C.primaryDark
 }}>
       {ini(se.name)}
     </span>
@@ -2057,7 +2061,7 @@ function SERosterPicker({ selectedSE, onSelect }) {
 }}>
         {se.name}
       </span>
-      <Pill label={se.role} color={ROLE_COLOR_2[se.role] || C.primary} soft={(ROLE_COLOR_2[se.role] || C.primary) + "18"} />
+      <Pill label={se.role} color={ROLE_COLOR_2[se.role] || C.primary} soft={withA((ROLE_COLOR_2[se.role] || C.primary), "18")} />
     </div>
     <div style={{
   fontFamily: F,
@@ -2110,7 +2114,7 @@ function ModelInterestPicker({ value, onChange, colorValue, onColorChange }) {
   gap: 6,
   marginBottom: 10
 }}>
-  {tags.map(t => <Pill label={t} color={C.primary} soft={C.primarySoft} key={t} />)}
+  {tags.map(t => <Pill label={t} color={C.primary} soft={C.primaryWash} key={t} />)}
   {colorValue.map(c => <Pill label={c} color={C.teal} soft={C.tealSoft} key={c} />)}
 </div>}
   <button onClick={() => setOpen(v => !v)} style={{
@@ -2170,7 +2174,7 @@ function ModelInterestPicker({ value, onChange, colorValue, onColorChange }) {
   fontFamily: F,
   fontSize: 11,
   fontWeight: isActive ? 700 : 500,
-  color: isActive ? C.primary : hasSelection ? C.ink : C.sub
+  color: isActive ? C.primaryDark : hasSelection ? C.ink : C.sub
 }}>
     {model}
   </span>
@@ -2209,7 +2213,7 @@ function ModelInterestPicker({ value, onChange, colorValue, onColorChange }) {
   fontFamily: F,
   fontSize: 12,
   fontWeight: on ? 700 : 500,
-  color: on ? C.primary : C.ink
+  color: on ? C.primaryDark : C.ink
 }}>
     {variant}
   </span>
@@ -2284,7 +2288,7 @@ function CallbackScheduler({ dateValue, onDateChange, timeValue, onTimeChange })
   borderRadius: 8,
   border: `1.5px solid ${dateValue === isoDate(new Date(Date.now() + o.days * 864e5)) ? C.primary : C.borderStrong}`,
   background: dateValue === isoDate(new Date(Date.now() + o.days * 864e5)) ? C.primarySoft : C.card,
-  color: dateValue === isoDate(new Date(Date.now() + o.days * 864e5)) ? C.primary : C.sub,
+  color: dateValue === isoDate(new Date(Date.now() + o.days * 864e5)) ? C.primaryDark : C.sub,
   fontFamily: F,
   fontWeight: 700,
   fontSize: 11.5,
@@ -2367,7 +2371,7 @@ function CallbackScheduler({ dateValue, onDateChange, timeValue, onTimeChange })
   cursor: "pointer",
   border: isToday && !isSelected ? `1.5px solid ${C.primary}` : "1px solid transparent",
   background: isSelected ? C.primary : "none",
-  color: isSelected ? "#fff" : C.ink,
+  color: isSelected ? C.primaryInk : C.ink,
   fontFamily: F,
   fontWeight: isSelected || isToday ? 700 : 500,
   fontSize: 11.5
@@ -2398,7 +2402,7 @@ function CallbackScheduler({ dateValue, onDateChange, timeValue, onTimeChange })
   borderRadius: 8,
   border: `1.5px solid ${timeValue === t.key ? C.primary : C.borderStrong}`,
   background: timeValue === t.key ? C.primarySoft : C.card,
-  color: timeValue === t.key ? C.primary : C.sub,
+  color: timeValue === t.key ? C.primaryDark : C.sub,
   fontFamily: F,
   fontWeight: 700,
   fontSize: 12,
@@ -2470,21 +2474,22 @@ function CallRecordingPlayer({ durationLabel }) {
   cursor: "pointer",
   flexShrink: 0
 }}>
-    {playing ? <Pause size={11} color="#fff" /> : <Play size={11} color="#fff" style={{
+    {playing ? <Pause size={11} color={C.primaryInk} /> : <Play size={11} color={C.primaryInk} style={{
   marginLeft: 1
 }} />}
   </button>
   <div style={{
   flex: 1,
   height: 4,
-  background: C.border,
+  background: "var(--bar-track)",
   borderRadius: 999,
   overflow: "hidden"
 }}>
     <div style={{
   width: `${progress * 100}%`,
   height: "100%",
-  background: C.primary,
+  background: "var(--bar-fill)",
+  boxShadow: "inset 0 0 0 1px var(--bar-edge)",
   borderRadius: 999
 }} />
   </div>
@@ -2614,7 +2619,7 @@ function CollectibleDocRow({ label, done, via, onCollect, onUndo, onSendLink, on
 }}>
   <Image size={13} color={C.primary} />
 </button>}
-      {done && via && <Pill label={viaLabel} color={C.primary} soft={C.primarySoft} />}
+      {done && via && <Pill label={viaLabel} color={C.primary} soft={C.primaryWash} />}
       {done && <button onClick={onUndo} style={{
   background: "none",
   border: "none",
@@ -2755,8 +2760,8 @@ function ExpandRow({ label, accent, open, onToggle, hasData }) {
   return (
     <button onClick={onToggle} style={{
       display: "flex", alignItems: "center", gap: 7, width: "100%",
-      background: open ? accent + "0F" : C.card,
-      border: `1.5px solid ${hasData || open ? accent + "55" : C.borderStrong}`,
+      background: open ? withA(accent, "0F") : C.card,
+      border: `1.5px solid ${hasData || open ? withA(accent, "55") : C.borderStrong}`,
       borderRadius: 10, padding: "9px 12px", marginBottom: open ? 0 : 14,
       cursor: "pointer", textAlign: "left",
     }}>
@@ -2772,7 +2777,7 @@ function ExpandRow({ label, accent, open, onToggle, hasData }) {
 function CollapsibleDetails({ title, subtitle, accent, hasData, defaultOpen = false, children }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div style={{ background: C.card, border: `1.5px solid ${accent}55`, borderRadius: 10, marginBottom: 14, overflow: "hidden" }}>
+    <div style={{ background: C.card, border: `1.5px solid ${withA(accent, "55")}`, borderRadius: 10, marginBottom: 14, overflow: "hidden" }}>
       <button onClick={() => setOpen(o => !o)} style={{
         display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 12px",
         background: "none", border: "none", cursor: "pointer", textAlign: "left",
@@ -3044,7 +3049,7 @@ function PaymentDetailsForm({ value, onChange }) {
     </div>
   </div>
   <div style={{
-  background: C.primarySoft,
+  background: C.primaryWash,
   borderRadius: 8,
   padding: "8px 10px",
   display: "flex",
@@ -3198,8 +3203,8 @@ function PaymentDetailsForm({ value, onChange }) {
   justifyContent: "center",
   gap: 7,
   width: "100%",
-  background: C.primarySoft,
-  border: `1.5px dashed ${C.primary}66`,
+  background: C.primaryWash,
+  border: `1.5px dashed ${withA(C.primary, "66")}`,
   borderRadius: 8,
   padding: "8px 0",
   cursor: "pointer"
@@ -3214,13 +3219,13 @@ function PaymentDetailsForm({ value, onChange }) {
   background: C.primary,
   flexShrink: 0
 }}>
-        <Plus size={11} color="#fff" strokeWidth={3} />
+        <Plus size={11} color={C.primaryInk} strokeWidth={3} />
       </div>
       <span style={{
   fontFamily: F,
   fontSize: 11.5,
   fontWeight: 700,
-  color: C.primary
+  color: C.primaryDark
 }}>
         Add another add-on
       </span>
@@ -3251,8 +3256,8 @@ function LeadStatusRow({ lead, onOpenTab }) {
   <div style={{
   display: "flex",
   alignItems: "center",
-  background: C.primarySoft,
-  border: `1px solid ${C.primary}35`,
+  background: C.primaryWash,
+  border: `1px solid ${withA(C.primary, "35")}`,
   borderRadius: 6,
   padding: "3px 8px"
 }}>
@@ -3260,7 +3265,7 @@ function LeadStatusRow({ lead, onOpenTab }) {
   fontFamily: F,
   fontSize: 10.5,
   fontWeight: 700,
-  color: C.primary
+  color: C.primaryDark
 }}>
       {stageStatusLabel(lead)}
     </span>
@@ -3272,7 +3277,7 @@ function LeadStatusRow({ lead, onOpenTab }) {
   alignItems: "center",
   gap: 4,
   background: meta.soft,
-  border: `1px solid ${meta.color}35`,
+  border: `1px solid ${withA(meta.color, "35")}`,
   borderRadius: 6,
   padding: "3px 8px",
   cursor: onOpenTab ? "pointer" : "default"
@@ -3379,7 +3384,7 @@ function QualificationCallForm({ lead, onSave, onCancel, channel, allLeads, show
     <span style={{
   fontFamily: F,
   fontSize: 11.5,
-  color: C.primary,
+  color: C.primaryDark,
   fontWeight: 800,
   textTransform: "uppercase",
   letterSpacing: 0.5
@@ -3410,7 +3415,7 @@ function QualificationCallForm({ lead, onSave, onCancel, channel, allLeads, show
   borderRadius: 8,
   border: `1.5px solid ${disposition === o.key ? C.primary : C.borderStrong}`,
   background: disposition === o.key ? C.primarySoft : C.card,
-  color: disposition === o.key ? C.primary : C.sub,
+  color: disposition === o.key ? C.primaryDark : C.sub,
   fontFamily: F,
   fontWeight: 700,
   fontSize: 12,
@@ -3758,14 +3763,12 @@ function QualificationCallForm({ lead, onSave, onCancel, channel, allLeads, show
 }}>
     The final value is only confirmed after physical inspection by an evaluator.
   </div>
-  <button onClick={() => setExchangeAppraisalScheduled(true)} style={{
+  <button className="rg-btn-primary rg-press" onClick={() => setExchangeAppraisalScheduled(true)} style={{
   marginTop: 9,
   width: "100%",
   padding: "8px 0",
   borderRadius: 9,
   border: "none",
-  background: C.primary,
-  color: "#fff",
   fontFamily: F,
   fontWeight: 700,
   fontSize: 11.5,
@@ -4036,7 +4039,7 @@ function QualificationCallForm({ lead, onSave, onCancel, channel, allLeads, show
   alignItems: "center",
   gap: 8,
   width: "100%",
-  background: decision === key ? color + "12" : C.card,
+  background: decision === key ? withA(color, "12") : C.card,
   border: `1.5px solid ${decision === key ? color : C.border}`,
   borderRadius: 10,
   padding: "9px 12px",
@@ -4280,7 +4283,7 @@ function QualificationCallForm({ lead, onSave, onCancel, channel, allLeads, show
 }}>
       Cancel
     </button>
-    <button onClick={() => {
+    <button className="rg-btn-primary rg-press" onClick={() => {
   if (!canSubmit) {
     setAttempted(true);
     return;
@@ -4325,8 +4328,8 @@ function QualificationCallForm({ lead, onSave, onCancel, channel, allLeads, show
   padding: "10px 0",
   borderRadius: 10,
   border: "none",
-  background: canSubmit ? C.primary : "rgba(15,23,42,0.10)",
-  color: canSubmit ? "#fff" : C.sub,
+  background: canSubmit ? undefined : "rgba(15,23,42,0.10)",
+  color: canSubmit ? undefined : C.sub, boxShadow: canSubmit ? undefined : "none",
   fontFamily: F,
   fontWeight: 700,
   fontSize: 12.5,
@@ -4460,7 +4463,7 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
   borderRadius: 8,
   border: `1.5px solid ${disposition === o.key ? C.primary : C.borderStrong}`,
   background: disposition === o.key ? C.primarySoft : C.card,
-  color: disposition === o.key ? C.primary : C.sub,
+  color: disposition === o.key ? C.primaryDark : C.sub,
   fontFamily: F,
   fontWeight: 700,
   fontSize: 12,
@@ -4808,14 +4811,12 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
 }}>
     The final value is only confirmed after physical inspection by an evaluator.
   </div>
-  <button onClick={() => setExchangeAppraisalScheduled(true)} style={{
+  <button className="rg-btn-primary rg-press" onClick={() => setExchangeAppraisalScheduled(true)} style={{
   marginTop: 9,
   width: "100%",
   padding: "8px 0",
   borderRadius: 9,
   border: "none",
-  background: C.primary,
-  color: "#fff",
   fontFamily: F,
   fontWeight: 700,
   fontSize: 11.5,
@@ -5086,7 +5087,7 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
   alignItems: "center",
   gap: 8,
   width: "100%",
-  background: decision === key ? color + "12" : C.card,
+  background: decision === key ? withA(color, "12") : C.card,
   border: `1.5px solid ${decision === key ? color : C.border}`,
   borderRadius: 10,
   padding: "9px 12px",
@@ -5663,7 +5664,7 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
 }}>
       Cancel
     </button>
-    <button onClick={() => {
+    <button className="rg-btn-primary rg-press" onClick={() => {
   if (!canSubmit) {
     setAttempted(true);
     return;
@@ -5718,8 +5719,8 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
   padding: "10px 0",
   borderRadius: 10,
   border: "none",
-  background: canSubmit ? C.primary : "rgba(15,23,42,0.10)",
-  color: canSubmit ? "#fff" : C.sub,
+  background: canSubmit ? undefined : "rgba(15,23,42,0.10)",
+  color: canSubmit ? undefined : C.sub, boxShadow: canSubmit ? undefined : "none",
   fontFamily: F,
   fontWeight: 700,
   fontSize: 12.5,
@@ -5784,7 +5785,7 @@ function TestDriveForm({ onSave, onCancel, allLeads, excludeLeadId, showToast, c
   borderRadius: 9,
   border: `1.5px solid ${mode === m.key ? C.primary : C.borderStrong}`,
   background: mode === m.key ? C.primarySoft : C.card,
-  color: mode === m.key ? C.primary : C.sub,
+  color: mode === m.key ? C.primaryDark : C.sub,
   fontFamily: F,
   fontWeight: 700,
   fontSize: 12,
@@ -5876,7 +5877,7 @@ function TestDriveForm({ onSave, onCancel, allLeads, excludeLeadId, showToast, c
 }}>
       Cancel
     </button>
-    <button onClick={() => {
+    <button className="rg-btn-primary rg-press" onClick={() => {
   if (!canSubmit) {
     setAttempted(true);
     return;
@@ -5894,8 +5895,8 @@ function TestDriveForm({ onSave, onCancel, allLeads, excludeLeadId, showToast, c
   padding: "10px 0",
   borderRadius: 10,
   border: "none",
-  background: canSubmit ? C.primary : "rgba(15,23,42,0.10)",
-  color: canSubmit ? "#fff" : C.sub,
+  background: canSubmit ? undefined : "rgba(15,23,42,0.10)",
+  color: canSubmit ? undefined : C.sub, boxShadow: canSubmit ? undefined : "none",
   fontFamily: F,
   fontWeight: 700,
   fontSize: 12.5,
@@ -6116,7 +6117,7 @@ function QuoteForm({ model, onSave, onCancel }) {
 }}>
   {selectedAccessories.map(key => {
   const a = ACCESSORY_OPTIONS.find(x => x.key === key);
-  return <Pill label={`${a.label} (+${formatINR(a.amount)})`} color={C.primary} soft={C.primarySoft} onRemove={() => toggleAccessory(key)} key={key} />;
+  return <Pill label={`${a.label} (+${formatINR(a.amount)})`} color={C.primary} soft={C.primaryWash} onRemove={() => toggleAccessory(key)} key={key} />;
 })}
 </div>}
   <div style={{
@@ -6172,7 +6173,7 @@ function QuoteForm({ model, onSave, onCancel }) {
   </span>
 </div>}
   <div style={{
-  background: C.primarySoft,
+  background: C.primaryWash,
   borderRadius: 10,
   padding: 11,
   marginBottom: 12
@@ -6246,7 +6247,7 @@ function QuoteForm({ model, onSave, onCancel }) {
 }}>
       Cancel
     </button>
-    <button onClick={() => {
+    <button className="rg-btn-primary rg-press" onClick={() => {
   if (!canSubmit) {
     setAttempted(true);
     return;
@@ -6261,8 +6262,8 @@ function QuoteForm({ model, onSave, onCancel }) {
   padding: "10px 0",
   borderRadius: 10,
   border: "none",
-  background: canSubmit ? C.primary : "rgba(15,23,42,0.10)",
-  color: canSubmit ? "#fff" : C.sub,
+  background: canSubmit ? undefined : "rgba(15,23,42,0.10)",
+  color: canSubmit ? undefined : C.sub, boxShadow: canSubmit ? undefined : "none",
   fontFamily: F,
   fontWeight: 700,
   fontSize: 12.5,
@@ -6362,7 +6363,7 @@ function RetailForm({ onSave, onCancel }) {
 }}>
       Cancel
     </button>
-    <button onClick={() => {
+    <button className="rg-btn-primary rg-press" onClick={() => {
   if (!canSubmit) {
     setAttempted(true);
     return;
@@ -6373,8 +6374,8 @@ function RetailForm({ onSave, onCancel }) {
   padding: "10px 0",
   borderRadius: 10,
   border: "none",
-  background: canSubmit ? C.primary : "rgba(15,23,42,0.10)",
-  color: canSubmit ? "#fff" : C.sub,
+  background: canSubmit ? undefined : "rgba(15,23,42,0.10)",
+  color: canSubmit ? undefined : C.sub, boxShadow: canSubmit ? undefined : "none",
   fontFamily: F,
   fontWeight: 700,
   fontSize: 12.5,
@@ -6455,13 +6456,13 @@ function DeliveryForm({ onSave, onCancel }) {
 }}>
       Cancel
     </button>
-    <button onClick={() => deliveryDate && onSave(deliveryDate)} disabled={!deliveryDate} style={{
+    <button className="rg-btn-primary rg-press" onClick={() => deliveryDate && onSave(deliveryDate)} disabled={!deliveryDate} style={{
   flex: 2,
   padding: "10px 0",
   borderRadius: 10,
   border: "none",
-  background: deliveryDate ? C.primary : "rgba(15,23,42,0.10)",
-  color: deliveryDate ? "#fff" : C.sub,
+  background: deliveryDate ? undefined : "rgba(15,23,42,0.10)",
+  color: deliveryDate ? undefined : C.sub, boxShadow: deliveryDate ? undefined : "none",
   fontFamily: F,
   fontWeight: 700,
   fontSize: 12.5,
@@ -6921,7 +6922,7 @@ function AddLeadForm({ onSave, onCancel, customSources, onAddCustomSource }) {
 }}>
       Cancel
     </button>
-    <button onClick={() => {
+    <button className="rg-btn-primary rg-press" onClick={() => {
   if (!canSubmit) {
     setAttempted(true);
     return;
@@ -6958,8 +6959,8 @@ function AddLeadForm({ onSave, onCancel, customSources, onAddCustomSource }) {
   padding: "12px 0",
   borderRadius: 10,
   border: "none",
-  background: canSubmit ? C.primary : "rgba(15,23,42,0.10)",
-  color: canSubmit ? "#fff" : C.sub,
+  background: canSubmit ? undefined : "rgba(15,23,42,0.10)",
+  color: canSubmit ? undefined : C.sub, boxShadow: canSubmit ? undefined : "none",
   fontFamily: F,
   fontWeight: 700,
   fontSize: 13,
@@ -7282,7 +7283,7 @@ function LeadRow({ lead, onUpdateLead, showToast, focusMode, allLeads }) {
   }; else if (lane === "new" && lead.contacted === 0) reason = {
     text: "\u{1F195} Not yet called",
     color: C.primaryDark,
-    bg: C.primarySoft
+    bg: C.primaryWash
   }; else if (lane === "dormant" && lead.assignedSE) reason = {
     text: overdueDays === null ? "SE hasn't called" : `SE quiet ${overdueDays}d`,
     color: C.hot,
@@ -7307,7 +7308,7 @@ function LeadRow({ lead, onUpdateLead, showToast, focusMode, allLeads }) {
   display: "inline-flex",
   alignItems: "center",
   background: reason.bg,
-  border: `1px solid ${reason.color}35`,
+  border: `1px solid ${withA(reason.color, "35")}`,
   borderRadius: 7,
   padding: "3px 8px",
   fontFamily: F,
@@ -7391,7 +7392,7 @@ function LeadRow({ lead, onUpdateLead, showToast, focusMode, allLeads }) {
   fontFamily: F,
   fontSize: 9.5,
   fontWeight: 800,
-  color: showAltPhone ? C.primary : C.sub
+  color: showAltPhone ? C.primaryDark : C.sub
 }}>
   +1
 </button> : <button onClick={() => {
@@ -7532,9 +7533,9 @@ function LeadRow({ lead, onUpdateLead, showToast, focusMode, allLeads }) {
   gap: 3,
   padding: "5px 9px",
   borderRadius: 6,
-  border: `1px solid ${on ? C.ink : C.borderStrong}`,
-  background: on ? C.ink : "none",
-  color: on ? "#fff" : C.sub,
+  border: `1px solid ${on ? "var(--chip-on-border)" : C.borderStrong}`,
+  background: on ? C.primarySoft : "none",
+  color: on ? C.primaryOnSoft : C.sub,
   fontFamily: F,
   fontWeight: 700,
   fontSize: 9.5,
@@ -7732,7 +7733,7 @@ function LeadRow({ lead, onUpdateLead, showToast, focusMode, allLeads }) {
   cursor: "pointer",
   marginTop: 6,
   padding: 0,
-  color: C.primary,
+  color: C.primaryDark,
   fontFamily: F,
   fontSize: 10.5,
   fontWeight: 700
@@ -8014,7 +8015,7 @@ function LeadRow({ lead, onUpdateLead, showToast, focusMode, allLeads }) {
               padding: "11px 12px", marginBottom: 7, borderRadius: 10, cursor: "pointer",
               border: `1px solid ${C.border}`, background: C.card,
             }}>
-              <span style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: o.color + "1A",
+              <span style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: withA(o.color, "1A"),
                 display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <o.Icon size={15} color={o.color} />
               </span>
@@ -8069,25 +8070,28 @@ function FocusModeScreen({ leads, onUpdateLead, showToast, onExit }) {
   flexDirection: "column",
   height: "100%"
 }}>
-  <div style={{
+  <div className="rg-bar" style={{
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  padding: "12px 14px",
-  background: C.card,
-  borderBottom: `1px solid ${C.border}`
+  padding: "0 14px",
+  height: 58,
+  boxSizing: "border-box",
+  flexShrink: 0,
+  position: "relative",
+  zIndex: 30
 }}>
     <div style={{
   display: "flex",
   alignItems: "center",
   gap: 8
 }}>
-      <Zap size={16} color={C.primary} />
+      <Zap size={16} color={ACCENT.hdrInk} />
       <span style={{
   fontFamily: F,
   fontWeight: 800,
   fontSize: 13,
-  color: C.ink
+  color: ACCENT.hdrInk
 }}>
         Focus Mode
       </span>
@@ -8101,23 +8105,21 @@ function FocusModeScreen({ leads, onUpdateLead, showToast, onExit }) {
   fontFamily: F,
   fontWeight: 800,
   fontSize: 13,
-  color: C.primary
+  color: ACCENT.hdrInk
 }}>
         {Math.min(index, total)}
         /
         {total}
          worked
       </span>
-      <button onClick={onExit} style={{
-  background: "none",
-  border: `1.5px solid ${C.borderStrong}`,
+      <button onClick={onExit} className="rg-bar-chip rg-press" style={{
+  border: "none",
   borderRadius: 8,
-  padding: "5px 10px",
+  padding: "6px 11px",
   cursor: "pointer",
   fontFamily: F,
   fontWeight: 700,
-  fontSize: 11,
-  color: C.sub
+  fontSize: 11
 }}>
         Exit
       </button>
@@ -8156,9 +8158,7 @@ function FocusModeScreen({ leads, onUpdateLead, showToast, onExit }) {
     {total}
      worked. Nice run.
   </div>
-  <button onClick={onExit} style={{
-  background: C.primary,
-  color: "#fff",
+  <button className="rg-btn-primary rg-press" onClick={onExit} style={{
   border: "none",
   borderRadius: 10,
   padding: "10px 20px",
@@ -8270,7 +8270,8 @@ function QuoteShareScreen({ lead, quote, onMediumUsed, onDone }) {
   width: 4,
   height: 4,
   borderRadius: "50%",
-  background: C.primary,
+  background: ACCENT.dot,
+  boxShadow: `0 0 0 1px ${ACCENT.level}`,
   marginLeft: 1
 }} />
       </span>
@@ -8342,7 +8343,7 @@ function QuoteShareScreen({ lead, quote, onMediumUsed, onDone }) {
   fontFamily: F,
   fontWeight: 900,
   fontSize: 19,
-  color: C.primary
+  color: C.primaryDark
 }}>
         {formatINR(quote.total)}
       </span>
@@ -8389,7 +8390,7 @@ function QuoteShareScreen({ lead, quote, onMediumUsed, onDone }) {
   background: C.card,
   outline: "none"
 }} />
-  <button onClick={() => {
+  <button className="rg-btn-primary rg-press" onClick={() => {
   if (otherText.trim()) {
     markSent(`Other: ${otherText.trim()}`);
     setOtherText("");
@@ -8399,8 +8400,8 @@ function QuoteShareScreen({ lead, quote, onMediumUsed, onDone }) {
   padding: "0 16px",
   borderRadius: 9,
   border: "none",
-  background: otherText.trim() ? C.primary : "rgba(15,23,42,0.10)",
-  color: otherText.trim() ? "#fff" : C.sub,
+  background: otherText.trim() ? undefined : "rgba(15,23,42,0.10)",
+  color: otherText.trim() ? undefined : C.sub, boxShadow: otherText.trim() ? undefined : "none",
   fontFamily: F,
   fontWeight: 700,
   fontSize: 12.5,
@@ -8409,13 +8410,11 @@ function QuoteShareScreen({ lead, quote, onMediumUsed, onDone }) {
     Log
   </button>
 </div>}
-  <button onClick={onDone} style={{
+  <button className="rg-btn-primary rg-press" onClick={onDone} style={{
   width: "100%",
   padding: "10px 0",
   borderRadius: 10,
   border: "none",
-  background: C.primary,
-  color: "#fff",
   fontFamily: F,
   fontWeight: 700,
   fontSize: 12.5,
@@ -8580,19 +8579,19 @@ function CallQueueScreen({ leads, subView, onUpdateLead, showToast, onEnterFocus
         </div>
         <button onClick={openFilterSheet} className="rg-btn rg-press" style={{
           position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: 12, flexShrink: 0,
-          cursor: "pointer", ...(filtersActive ? { background: C.primarySoft, borderColor: "rgba(59,75,232,0.35)" } : {}),
+          cursor: "pointer", ...(filtersActive ? { background: C.primarySoft, borderColor: "var(--chip-on-border)" } : {}),
         }}>
-          <Filter size={15} color={filtersActive ? C.primary : C.sub} />
+          <Filter size={15} color={filtersActive ? C.primaryOnSoft : C.sub} />
           {filtersActive && <span style={{ position: "absolute", top: 6, right: 6, width: 6, height: 6, borderRadius: "50%", background: C.hot }} />}
         </button>
         <button onClick={onEnterFocusMode} title="Focus / auto-dial mode" className="rg-btn-primary rg-press" style={{
           display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: 12, flexShrink: 0,
           cursor: "pointer",
-        }}><Zap size={16} color="#fff" /></button>
-        <button onClick={() => setShowAddLead(true)} title="Add lead" className="rg-press" style={{
+        }}><Zap size={16} /></button>
+        <button onClick={() => setShowAddLead(true)} title="Add lead" className="rg-btn rg-press" style={{
           display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: 12, flexShrink: 0,
-          border: "none", background: "linear-gradient(180deg,#1C2A5C 0%,#0B1946 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18),0 6px 16px rgba(11,25,70,0.22)", cursor: "pointer",
-        }}><UserPlus size={16} color="#fff" /></button>
+          cursor: "pointer",
+        }}><UserPlus size={16} color={C.ink} /></button>
       </div>
 
       <FilterSheet
@@ -8629,7 +8628,7 @@ function CallQueueScreen({ leads, subView, onUpdateLead, showToast, onEnterFocus
       )}
 
       <div style={{ fontFamily: F, fontWeight: 800, fontSize: 14, color: C.ink, marginBottom: 10 }}>
-        {viewTitle} <span style={{ color: C.primary }}>({active.length})</span>
+        {viewTitle} <span style={{ color: C.primaryDark }}>({active.length})</span>
       </div>
 
       {active.length === 0 && (
@@ -8693,7 +8692,7 @@ function RecentActivityScreen({ leads, onUpdateLead, showToast }) {
       )}
 
       <div style={{ fontFamily: F, fontWeight: 800, fontSize: 14, color: C.ink, marginBottom: 10 }}>
-        Recent Activity <span style={{ color: C.primary }}>({shown.length})</span>
+        Recent Activity <span style={{ color: C.primaryDark }}>({shown.length})</span>
       </div>
 
       {shown.length === 0 && (
@@ -8709,7 +8708,7 @@ function RecentActivityScreen({ leads, onUpdateLead, showToast }) {
             <span style={{ fontFamily: F, fontSize: 10.5, color: C.faint }}>{relativeTime(new Date(e.date))}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-            <span style={{ fontFamily: F, fontSize: 10, fontWeight: 700, color: C.primary, background: C.primarySoft, borderRadius: 6, padding: "2px 7px" }}>
+            <span style={{ fontFamily: F, fontSize: 10, fontWeight: 700, color: C.primaryDark, background: C.primaryWash, borderRadius: 6, padding: "2px 7px" }}>
               {EXTRA_DISPOSITION_LABELS[e.disposition] || e.disposition}
             </span>
             {e.recordingDuration && (
@@ -8985,7 +8984,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
             <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, padding: 11, marginBottom: 10 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={{ fontFamily: F, fontSize: 13, fontWeight: 700, color: C.ink }}>{picked.name}</span>
-                <button onClick={() => { setPicked(null); setResolution(null); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: F, fontSize: 10.5, fontWeight: 700, color: C.primary }}>Change</button>
+                <button onClick={() => { setPicked(null); setResolution(null); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: F, fontSize: 10.5, fontWeight: 700, color: C.primaryDark }}>Change</button>
               </div>
               <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, marginTop: 2 }}>{picked.phone}</div>
             </div>
@@ -9059,11 +9058,11 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
           </>
         )}
 
-        <button
+        <button className="rg-btn-primary rg-press"
           onClick={() => canConfirm && onConfirm(unit, picked, mismatches, resolution)}
           style={{
             width: "100%", marginTop: 4, padding: "13px 0", borderRadius: 11, border: "none",
-            background: canConfirm ? C.primary : "rgba(15,23,42,0.10)", color: canConfirm ? "#fff" : C.faint,
+            background: canConfirm ? undefined : "rgba(15,23,42,0.10)", color: canConfirm ? undefined : C.faint, boxShadow: canConfirm ? undefined : "none",
             fontFamily: F, fontWeight: 800, fontSize: 13.5, cursor: canConfirm ? "pointer" : "default",
           }}>
           {!picked ? "Select a customer"
@@ -9156,8 +9155,8 @@ function UnitRow({ unit, onBlock, onRelease, onArrived }) {
           ) : unit.status === "in_stock" ? (
             <button onClick={() => onBlock(unit)} style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 6, width: "100%",
-              background: C.primarySoft, border: `1.5px solid ${C.primary}44`, borderRadius: 9,
-              padding: "9px 0", cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.primary,
+              background: C.primaryWash, border: `1.5px solid ${withA(C.primary, "44")}`, borderRadius: 9,
+              padding: "9px 0", cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.primaryDark,
             }}>
               <Lock size={12} />Block for a customer
             </button>
@@ -9455,10 +9454,10 @@ function PhotoStrip({ unit, onAddPhotos }) {
           {unit.photos} photos{enough ? "" : " — too few to share with a customer"}
         </span>
         <button onClick={(e) => { e.stopPropagation(); onAddPhotos && onAddPhotos(unit); }} style={{
-          display: "flex", alignItems: "center", gap: 4, background: enough ? "none" : C.primarySoft,
-          border: `1px solid ${enough ? C.border : C.primary + "44"}`, borderRadius: 7,
+          display: "flex", alignItems: "center", gap: 4, background: enough ? "none" : C.primaryWash,
+          border: `1px solid ${enough ? C.border : withA(C.primary, "44")}`, borderRadius: 7,
           padding: "4px 9px", cursor: "pointer",
-          fontFamily: F, fontSize: 10, fontWeight: 700, color: enough ? C.sub : C.primary,
+          fontFamily: F, fontSize: 10, fontWeight: 700, color: enough ? C.sub : C.primaryDark,
         }}><Plus size={10} />Add photos</button>
       </div>
     </div>
@@ -9481,7 +9480,7 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
   ).slice(0, 4);
 
   return (
-    <div className="rg-glass" style={{ ...(open ? { borderColor: C.primary + "55" } : {}),
+    <div className="rg-glass" style={{ ...(open ? { borderColor: withA(C.primary, "55") } : {}),
       borderRadius: 20, marginBottom: 10, overflow: "hidden" }}>
 
       {/* ---- Collapsed card ---- */}
@@ -9572,7 +9571,7 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
                 flex: 1, padding: "6px 0", borderRadius: 7, cursor: "pointer",
                 border: `1.5px solid ${tab === k ? C.primary : C.border}`,
                 background: tab === k ? C.primarySoft : C.card,
-                color: tab === k ? C.primary : C.sub,
+                color: tab === k ? C.primaryDark : C.sub,
                 fontFamily: F, fontWeight: 700, fontSize: 10,
               }}>{l}</button>
             ))}
@@ -9732,8 +9731,8 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
                       </span>
                     </span>
                     <button onClick={() => showToast && showToast(`Shared ${unit.year} ${unit.model} with ${l.name.split(" ")[0]}`)}
-                      style={{ background: C.primarySoft, border: "none", borderRadius: 7, padding: "6px 10px",
-                        cursor: "pointer", fontFamily: F, fontSize: 10.5, fontWeight: 700, color: C.primary }}>
+                      style={{ background: C.primaryWash, border: "none", borderRadius: 7, padding: "6px 10px",
+                        cursor: "pointer", fontFamily: F, fontSize: 10.5, fontWeight: 700, color: C.primaryDark }}>
                       Share
                     </button>
                   </div>
@@ -9757,14 +9756,14 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
               </>
             ) : (
               <>
-                <button onClick={() => showToast && showToast("Test ride request sent to the branch")}
-                  style={{ flex: 1, background: C.card, border: `1.5px solid ${C.borderStrong}`, borderRadius: 9,
+                <button onClick={() => showToast && showToast("Test ride request sent to the branch")} className="rg-btn rg-press"
+                  style={{ flex: 1, borderRadius: 9,
                     padding: "10px 0", cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.sub }}>
                   Book test ride
                 </button>
-                <button onClick={() => onBlock(unit)} style={{
-                  flex: 1, background: C.primary, border: "none", borderRadius: 9, padding: "10px 0",
-                  cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 800, color: "#fff",
+                <button onClick={() => onBlock(unit)} className="rg-btn-primary rg-press" style={{
+                  flex: 1, border: "none", borderRadius: 9, padding: "10px 0",
+                  cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 800,
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                 }}><Lock size={12} />Block for customer</button>
               </>
@@ -9821,11 +9820,11 @@ function WaitlistRow({ entry, index, isMine }) {
         width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
         background: index === 0 ? C.primary : C.bg,
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontFamily: F, fontSize: 10, fontWeight: 800, color: index === 0 ? "#fff" : C.sub,
+        fontFamily: F, fontSize: 10, fontWeight: 800, color: index === 0 ? C.primaryInk : C.sub,
       }}>{index + 1}</span>
       <span style={{ flex: 1, minWidth: 0 }}>
         <span style={{ display: "block", fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.ink }}>
-          {entry.name}{isMine && <span style={{ color: C.primary, fontWeight: 800 }}> · yours</span>}
+          {entry.name}{isMine && <span style={{ color: C.primaryDark, fontWeight: 800 }}> · yours</span>}
         </span>
         <span style={{ display: "block", fontFamily: F, fontSize: 9.5, color: C.faint }}>
           Added by {entry.by} · {fmtDate(new Date(entry.at))}
@@ -9875,10 +9874,10 @@ function WaitlistPanel({ model, variant, color, entries, currentUser, waitWeeks,
         onClick={() => canAct ? onJoin({ model, variant, color }) : null}
         style={{
           width: "100%", marginTop: 9, background: canAct ? C.primarySoft : C.bg,
-          border: `1.5px solid ${canAct ? C.primary + "44" : C.border}`, borderRadius: 9,
+          border: `1.5px solid ${canAct ? withA(C.primary, "44") : C.border}`, borderRadius: 9,
           padding: "9px 0", cursor: canAct ? "pointer" : "default",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-          fontFamily: F, fontSize: 11.5, fontWeight: 700, color: canAct ? C.primary : C.ghost,
+          fontFamily: F, fontSize: 11.5, fontWeight: 700, color: canAct ? C.primaryDark : C.ghost,
         }}>
         <Plus size={12} />{canAct ? "Add customer to waitlist" : "Sales Executive only"}
       </button>
@@ -9946,7 +9945,7 @@ function DeclineAllotmentSheet({ allotment, onClose, onConfirm }) {
               background: on ? C.primarySoft : C.card,
               border: `1.5px solid ${on ? C.primary : C.border}`, borderRadius: 11, padding: "11px 12px",
             }}>
-              <span style={{ display: "block", fontFamily: F, fontSize: 12.5, fontWeight: 700, color: on ? C.primary : C.ink }}>
+              <span style={{ display: "block", fontFamily: F, fontSize: 12.5, fontWeight: 700, color: on ? C.primaryDark : C.ink }}>
                 {r.label}
               </span>
               <span style={{ display: "block", fontFamily: F, fontSize: 10.5, color: C.faint, marginTop: 2, lineHeight: 1.4 }}>
@@ -9965,9 +9964,9 @@ function DeclineAllotmentSheet({ allotment, onClose, onConfirm }) {
           </div>
         )}
 
-        <button onClick={() => reason && onConfirm(allotment, reason)} style={{
+        <button onClick={() => reason && onConfirm(allotment, reason)} className="rg-btn-primary rg-press" style={{
           width: "100%", marginTop: 14, padding: "13px 0", borderRadius: 11, border: "none",
-          background: reason ? C.primary : C.ghost, color: "#fff",
+          background: reason ? undefined : "rgba(15,23,42,0.10)", color: reason ? undefined : C.faint, boxShadow: reason ? undefined : "none",
           fontFamily: F, fontWeight: 800, fontSize: 13.5, cursor: reason ? "pointer" : "default",
         }}>{reason ? "Confirm decline" : "Pick a reason"}</button>
       </div>
@@ -10006,15 +10005,15 @@ function AddPhotosSheet({ unit, onClose, onAdd }) {
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
               }}>
                 <Camera size={17} color={on ? C.primary : C.sub} />
-                <span style={{ fontFamily: F, fontSize: 10.5, fontWeight: 700, color: on ? C.primary : C.sub }}>{c}</span>
+                <span style={{ fontFamily: F, fontSize: 10.5, fontWeight: 700, color: on ? C.primaryDark : C.sub }}>{c}</span>
               </button>
             );
           })}
         </div>
 
-        <button onClick={() => picked.length && onAdd(unit, picked)} style={{
+        <button onClick={() => picked.length && onAdd(unit, picked)} className="rg-btn-primary rg-press" style={{
           width: "100%", padding: "13px 0", borderRadius: 11, border: "none",
-          background: picked.length ? C.primary : C.ghost, color: "#fff",
+          background: picked.length ? undefined : "rgba(15,23,42,0.10)", color: picked.length ? undefined : C.faint, boxShadow: picked.length ? undefined : "none",
           fontFamily: F, fontWeight: 800, fontSize: 13.5, cursor: picked.length ? "pointer" : "default",
         }}>
           {picked.length ? `Capture ${picked.length} set${picked.length > 1 ? "s" : ""}` : "Pick what to shoot"}
@@ -10235,11 +10234,11 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
           return (
             <button key={c.key} aria-pressed={on} className="rg-btn rg-press" onClick={() => { setCategory(c.key); setOpenModel(null); setOpenVariant(null); setOpenColor(null); }} style={{
               flex: 1, padding: "8px 4px", borderRadius: 14, cursor: "pointer",
-              ...(on ? { background: C.primarySoft, borderColor: "rgba(59,75,232,0.35)" } : {}),
+              ...(on ? { background: C.primarySoft, borderColor: "var(--chip-on-border)" } : {}),
               display: "flex", flexDirection: "column", alignItems: "center", gap: 1,
             }}>
-              <span style={{ fontFamily: FONT_DISPLAY, fontSize: 14, fontWeight: 700, color: on ? C.primary : C.ink, lineHeight: 1 }}>{n}</span>
-              <span style={{ fontFamily: F, fontSize: 8.5, fontWeight: 700, color: on ? C.primary : C.faint, textTransform: "uppercase", letterSpacing: 0.3 }}>{c.label}</span>
+              <span style={{ fontFamily: FONT_DISPLAY, fontSize: 14, fontWeight: 700, color: on ? C.primaryDark : C.ink, lineHeight: 1 }}>{n}</span>
+              <span style={{ fontFamily: F, fontSize: 8.5, fontWeight: 700, color: on ? C.primaryDark : C.faint, textTransform: "uppercase", letterSpacing: 0.3 }}>{c.label}</span>
             </button>
           );
         })}
@@ -10255,7 +10254,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
             padding: "10px 14px", marginBottom: 10 }}>
             {Object.keys(PUNE_STORES).map(b => (
               <span key={b} data-branch={b} style={{ fontFamily: F, fontSize: 11.5, fontWeight: 600, color: TINTS.yellow.label }}>
-                {b} <strong data-count style={{ fontFamily: FONT_DISPLAY, fontSize: 19, fontWeight: 650, letterSpacing: "-0.02em", color: RIVER.ink, fontVariantNumeric: "tabular-nums" }}>{onHand.filter(u => u.branch === b).length}</strong>
+                {b} <strong data-count style={{ fontFamily: FONT_DISPLAY, fontSize: 19, fontWeight: 650, letterSpacing: "-0.02em", color: ACCENT.num, fontVariantNumeric: "tabular-nums" }}>{onHand.filter(u => u.branch === b).length}</strong>
               </span>
             ))}
             <span style={{ fontFamily: F, fontSize: 11, color: BOX_SUB }}>
@@ -10310,7 +10309,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
             flex: 1, minWidth: 0, boxSizing: "border-box",
             border: `1.5px solid ${value ? C.primary : C.borderStrong}`, borderRadius: 9,
             padding: "8px 9px", fontFamily: F, fontSize: 11.5,
-            color: value ? C.primary : C.sub, background: value ? C.primarySoft : C.card,
+            color: value ? C.primaryDark : C.sub, background: value ? C.primarySoft : C.card,
             outline: "none", cursor: "pointer", appearance: "none", WebkitAppearance: "none",
           }}>
             <option value="">{placeholder}</option>
@@ -10329,7 +10328,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
                   flex: 1, padding: "7px 0", borderRadius: 9, cursor: "pointer",
                   border: `1.5px solid ${on ? C.primary : C.border}`,
                   background: on ? C.primarySoft : C.card,
-                  color: on ? C.primary : C.sub,
+                  color: on ? C.primaryDark : C.sub,
                   fontFamily: F, fontWeight: 700, fontSize: 11,
                 }}>{l} <span style={{ opacity: .65 }}>{n}</span></button>
               );
@@ -10385,7 +10384,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
         const roll = rollupStatus(mUnits, model);
         const variants = [...new Set(mUnits.map(u => u.variant))];
         return (
-          <div key={model} className="rg-glass" style={{ borderRadius: 20, marginBottom: 8, overflow: "hidden", ...(mOpen ? { borderColor: C.primary + "55" } : {}) }}>
+          <div key={model} className="rg-glass" style={{ borderRadius: 20, marginBottom: 8, overflow: "hidden", ...(mOpen ? { borderColor: withA(C.primary, "55") } : {}) }}>
             <button onClick={() => { setOpenModel(mOpen ? null : model); setOpenVariant(null); setOpenColor(null); }} style={{
               display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px",
               background: "none", border: "none", cursor: "pointer", textAlign: "left",
@@ -10539,8 +10538,10 @@ function BreakdownTable({ rows, columns, onRowTap }) {
           <button key={c.key} onClick={() => setSortKey(c.key)} style={{
             width: 34, flexShrink: 0, background: "none", border: "none", cursor: "pointer", padding: 0,
             fontFamily: F, fontSize: 8.5, fontWeight: 800, letterSpacing: 0.2, textAlign: "center",
-            color: sortKey === c.key ? C.primary : C.faint, textTransform: "uppercase",
-          }}>{c.short}</button>
+            color: sortKey === c.key ? ACCENT.sortInk : C.faint, textTransform: "uppercase",
+          }}>{sortKey === c.key
+            ? <span style={{ background: ACCENT.sortBg, boxShadow: `0 0 0 2px ${ACCENT.sortBg}`, borderRadius: 2, color: C.ink }}>{c.short}</span>
+            : c.short}</button>
         ))}
       </div>
 
@@ -10577,7 +10578,7 @@ function BreakdownTable({ rows, columns, onRowTap }) {
                 const v = r.values[c.key] || 0;
                 const pct = first ? (v / first) * 100 : 0;
                 return pct > 0 ? (
-                  <span key={c.key} title={`${c.label}: ${v}`} style={{ width: `${pct}%`, background: c.color || C.primary, opacity: 0.85 }} />
+                  <span key={c.key} title={`${c.label}: ${v}`} style={{ width: `${pct}%`, background: c.color || C.data, opacity: 0.85 }} />
                 ) : null;
               })}
             </div>
@@ -10611,7 +10612,7 @@ function BarRows({ data, accent, maxLabel = 96, showZero = true }) {
           <span style={{ flex: 1, height: 16, background: C.bg, borderRadius: 4, overflow: "hidden", position: "relative" }}>
             <span style={{
               display: "block", width: `${(d.value / max) * 100}%`, height: "100%",
-              background: d.color || accent || C.primary, borderRadius: 4, transition: "width .4s",
+              background: d.color || accent || C.data, borderRadius: 4, transition: "width .4s",
             }} />
           </span>
           <span style={{ fontFamily: F, fontSize: 11, fontWeight: 800, color: C.ink, width: 30, textAlign: "right", flexShrink: 0 }}>
@@ -10625,7 +10626,7 @@ function BarRows({ data, accent, maxLabel = 96, showZero = true }) {
 
 // Sparkline with an area fill. Used for "how has this moved over the last N days" — the
 // shape matters more than exact values, so there are no gridlines.
-function TrendChart({ points, labels, accent = C.primary, height = 64, target }) {
+function TrendChart({ points, labels, accent = C.data, height = 64, target }) {
   const max = Math.max(1, ...points, target || 0);
   const w = 300, pad = 4;
   const step = points.length > 1 ? (w - pad * 2) / (points.length - 1) : 0;
@@ -10640,10 +10641,10 @@ function TrendChart({ points, labels, accent = C.primary, height = 64, target })
           <line x1={pad} x2={w - pad} y1={y(target)} y2={y(target)}
             stroke={C.faint} strokeWidth="1" strokeDasharray="4 4" opacity="0.7" />
         )}
-        <path d={area} fill={accent} opacity="0.12" />
-        <path d={line} fill="none" stroke={accent} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+        <path d={area} style={{ fill: accent }} opacity="0.12" />
+        <path d={line} fill="none" style={{ stroke: accent }} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
         {coords.map(([x, yy], i) => (
-          <circle key={i} cx={x} cy={yy} r={i === coords.length - 1 ? 3.5 : 2} fill={accent} />
+          <circle key={i} cx={x} cy={yy} r={i === coords.length - 1 ? 3.5 : 2} style={{ fill: accent }} />
         ))}
       </svg>
       {labels && (
@@ -10674,7 +10675,7 @@ function FunnelChart({ stages }) {
               <span style={{ flex: 1, height: 20, background: C.bg, borderRadius: 4, overflow: "hidden" }}>
                 <span style={{
                   display: "flex", alignItems: "center", justifyContent: "flex-end",
-                  width: `${Math.max(pct, 6)}%`, height: "100%", background: s.color || C.primary,
+                  width: `${Math.max(pct, 6)}%`, height: "100%", background: s.color || C.data,
                   borderRadius: 4, paddingRight: 6, boxSizing: "border-box", transition: "width .4s",
                 }}>
                   <span style={{ fontFamily: F, fontSize: 10, fontWeight: 800, color: "#fff" }}>{s.value}</span>
@@ -10951,7 +10952,7 @@ function LearningScreen() {
             <button key={k} onClick={() => setView(k)} style={{
               flex: 1, padding: "10px 0", borderRadius: 11, cursor: "pointer",
               border: `1.5px solid ${on ? C.primary : C.border}`,
-              background: on ? C.primarySoft : C.card, color: on ? C.primary : C.sub,
+              background: on ? C.primarySoft : C.card, color: on ? C.primaryDark : C.sub,
               fontFamily: F, fontWeight: 800, fontSize: 12.5,
             }}>{l}</button>
           );
@@ -10969,7 +10970,7 @@ function LearningScreen() {
             const id = c.ours + c.theirs;
             const open = openModel === id;
             return (
-              <div key={id} className="rg-glass" style={{ ...(open ? { borderColor: C.primary + "55" } : {}),
+              <div key={id} className="rg-glass" style={{ ...(open ? { borderColor: withA(C.primary, "55") } : {}),
                 borderRadius: 18, marginBottom: 9, overflow: "hidden" }}>
                 <button onClick={() => setOpenModel(open ? null : id)} style={{
                   display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "13px 14px",
@@ -10986,8 +10987,8 @@ function LearningScreen() {
                 </button>
                 {open && (
                   <div style={{ padding: "0 14px 14px" }}>
-                    <div style={{ background: C.primarySoft, borderRadius: 9, padding: "10px 11px", marginBottom: 11 }}>
-                      <span style={{ fontFamily: F, fontSize: 12, fontWeight: 700, color: C.primary, lineHeight: 1.45 }}>
+                    <div style={{ background: C.primaryWash, borderRadius: 9, padding: "10px 11px", marginBottom: 11 }}>
+                      <span style={{ fontFamily: F, fontSize: 12, fontWeight: 700, color: C.primaryDark, lineHeight: 1.45 }}>
                         {c.headline}
                       </span>
                     </div>
@@ -11055,9 +11056,9 @@ function LearningScreen() {
               </span>
             ))}
           </div>
-          <div style={{ height: 5, background: C.bg, borderRadius: 999, overflow: "hidden" }}>
+          <div style={{ height: 5, background: "var(--bar-track)", borderRadius: 999, overflow: "hidden" }}>
             <div style={{ width: `${Math.min(100, (totalMins / goalMins) * 100)}%`, height: "100%",
-              background: totalMins >= goalMins ? C.green : C.primary, borderRadius: 999 }} />
+              background: totalMins >= goalMins ? C.green : "var(--bar-fill)", boxShadow: totalMins >= goalMins ? undefined : "inset 0 0 0 1px var(--bar-edge)", borderRadius: 999 }} />
           </div>
           <div style={{ fontFamily: F, fontSize: 10.5, color: C.sub, marginTop: 6 }}>
             {totalMins >= goalMins
@@ -11073,13 +11074,13 @@ function LearningScreen() {
             return (
               <button key={c.key} onClick={() => { setCat(c.key); setOpenId(null); }} style={{
                 flex: 1, padding: "10px 2px", borderRadius: 11, cursor: "pointer",
-                border: `1.5px solid ${on ? c.color : C.border}`,
-                background: on ? c.color + "12" : C.card,
+                border: `1.5px solid ${on ? "var(--chip-on-border)" : C.border}`,
+                background: on ? C.primarySoft : C.card,
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
               }}>
-                {React.createElement(c.Icon, { size: 16, color: on ? c.color : C.sub })}
-                <span style={{ fontFamily: F, fontSize: 10.5, fontWeight: 700, color: on ? c.color : C.sub }}>{c.label}</span>
-                <span style={{ fontFamily: F, fontSize: 9.5, color: on ? c.color : C.faint, opacity: .8 }}>{n}</span>
+                {React.createElement(c.Icon, { size: 16, color: on ? C.primaryOnSoft : c.color })}
+                <span style={{ fontFamily: F, fontSize: 10.5, fontWeight: 700, color: on ? C.primaryOnSoft : C.sub }}>{c.label}</span>
+                <span style={{ fontFamily: F, fontSize: 9.5, color: on ? C.primaryOnSoft : C.faint }}>{n}</span>
               </button>
             );
           })}
@@ -11090,7 +11091,7 @@ function LearningScreen() {
           const isDone = done.includes(m.id);
           const open = openId === m.id;
           return (
-            <div key={m.id} className="rg-glass" style={{ ...(open ? { borderColor: meta.color + "66" } : {}),
+            <div key={m.id} className="rg-glass" style={{ ...(open ? { borderColor: withA(meta.color, "66") } : {}),
               borderRadius: 18, marginBottom: 8, overflow: "hidden" }}>
               <button onClick={() => setOpenId(open ? null : m.id)} style={{
                 display: "flex", alignItems: "center", gap: 11, width: "100%", padding: 13,
@@ -11121,17 +11122,17 @@ function LearningScreen() {
                     {m.blurb}
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => setDone(d => isDone ? d.filter(x => x !== m.id) : [...d, m.id])}
+                    <button onClick={() => setDone(d => isDone ? d.filter(x => x !== m.id) : [...d, m.id])} className="rg-btn rg-press"
                       style={{ padding: "9px 14px", borderRadius: 9, cursor: "pointer",
-                        border: `1.5px solid ${C.borderStrong}`, background: C.card, color: C.sub,
+                        color: C.sub,
                         fontFamily: F, fontWeight: 700, fontSize: 12 }}>
                       {isDone ? "Undo" : "Mark done"}
                     </button>
-                    <button style={{ flex: 1, padding: "9px 0", borderRadius: 9, cursor: "pointer",
-                      border: "none", background: meta.color, color: "#fff",
+                    <button className="rg-btn-primary rg-press" style={{ flex: 1, padding: "9px 0", borderRadius: 9, cursor: "pointer",
+                      border: "none",
                       display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                       fontFamily: F, fontWeight: 800, fontSize: 12 }}>
-                      {React.createElement(meta.Icon, { size: 14, color: "#fff" })}
+                      {React.createElement(meta.Icon, { size: 14 })}
                       {meta.verb} · {m.mins} min
                     </button>
                   </div>
@@ -11264,7 +11265,7 @@ function FunnelTable({ rows, dimension, onPickRow, activeRow, totals }) {
                 border: "none", borderRadius: on ? 6 : 0, cursor: onPickRow ? "pointer" : "default", textAlign: "left",
               }}>
                 <span style={{ width: 96, flexShrink: 0, display: "flex", alignItems: "center",
-                  fontFamily: F, fontSize: 11, fontWeight: on ? 800 : 600, color: on ? C.primary : C.ink,
+                  fontFamily: F, fontSize: 11, fontWeight: on ? 800 : 600, color: on ? C.primaryDark : C.ink,
                   overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingLeft: on ? 6 : 0 }}>
                   {r.label}
                 </span>
@@ -11450,7 +11451,7 @@ function KpiTile({ label, value, prev, tint }) {
   const d = delta(value, prev);
   const up = d != null && d > 0;
   return (
-    <Metric label={label} tint={tint || "grey"}
+    <Metric label={label} tint={tint || "neutral"}
       value={<>{value}{d != null && (
         <span style={{ fontFamily: F, fontSize: 11, fontWeight: 700, letterSpacing: 0, marginLeft: 6, color: up ? TONE.up : TONE.down }}>
           {up ? "▲" : "▼"}{Math.abs(d)}%
@@ -11529,9 +11530,9 @@ function DashboardScreen({ leads }) {
       </div>
 
       <MetricGrid>
-        <KpiTile label="Contacted · this month" value={thisM.contacted} prev={lastM.contacted} tint="grey" />
-        <KpiTile label="Qualified · this month" value={thisM.opportunity} prev={lastM.opportunity} tint="grey" />
-        <KpiTile label="Test rides · this month" value={thisM.visit} prev={lastM.visit} tint="grey" />
+        <KpiTile label="Contacted · this month" value={thisM.contacted} prev={lastM.contacted} tint="neutral" />
+        <KpiTile label="Qualified · this month" value={thisM.opportunity} prev={lastM.opportunity} tint="neutral" />
+        <KpiTile label="Test rides · this month" value={thisM.visit} prev={lastM.visit} tint="neutral" />
         <KpiTile label="Retailed · this month" value={thisM.retailed} prev={lastM.retailed} tint="yellow" />
       </MetricGrid>
 
@@ -11598,8 +11599,8 @@ function DashboardScreen({ leads }) {
       </div>
 
       {drillRow && (
-        <div style={{ background: C.primarySoft, border: `1px solid ${C.primary}33`, borderRadius: 12, padding: 12, marginBottom: 10 }}>
-          <div style={{ fontFamily: F, fontSize: 12, fontWeight: 800, color: C.primary, marginBottom: 6 }}>{drillRow.label}</div>
+        <div style={{ background: C.primaryWash, border: `1px solid ${withA(C.primary, "33")}`, borderRadius: 12, padding: 12, marginBottom: 10 }}>
+          <div style={{ fontFamily: F, fontSize: 12, fontWeight: 800, color: C.primaryDark, marginBottom: 6 }}>{drillRow.label}</div>
           <div style={{ fontFamily: F, fontSize: 11, color: C.sub, lineHeight: 1.55 }}>
             {drillRow.values.leads} leads, {drillRow.values.opportunity} qualified
             ({pct(drillRow.values.opportunity, drillRow.values.leads)}%),
@@ -11715,8 +11716,7 @@ export default function RelationshipManagerApp() {
       setLeads((ls) => [...ls, newLead]);
       showToast(`\u2705 Lead added \u2014 ${data.name}`);
     };
-    return <div className="rm-shell rg-root rg-mesh">
-  <RiverGlassStyles />
+    return <ThemeRoot className="rm-shell">
   <style>
     {FONTS}
     {`
@@ -11731,10 +11731,10 @@ export default function RelationshipManagerApp() {
         .rm-outer { flex: 1; min-width: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
         .rm-card { width: 100%; min-width: 0; max-width: 420px; height: 100vh; max-height: 860px; display: flex; flex-direction: column; position: relative; overflow: hidden; box-shadow: 0 0 0 1px rgba(15,23,42,0.08), 0 24px 64px rgba(31,38,135,0.16); border-radius: 22px; }
         /* River Glass: inputs keep their inline look and get the indigo focus ring. */
-        .rm-card input:not([type=checkbox]):not([type=radio]):not([type=range]):focus, .rm-card textarea:focus, .rm-card select:focus { border-color: rgba(59,75,232,0.55) !important; box-shadow: 0 0 0 3px rgba(59,75,232,0.14) !important; outline: none; }
+        .rm-card input:not([type=checkbox]):not([type=radio]):not([type=range]):focus, .rm-card textarea:focus, .rm-card select:focus { border-color: var(--focus-border) !important; box-shadow: 0 0 0 3px var(--focus-halo) !important; outline: none; }
         .rm-card .rg-input input:focus { box-shadow: none !important; }
-        .rm-card .rg-chip.on { color: ${C.primaryDark}; }
-        .rm-card .rg-input:focus-within { border-color: rgba(59,75,232,0.55); box-shadow: 0 0 0 3px rgba(59,75,232,0.14); }
+        .rm-card .rg-chip.on { color: var(--chip-on-ink); }
+        .rm-card .rg-input:focus-within { border-color: var(--focus-border); box-shadow: 0 0 0 3px var(--focus-halo); }
         .rm-content { flex: 1; min-height: 0; min-width: 0; overflow-y: auto; }
         input[type="search"]::-webkit-search-cancel-button,
         input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
@@ -11778,7 +11778,8 @@ export default function RelationshipManagerApp() {
   width: 5,
   height: 5,
   borderRadius: "50%",
-  background: C.primary,
+  background: ACCENT.dot,
+  boxShadow: `0 0 0 1px ${ACCENT.level}`,
   marginLeft: 1,
   marginBottom: 8
 }} />
@@ -11798,7 +11799,7 @@ export default function RelationshipManagerApp() {
     }}>
       <t.Icon size={17} color={groupActive ? C.primary : C.faint} strokeWidth={groupActive ? 2.4 : 1.8} />
       <span style={{ flex: 1, fontFamily: F, fontWeight: groupActive ? 700 : 500, fontSize: 13,
-        color: groupActive ? C.primary : C.sub }}>{t.label}</span>
+        color: groupActive ? C.primaryDark : C.sub }}>{t.label}</span>
       {t.subs.length > 0 && <ChevronDown size={14} color={C.ghost} style={{
         transform: expanded ? "rotate(180deg)" : "none", transition: "transform .18s" }} />}
     </button>
@@ -11810,7 +11811,7 @@ export default function RelationshipManagerApp() {
         cursor: "pointer", textAlign: "left",
       }}>
         <span style={{ fontFamily: F, fontWeight: on ? 700 : 500, fontSize: 12.5,
-          color: on ? C.primary : C.sub }}>{sub.label}</span>
+          color: on ? C.primaryDark : C.sub }}>{sub.label}</span>
       </button>;
     })}
   </div>;
@@ -11912,5 +11913,5 @@ export default function RelationshipManagerApp() {
       <Toast text={toast} />
     </div>
   </div>
-</div>;
+</ThemeRoot>;
   }
