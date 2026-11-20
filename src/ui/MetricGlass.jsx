@@ -9,31 +9,28 @@ import React from "react";
 
 const CSS = `
 .amg-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.amg-box{position:relative;min-width:0;box-sizing:border-box;border-radius:16px;padding:12px 14px;
-  background:
-    radial-gradient(120% 90% at 0% 0%, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0) 55%),
-    linear-gradient(135deg, rgba(59,75,232,0.16) 0%, rgba(59,75,232,0.05) 100%),
-    rgba(255,255,255,0.72);
-  -webkit-backdrop-filter:blur(16px) saturate(180%);backdrop-filter:blur(16px) saturate(180%);
-  /* All colour stays inside the box: a crisp border on the edge, highlights drawn inward only,
-     no outer shadow or glow on the page around it. */
-  border:1px solid rgba(59,75,232,0.20);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,0.95), inset 0 0 0 1px rgba(255,255,255,0.55);
+.amg-box{position:relative;min-width:0;box-sizing:border-box;border-radius:12px;padding:12px 14px 13px;
+  /* Professional, restrained: a clean white panel with a hairline border. A very light frost keeps a
+     hint of glass; all colour stays inside the box edge (no outer glow). Indigo is only an accent. */
+  background:rgba(255,255,255,0.88);
+  -webkit-backdrop-filter:blur(12px) saturate(140%);backdrop-filter:blur(12px) saturate(140%);
+  border:1px solid #E3E6EF;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,1);
   overflow:hidden;
   font-family:'Inter',-apple-system,system-ui,sans-serif}
 .amg-span{grid-column:1/-1}
-.amg-label{font-size:11px;font-weight:600;color:#2F3CC0;line-height:1.3;letter-spacing:0.01em;
+.amg-label{font-size:11px;font-weight:600;color:#5D6577;line-height:1.3;letter-spacing:0.04em;text-transform:uppercase;
   overflow-wrap:anywhere}
-.amg-value{margin-top:4px;font-size:22px;font-weight:700;color:#0B1946;line-height:1.15;
-  font-variant-numeric:tabular-nums;letter-spacing:-0.01em;overflow-wrap:anywhere}
+.amg-value{margin-top:6px;font-size:24px;font-weight:650;color:#0B1946;line-height:1.1;
+  font-variant-numeric:tabular-nums;letter-spacing:-0.02em;overflow-wrap:anywhere}
 .amg-after{font-size:13px;font-weight:600;color:#5D6577;margin-left:3px;letter-spacing:0}
 .amg-sub{margin-top:3px;font-size:11px;color:#5D6577;line-height:1.35;font-variant-numeric:tabular-nums;
   overflow-wrap:anywhere}
-.amg-bar{position:relative;margin-top:8px;height:4px;border-radius:999px;background:rgba(59,75,232,0.14)}
+.amg-bar{position:relative;margin-top:10px;height:3px;border-radius:999px;background:#ECEEF4}
 .amg-fill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:#3B4BE8}
 .amg-tick{position:absolute;top:-2px;bottom:-2px;width:2px;border-radius:1px;background:#0B1946;opacity:0.45}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-  .amg-box{background:linear-gradient(135deg,#ECEEFD 0%,#F8F8FE 100%)}
+  .amg-box{background:#FFFFFF}
 }
 `;
 
