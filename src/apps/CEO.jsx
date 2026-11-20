@@ -18,17 +18,64 @@ import { stockFor, VARIANTS, COLOURS } from "../data/epicRiverInventory.js";
    numerators and denominators, never an average of averages.
    ================================================================================== */
 
+/* Round 5 look: iOS 18-style glass over a soft, fixed mesh backdrop. Colours are tuned so body
+   text keeps ≥ 4.5:1 on the glass over the darkest part of the backdrop. */
 const C = {
-  bg: "#F3F4F9", card: "#FFFFFF", border: "#E7EAF3", borderStrong: "#D5DAE8",
-  ink: "#0B1946", sub: "#4F5A7D", faint: "#6B7596", ghost: "#AEB4CB",
-  primary: "#3B4BE8", primarySoft: "rgba(59,75,232,0.09)",
-  hot: "#E53935", hotSoft: "rgba(229,57,53,0.08)",
-  warm: "#F59E0B", warmSoft: "rgba(245,158,11,0.10)",
-  green: "#2E7D32", greenSoft: "rgba(46,125,50,0.09)",
+  bg: "#F6F7FB", card: "rgba(255,255,255,0.72)", border: "rgba(15,23,42,0.06)", borderStrong: "rgba(15,23,42,0.12)",
+  ink: "#0B1946", sub: "#4A5578", faint: "#5D6577", ghost: "#AEB4CB",
+  primary: "#3B4BE8", primarySoft: "rgba(59,75,232,0.10)",
+  hot: "#C62828", hotSoft: "rgba(198,40,40,0.08)",
+  warm: "#B45309", warmSoft: "rgba(245,158,11,0.10)",
+  green: "#2A7330", greenSoft: "rgba(46,125,50,0.09)",
   purple: "#6D28D9", teal: "#00695C",
 };
-const F = "'Inter', -apple-system, system-ui, sans-serif";
-const shadow = "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)";
+const F = "-apple-system, 'SF Pro Text', 'SF Pro Display', Inter, system-ui, sans-serif";
+const FD = "-apple-system, 'SF Pro Display', 'SF Pro Text', Inter, system-ui, sans-serif";   // big numbers
+const tint = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+const deepen = (hex) => { const n = parseInt(hex.slice(1), 16), k = 0.3, ink = [11, 25, 70];   // 70% tone + 30% ink, for small text on a tint
+  return `rgb(${[n >> 16, (n >> 8) & 255, n & 255].map((v, i) => Math.round(v * (1 - k) + ink[i] * k)).join(",")})`; };
+const HEADER_H = 58;   // the glass header floats over the scrolling content
+const ROW_TINT = "rgba(99,102,241,0.06)";
+
+const BLUR = "-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);";
+const GLASS_CSS = `
+.ceo-root{-webkit-font-smoothing:antialiased;}
+.ceo-mesh{background:
+  radial-gradient(70% 42% at 0% 0%, #E8EBFF 0%, rgba(232,235,255,0) 100%),
+  radial-gradient(60% 40% at 100% 28%, #F1E8FF 0%, rgba(241,232,255,0) 100%),
+  radial-gradient(70% 42% at 0% 72%, #E3F6F1 0%, rgba(227,246,241,0) 100%),
+  radial-gradient(65% 42% at 100% 100%, #FFF0E6 0%, rgba(255,240,230,0) 100%),
+  #F7F8FC;}
+.g-glass{${BLUR}background:rgba(255,255,255,0.62);border:1px solid rgba(15,23,42,0.06);border-radius:24px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,0.7),0 8px 32px rgba(31,38,135,0.08);}
+.g-box{${BLUR}background:rgba(255,255,255,0.66);border:1px solid rgba(15,23,42,0.06);border-radius:18px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,0.7),0 8px 28px rgba(31,38,135,0.07);transition:transform .18s ease;}
+.g-box.in{background:rgba(255,255,255,0.58);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.75),0 2px 10px rgba(31,38,135,0.05);}
+.g-box:active{transform:scale(.98);}
+.g-bar{${BLUR}background:rgba(255,255,255,0.6);border-bottom:1px solid rgba(15,23,42,0.06);box-shadow:inset 0 -1px 0 rgba(255,255,255,0.7);}
+.g-pin{${BLUR}background:rgba(255,255,255,0.86);border-radius:14px;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.8),0 6px 18px rgba(31,38,135,0.07);}
+.g-drawer{-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);background:rgba(255,255,255,0.72);
+  border-right:1px solid rgba(255,255,255,0.7);box-shadow:inset -1px 0 0 rgba(15,23,42,0.06),0 8px 40px rgba(31,38,135,0.16);}
+.g-dim{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);background:rgba(15,23,42,0.22);}
+.g-btn{${BLUR}background:rgba(255,255,255,0.7);border:1px solid rgba(15,23,42,0.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.7),0 2px 8px rgba(31,38,135,0.06);}
+.g-seg{background:rgba(15,23,42,0.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.6);}
+.g-thumb{background:#fff;box-shadow:0 3px 8px rgba(15,23,42,0.12),0 1px 1px rgba(15,23,42,0.04);transition:transform .2s ease;}
+.g-toast{-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);background:rgba(11,25,70,0.86);
+  box-shadow:0 10px 30px rgba(11,25,70,0.25);}
+.g-press{transition:transform .18s ease;}
+.g-press:active{transform:scale(.98);}
+.g-chev{transition:transform .18s ease;}
+.g-field:focus{border-color:rgba(59,75,232,0.55)!important;box-shadow:0 0 0 3px rgba(59,75,232,0.12);}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .g-glass,.g-box,.g-box.in,.g-bar,.g-pin,.g-drawer,.g-btn{background:rgba(255,255,255,0.92);}
+  .g-dim{background:rgba(15,23,42,0.4);}
+  .g-toast{background:rgba(11,25,70,0.96);}
+}
+@media (prefers-reduced-motion:reduce){
+  .ceo-root *{transition:none!important;}
+  .g-press:active,.g-box:active{transform:none;}
+}
+`;
 
 /* ---------------- Formatting (Indian units) ---------------- */
 const ok = (x) => x != null && Number.isFinite(x);
@@ -409,33 +456,56 @@ function labelOf(fk, key) {
 }
 
 /* ============================ SHARED UI ============================ */
-function Card({ children, style, ...rest }) {
-  return <div {...rest} style={{ background: C.card, borderRadius: 16, padding: 14, marginBottom: 10, boxShadow: shadow, ...style }}>{children}</div>;
+function Card({ children, style, className, ...rest }) {
+  return <div {...rest} className={`g-glass${className ? " " + className : ""}`} style={{ padding: 14, marginBottom: 12, ...style }}>{children}</div>;
+}
+/* A key number in a glass box: small label, big number, one grey sub-line. `inner` = sits inside a card. */
+function Metric({ label, value, after, sub, sub2, tone = C.ink, span, inner, testid, ...rest }) {
+  return (
+    <div {...rest} data-testid={testid} className={`g-box${inner ? " in" : ""}`}
+      style={{ minWidth: 0, padding: inner ? "11px 12px 10px" : "12px 14px 11px", gridColumn: span ? "1 / -1" : undefined }}>
+      <div style={{ fontFamily: F, fontSize: 11, fontWeight: 500, color: C.faint, lineHeight: 1.25 }}>{label}</div>
+      <div style={{ fontFamily: FD, fontSize: inner ? 20 : 23, fontWeight: 600, letterSpacing: "-0.02em", color: tone, marginTop: 4, lineHeight: 1.1,
+        whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+        {value}{after && <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: 0, color: C.faint }}>{after}</span>}
+      </div>
+      {sub && <div style={{ fontFamily: F, fontSize: 11, color: C.faint, marginTop: 4, lineHeight: 1.3 }}>{sub}</div>}
+      {sub2 && <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, marginTop: 1, lineHeight: 1.3 }}>{sub2}</div>}
+    </div>
+  );
+}
+function MetricGrid({ children, testid, style }) {
+  return <div data-testid={testid} style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: 10, marginBottom: 12, ...style }}>{children}</div>;
 }
 function ScreenHead({ title, blurb, right }) {
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 12 }}>
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, margin: "2px 2px 14px" }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: F, fontWeight: 800, fontSize: 15.5, color: C.ink }}>{title}</div>
-        {blurb && <div style={{ fontFamily: F, fontSize: 11.5, color: C.sub, marginTop: 2, lineHeight: 1.4 }}>{blurb}</div>}
+        <div style={{ fontFamily: FD, fontWeight: 700, fontSize: 22, letterSpacing: "-0.02em", color: C.ink }}>{title}</div>
+        {blurb && <div style={{ fontFamily: F, fontSize: 12, color: C.sub, marginTop: 3, lineHeight: 1.4 }}>{blurb}</div>}
       </div>
       {right}
     </div>
   );
 }
 function PeriodLine() {
-  return <div style={{ fontFamily: F, fontSize: 11, color: C.faint, margin: "0 0 9px 4px" }}>{PERIOD_LINE}</div>;
+  return <div style={{ fontFamily: F, fontSize: 11.5, fontWeight: 500, color: C.faint, margin: "0 0 10px 4px" }}>{PERIOD_LINE}</div>;
 }
+/* iOS segmented control: a tinted track with a raised white thumb that slides to the chosen option. */
 function Seg({ value, onChange, opts, testid }) {
+  const i = Math.max(0, opts.findIndex(([v]) => v === value));
   return (
-    <span data-testid={testid} style={{ display: "inline-flex", flexShrink: 0, border: `1.5px solid ${C.border}`, borderRadius: 9, padding: 2 }}>
+    <span data-testid={testid} className="g-seg" style={{ position: "relative", display: "inline-grid", gridTemplateColumns: `repeat(${opts.length}, 1fr)`,
+      flexShrink: 0, borderRadius: 10, padding: 2 }}>
+      <span aria-hidden className="g-thumb" style={{ position: "absolute", top: 2, bottom: 2, left: 2, borderRadius: 8,
+        width: `calc((100% - 4px) / ${opts.length})`, transform: `translateX(${i * 100}%)` }} />
       {opts.map(([v, label]) => {
         const on = value === v;
         return (
           <button key={v} type="button" aria-pressed={on} data-testid={`${testid}-${v}`} onClick={() => onChange(v)} style={{
-            padding: "4px 9px", borderRadius: 7, border: "none", cursor: "pointer",
-            background: on ? C.primarySoft : "none", color: on ? C.primary : C.sub,
-            fontFamily: F, fontWeight: 700, fontSize: 11 }}>{label}</button>
+            position: "relative", padding: "5px 9px", borderRadius: 8, border: "none", cursor: "pointer", background: "none",
+            color: on ? C.primary : C.sub, fontFamily: F, fontWeight: on ? 600 : 500, fontSize: 11.5, transition: "color .2s ease",
+            WebkitTapHighlightColor: "transparent" }}>{label}</button>
         );
       })}
     </span>
@@ -444,34 +514,36 @@ function Seg({ value, onChange, opts, testid }) {
 function CardHead({ Icon, title, right, hint, testid }) {
   return (
     <>
-      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3, paddingLeft: 4 }}>
-        <Icon size={14} color={C.primary} />
-        <span data-testid={testid} style={{ flex: 1, minWidth: 0, fontFamily: F, fontSize: 13.5, fontWeight: 800, color: C.ink }}>{title}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, paddingLeft: 4 }}>
+        <span style={{ width: 24, height: 24, borderRadius: "50%", background: C.primarySoft, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon size={13} color={C.primary} />
+        </span>
+        <span data-testid={testid} style={{ flex: 1, minWidth: 0, fontFamily: FD, fontSize: 15, fontWeight: 650, letterSpacing: "-0.01em", color: C.ink }}>{title}</span>
         {right}
       </div>
-      {hint && <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, marginBottom: 8, paddingLeft: 4 }}>{hint}</div>}
+      {hint && <div style={{ fontFamily: F, fontSize: 11, color: C.faint, marginBottom: 10, paddingLeft: 4, lineHeight: 1.35 }}>{hint}</div>}
     </>
   );
 }
 function BackBar({ title, sub, onBack }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-      <button type="button" aria-label="Back" data-testid="back" onClick={onBack} style={{ width: 32, height: 32, borderRadius: 10, border: `1px solid ${C.border}`,
-        background: C.card, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
-        <ChevronLeft size={17} color={C.ink} />
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+      <button type="button" aria-label="Back" data-testid="back" onClick={onBack} className="g-btn g-press" style={{ width: 34, height: 34, borderRadius: "50%",
+        display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, padding: 0 }}>
+        <ChevronLeft size={18} color={C.ink} />
       </button>
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontFamily: F, fontWeight: 800, fontSize: 15, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
-        {sub && <div style={{ fontFamily: F, fontSize: 11, color: C.faint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</div>}
+        <div style={{ fontFamily: FD, fontWeight: 700, fontSize: 17, letterSpacing: "-0.01em", color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
+        {sub && <div style={{ fontFamily: F, fontSize: 11.5, color: C.faint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</div>}
       </div>
     </div>
   );
 }
 
 /* ============================ THE EXPANDABLE TABLE ============================
-   Manager's TargetRow treatment: a level-coloured left bar and a background step per depth
-   (no indenting), a chevron, an initials avatar, name over a one-line sub. */
-const DEPTH_BG = ["rgba(59,75,232,0.07)", "#FFFFFF", "#F8F9FD", "#EEF0F7"];
+   Manager's TargetRow treatment inside glass: transparent rows on hairlines, a thin level-coloured
+   pill on the left (no indenting), a faint tint on the group row and on open parents, a rotating
+   chevron, a soft tinted initials avatar, name over a one-line sub. */
 const LEVEL_TONE = {
   CEO: C.ink, ZH: C.primary, AM: C.purple, SM: C.ink, TL: C.teal, SE: C.ghost,
   GROUP: C.ink, STATE: C.primary, CITY: C.purple, OUTLET: C.teal,
@@ -485,11 +557,11 @@ const initials = (name) => name.split(" ").filter(Boolean).slice(0, 2).map(w => 
 const shortName = (name) => { const [a, ...b] = name.split(" "); return b.length ? `${a} ${b[b.length - 1][0]}.` : a; };
 
 function Avatar({ t, size }) {
-  const bg = AVATAR_BG[t.kind];
-  const box = { width: size, height: size, borderRadius: "50%", background: bg, color: "#fff", display: "flex", alignItems: "center",
-    justifyContent: "center", flexShrink: 0, fontFamily: F, fontWeight: 800, fontSize: size * 0.36 };
-  if (t.kind === "CITY") return <span style={box}><MapPin size={size * 0.5} color="#fff" /></span>;
-  if (t.kind === "OUTLET") return <span style={box}><Store size={size * 0.5} color="#fff" /></span>;
+  const tone = AVATAR_BG[t.kind];
+  const box = { width: size, height: size, borderRadius: "50%", background: tint(tone, 0.09), color: deepen(tone), display: "flex", alignItems: "center",
+    justifyContent: "center", flexShrink: 0, fontFamily: F, fontWeight: 700, fontSize: size * 0.36, boxShadow: `inset 0 0 0 1px ${tint(tone, 0.12)}` };
+  if (t.kind === "CITY") return <span style={box}><MapPin size={size * 0.5} color={deepen(tone)} /></span>;
+  if (t.kind === "OUTLET") return <span style={box}><Store size={size * 0.5} color={deepen(tone)} /></span>;
   const txt = t.kind === "GROUP" ? "ER" : t.kind === "STATE" ? STATE_ABBR[t.name] || initials(t.name) : initials(t.name);
   return <span style={box}>{txt}</span>;
 }
@@ -537,21 +609,21 @@ function TreeRow({ t, depth, expanded, onToggle, onOutlet, parent, cols, agg, cm
   const line = part === "kids" ? null : (
     <div data-testid="tree-row" data-key={t.key} data-parent={parent ? parent.key : ""} data-depth={depth} data-kind={t.kind} data-name={t.name}
       data-merged={t.merged || undefined} {...attrs}
-      style={{ display: "flex", alignItems: "center", minHeight: 48, borderBottom: `1px solid ${C.border}`,
-        background: DEPTH_BG[Math.min(depth, DEPTH_BG.length - 1)], borderLeft: `3px solid ${LEVEL_TONE[t.kind]}` }}>
+      style={{ position: "relative", display: "flex", alignItems: "center", minHeight: 48, borderBottom: `1px solid ${C.border}`,
+        background: depth === 0 || (open && t.hasKids) ? ROW_TINT : "transparent", transition: "background-color .18s ease" }}>
+      <span aria-hidden style={{ position: "absolute", left: 0, top: 9, bottom: 9, width: 3, borderRadius: 3, background: LEVEL_TONE[t.kind] }} />
       <button type="button" data-testid="tree-name" disabled={!clickable}
         onClick={() => (t.hasKids ? onToggle(t.key) : isOutlet ? onOutlet(t.loc.id) : null)}
         aria-expanded={t.hasKids ? open : undefined}
         style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 6, padding: "10px 4px 10px 6px",
           background: "none", border: "none", cursor: clickable ? "pointer" : "default", textAlign: "left", WebkitTapHighlightColor: "transparent" }}>
         {t.hasKids
-          ? (open ? <ChevronDown size={12} color={C.faint} style={{ flexShrink: 0 }} />
-                  : <ChevronRight size={12} color={C.faint} style={{ flexShrink: 0 }} />)
+          ? <ChevronRight size={12} color={C.faint} className="g-chev" style={{ flexShrink: 0, transform: open ? "rotate(90deg)" : "none" }} />
           : isOutlet ? <ChevronRight size={12} color={C.primary} style={{ flexShrink: 0 }} />
           : <span style={{ width: 12, flexShrink: 0 }} />}
         <Avatar t={t} size={depth === 0 ? 26 : 23} />
         <span style={{ minWidth: 0 }}>
-          <span style={{ display: "block", fontFamily: F, fontSize: 12.5, fontWeight: depth === 0 ? 800 : 600,
+          <span style={{ display: "block", fontFamily: F, fontSize: 12.5, fontWeight: depth === 0 ? 700 : 600,
             color: isOutlet ? C.primary : C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {displayName(t)}
           </span>
@@ -601,7 +673,7 @@ function useSort(cols, agg, initial, opts) {
   return [sort, (key) => setSort(s => nextSort(s, key, opts)), cmp];
 }
 function TreeHead({ cols, sort, onSort }) {
-  const h = { fontFamily: F, fontSize: 9, fontWeight: 800, color: C.sub, textTransform: "uppercase", letterSpacing: 0.2 };
+  const h = { fontFamily: F, fontSize: 9, fontWeight: 700, color: C.sub, textTransform: "uppercase", letterSpacing: 0.2 };
   const btn = { background: "none", border: "none", padding: 0, margin: 0, cursor: "pointer", lineHeight: "inherit", WebkitTapHighlightColor: "transparent" };
   const arrow = (k) => sort && sort.key === k
     ? <span style={{ position: "absolute", left: 0, right: 0, top: "100%", paddingTop: 1, fontSize: 6.5, lineHeight: 1, color: C.primary,
@@ -611,7 +683,7 @@ function TreeHead({ cols, sort, onSort }) {
         style={{ ...h, ...btn, position: "relative", ...style }}>{label}{arrow(k)}</button>
     : <span style={{ ...h, ...style }}>{label}</span>;
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: 7, borderBottom: `1.5px solid ${C.borderStrong}` }}>
+    <div style={{ display: "flex", alignItems: "flex-end", padding: "4px 0 7px", borderBottom: `1px solid ${C.borderStrong}` }}>
       {cell("name", "Name", { flex: 1, minWidth: 0, textAlign: "left", letterSpacing: 0.4, paddingLeft: 5 })}
       {cols.map(c => <React.Fragment key={c.key}>{cell(c.key, c.label, { width: c.w, flexShrink: 0, textAlign: c.align || "center", paddingRight: c.align === "right" ? 4 : 0 })}</React.Fragment>)}
     </div>
@@ -622,8 +694,8 @@ function Legend({ items }) {
     <div style={{ display: "flex", gap: 11, marginBottom: 9, paddingLeft: 4 }}>
       {items.map(([k, label]) => (
         <span key={k} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-          <span style={{ width: 3, height: 11, borderRadius: 2, background: LEVEL_TONE[k] }} />
-          <span style={{ fontFamily: F, fontSize: 9.5, color: C.faint }}>{label}</span>
+          <span style={{ width: 3, height: 11, borderRadius: 3, background: LEVEL_TONE[k] }} />
+          <span style={{ fontFamily: F, fontSize: 10, color: C.faint }}>{label}</span>
         </span>
       ))}
     </div>
@@ -733,7 +805,7 @@ function TreeCard({ title, Icon, testid, hintPeople, hintLoc, cols, open, top, m
       {setMode && !fi && <Legend items={LEGEND[mode]} />}
       {fi ? (
         <>
-          <div data-testid="pinned" style={{ position: "sticky", top: 0, zIndex: 3, background: C.card }}>
+          <div data-testid="pinned" className="g-pin" style={{ position: "sticky", top: HEADER_H, zIndex: 3, overflow: "hidden" }}>
             <TreeHead cols={cols} sort={sort} onSort={onSort} />
             <TreeRow key={root.key} {...rp} part="line" />
           </div>
@@ -748,11 +820,20 @@ function TreeCard({ title, Icon, testid, hintPeople, hintLoc, cols, open, top, m
     </Card>
   );
 }
+/* Target ₹ value: each outlet's November target units at that outlet's model-mix price. */
+const TARGET_VALUE = LOCS.reduce((s, l) => s + l.monthTarget * l.avgPrice, 0);
 function BoardScreen({ open }) {
   const [mode, setMode] = useState("people");
+  const g = aggOf(mode === "people" ? PEOPLE_ROOT : LOC_ROOT);   // the group either way
   return (
     <div style={{ padding: "14px 14px 90px" }}>
       <PeriodLine />
+      <MetricGrid testid="board-summary">
+        <Metric testid="box-retail" label="Retail" value={nIN(g.retail)} after={` / ${nIN(g.target)}`}
+          sub={`${pctS(g.ach)} achieved`} sub2={`proj ${nIN(g.proj)}`} />
+        <Metric testid="box-value" label="Sales value" value={inr(g.value)} sub={`target ${inr(TARGET_VALUE)}`} />
+        <Metric testid="box-book" label="Bookings" value={nIN(g.book)} sub={`${nIN(g.book - g.retail)} booked, not yet retailed`} span />
+      </MetricGrid>
       <TreeCard title="Target achievement" Icon={Target} testid="board-title" cols={BOARD_COLS} open={open} mode={mode} setMode={setMode}
         defSort={{ key: "r", dir: "desc" }}
         hintPeople="Tap a name to expand, a header to sort. Proj = month at today's pace."
@@ -762,15 +843,6 @@ function BoardScreen({ open }) {
 }
 
 /* ============================ FINANCE ============================ */
-function Quiet({ k, v, sub }) {
-  return (
-    <div style={{ minWidth: 0 }}>
-      <div style={{ fontFamily: F, fontSize: 9, fontWeight: 800, color: C.faint, textTransform: "uppercase", letterSpacing: 0.4 }}>{k}</div>
-      <div style={{ fontFamily: F, fontSize: 14, fontWeight: 800, color: C.ink, marginTop: 2, whiteSpace: "nowrap" }}>{v}</div>
-      {sub && <div style={{ fontFamily: F, fontSize: 9.5, color: C.faint, marginTop: 1, whiteSpace: "nowrap" }}>{sub}</div>}
-    </div>
-  );
-}
 const FI_HINT = "Month to date · green/red = 5 pts (rates) or 5% (₹) better/worse than group";
 const FIN = {
   insfin: {
@@ -807,15 +879,13 @@ function FinanceScreen({ which, open, rates }) {
   const cols = useMemo(() => d.cols(gi), [d, gi]);
   const summary = d.summary(gi);
   const n = summary.length;
-  const top = (
-    <div data-testid="fin-summary" style={{ display: "grid", gridTemplateColumns: `repeat(${n === 3 ? 3 : 2}, minmax(0,1fr))`, gap: "10px 12px", padding: "6px 4px 12px" }}>
-      {summary.map(([k, v, sub]) => <Quiet key={k} k={k} v={v} sub={sub} />)}
-    </div>
-  );
   return (
     <div style={{ padding: "14px 14px 90px" }}>
       <PeriodLine />
-      <TreeCard title={d.title} Icon={d.Icon} testid={`fin-${which}`} cols={cols} open={open} mode={mode} setMode={setMode} top={top}
+      <MetricGrid testid="fin-summary">
+        {summary.map(([k, v, sub], i) => <Metric key={k} label={k} value={v} sub={sub} span={n % 2 === 1 && i === n - 1} />)}
+      </MetricGrid>
+      <TreeCard title={d.title} Icon={d.Icon} testid={`fin-${which}`} cols={cols} open={open} mode={mode} setMode={setMode}
         defSort={{ key: "name", dir: "desc" }} hintPeople={d.hint} hintLoc={d.hint} agg={agg} fi />
     </div>
   );
@@ -825,9 +895,15 @@ function FinanceScreen({ which, open, rates }) {
 function StockScreen({ open }) {
   const [ex, toggle] = useExpanded([LOC_ROOT.key]);
   const [sort, onSort, cmp] = useSort(STOCK_COLS, stockOf, { key: "u", dir: "desc" });
+  const g = stockOf(LOC_ROOT);
   return (
     <div style={{ padding: "14px 14px 90px" }}>
-      <div style={{ fontFamily: F, fontSize: 11, color: C.faint, margin: "0 0 9px 4px" }}>Today · ex-showroom value</div>
+      <div style={{ fontFamily: F, fontSize: 11.5, fontWeight: 500, color: C.faint, margin: "0 0 10px 4px" }}>Today · ex-showroom value</div>
+      <MetricGrid testid="stock-summary">
+        <Metric label="Units" value={nIN(g.units)} sub={`plus ${nIN(g.demo)} demo`} />
+        <Metric label="Value" value={inr(g.value)} sub="ex-showroom" />
+        <Metric label="90+ days" value={nIN(g.aged)} tone={g.aged > 0 ? C.hot : C.faint} sub="aged stock, units" span />
+      </MetricGrid>
       <Card style={TABLE_CARD}>
         <CardHead Icon={Package} title="Stock" testid="stock-title" hint="Tap a name to expand, a header to sort. 90+ days is aged stock." />
         <TreeHead cols={STOCK_COLS} sort={sort} onSort={onSort} />
@@ -847,16 +923,19 @@ function StockCard({ id }) {
   const units = (v, c) => { const l = s.lines.find(x => x.variant === v && x.colour === c); return l ? l.units : 0; };
   const age = [0, 1, 2, 3].map(b => s.lines.reduce((x, l) => x + l.buckets[b], 0));
   const grid = { display: "grid", gridTemplateColumns: "42px repeat(5, minmax(0,1fr)) 40px", alignItems: "center" };
-  const head = { fontFamily: F, fontSize: 9, fontWeight: 800, color: C.sub, textTransform: "uppercase", letterSpacing: 0.2, textAlign: "center" };
+  const head = { fontFamily: F, fontSize: 9, fontWeight: 700, color: C.sub, textTransform: "uppercase", letterSpacing: 0.2, textAlign: "center" };
   return (
     <Card data-testid="outlet-stock">
-      <CardHead Icon={Package} title="Stock" testid="outlet-stock-title" hint={`Today · ${inr(s.value)} ex-showroom`}
-        right={<span data-testid="outlet-stock-total" data-total={s.total} style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink }}>{nIN(s.total)} units</span>} />
-      <div style={{ ...grid, padding: "4px 4px 7px", borderBottom: `1.5px solid ${C.borderStrong}` }}>
+      <CardHead Icon={Package} title="Stock" testid="outlet-stock-title" hint="Today · by variant and colour" />
+      <MetricGrid style={{ margin: "0 0 12px" }}>
+        <Metric inner label="Units" value={<span data-testid="outlet-stock-total" data-total={s.total}>{nIN(s.total)}</span>} sub="in stock today" />
+        <Metric inner label="Value" value={inr(s.value)} sub="ex-showroom" />
+      </MetricGrid>
+      <div style={{ ...grid, padding: "4px 4px 7px", borderBottom: `1px solid ${C.borderStrong}` }}>
         <span />
         {COLOURS.map(c => (
           <span key={c} title={c} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-            <span style={{ width: 10, height: 10, borderRadius: "50%", background: SWATCH[c][1], border: `1px solid ${C.borderStrong}` }} />
+            <span style={{ width: 11, height: 11, borderRadius: "50%", background: SWATCH[c][1], boxShadow: `0 0 0 1px ${C.borderStrong}, 0 1px 3px rgba(15,23,42,0.12)` }} />
             <span style={{ ...head, fontSize: 8.5 }}>{SWATCH[c][0]}</span>
           </span>
         ))}
@@ -894,17 +973,12 @@ function OutletScreen({ id, onBack, rates }) {
   const a = withIncome(derive(sumIdx(l.ses)), rates);
   const gi = aggWith(rates)(LOC_ROOT);
   const line = (k, v, tone, gv, sub) => (
-    <div key={k} data-testid="outlet-fin-row" style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "9px 4px", borderTop: `1px solid ${C.border}` }}>
-      <span style={{ flex: 1, minWidth: 0, fontFamily: F, fontSize: 12.5, fontWeight: 600, color: C.ink }}>{k}
-        {sub && <span style={{ display: "block", fontSize: 10, color: C.faint, fontWeight: 500 }}>{sub}</span>}</span>
-      <span style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: tone }}>{v}</span>
-      <span style={{ width: 92, textAlign: "right", fontFamily: F, fontSize: 10, color: C.faint, whiteSpace: "nowrap" }}>group {gv}</span>
-    </div>
+    <Metric key={k} inner testid="outlet-fin-row" label={k} value={v} tone={tone} sub={`group ${gv}`} sub2={sub} />
   );
   return (
     <div data-testid="outlet-page" style={{ padding: "14px 14px 90px" }}>
       <BackBar title={l.name} sub={`${l.city} · ${l.state}`} onBack={onBack} />
-      <div style={{ fontFamily: F, fontSize: 11.5, color: C.sub, margin: "0 0 12px 40px", lineHeight: 1.5 }}>
+      <div style={{ fontFamily: F, fontSize: 11.5, color: C.sub, margin: "0 0 12px 44px", lineHeight: 1.5 }}>
         {l.format} · opened {monthLabel(l.opened)}{l.isNew ? " · new outlet" : ""}
         {l.real && <div style={{ color: C.faint, fontSize: 11 }}>{l.address}</div>}
         {l.real && <div style={{ display: "flex", alignItems: "center", gap: 5, color: C.faint, fontSize: 11 }}><Phone size={11} color={C.faint} />{l.phone}</div>}
@@ -919,12 +993,14 @@ function OutletScreen({ id, onBack, rates }) {
       <Card>
         <CardHead Icon={IndianRupee} title="Finance" testid="outlet-fin"
           hint={`This outlet, ${nIN(a.retail)} units, with the group in grey. Green / red = 5 pts or 5% better / worse.`} />
+        <MetricGrid style={{ marginBottom: 2 }}>
         {line("In-house insurance", pctS(a.insPct), rateTone(a.insPct, G.insPct, a.retail), pctS(G.insPct), `${nIN(a.ins)} policies`)}
         {line("Avg premium", rs(a.premAvg), rsTone(a.premAvg, G.premAvg, a.retail, a.ins), rs(G.premAvg), "per in-house policy")}
         {line("In-house finance", pctS(a.finPct), rateTone(a.finPct, G.finPct, a.retail), pctS(G.finPct), `${pctS(a.finShare)} of loans · group ${pctS(G.finShare)}`)}
         {line("Avg loan", lakh(a.loanAvg), rsTone(a.loanAvg, G.loanAvg, a.retail, a.fin), lakh(G.loanAvg), `${pctS(a.ltv)} LTV · group ${pctS(G.ltv)}`)}
         {line("Add-ons ₹/scooter", rs(a.addPU), rsTone(a.addPU, G.addPU, a.retail), rs(G.addPU), "accessories + River Care")}
         {line("Income per scooter", rs(a.totPV), rsTone(a.totPV, gi.totPV, a.retail), rs(gi.totPV), "at Admin → Payout & margin rates")}
+        </MetricGrid>
       </Card>
       <StockCard id={l.id} />
     </div>
@@ -941,41 +1017,45 @@ function ReportsScreen({ showToast }) {
     <div style={{ padding: "14px 14px 90px" }}>
       <ScreenHead title="Reports" blurb="Group reports as a sheet, sent to your email." />
       {reps.map(([t, s]) => (
-        <Card key={t} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
-          <FileText size={16} color={C.primary} />
+        <Card key={t} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 20, marginBottom: 10 }}>
+          <span style={{ width: 32, height: 32, borderRadius: "50%", background: C.primarySoft, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <FileText size={15} color={C.primary} />
+          </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink }}>{t}</div>
-            <div style={{ fontFamily: F, fontSize: 11, color: C.faint }}>{s}</div>
+            <div style={{ fontFamily: F, fontSize: 13.5, fontWeight: 650, color: C.ink }}>{t}</div>
+            <div style={{ fontFamily: F, fontSize: 11, color: C.faint, marginTop: 1 }}>{s}</div>
           </div>
-          <button type="button" onClick={() => showToast(`${t} — CSV sent to your email`)} style={{ border: `1.5px solid ${C.borderStrong}`, background: C.card, borderRadius: 9, padding: "6px 10px", fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.sub, cursor: "pointer" }}>CSV</button>
+          <button type="button" className="g-btn g-press" onClick={() => showToast(`${t} — CSV sent to your email`)} style={{ borderRadius: 999, padding: "6px 12px", fontFamily: F, fontSize: 11.5, fontWeight: 600, color: C.primary, cursor: "pointer" }}>CSV</button>
         </Card>
       ))}
     </div>
   );
 }
-const inputStyle = { width: "100%", boxSizing: "border-box", border: `1.5px solid ${C.borderStrong}`, borderRadius: 9,
-  padding: "9px 11px", fontFamily: F, fontSize: 13, color: C.ink, background: C.card, outline: "none" };
+const inputStyle = { width: "100%", boxSizing: "border-box", border: `1px solid ${C.borderStrong}`, borderRadius: 12,
+  padding: "10px 12px", fontFamily: F, fontSize: 13, color: C.ink, background: "rgba(255,255,255,0.78)", outline: "none",
+  boxShadow: "inset 0 1px 2px rgba(15,23,42,0.04)", transition: "border-color .18s ease, box-shadow .18s ease" };
 function Field({ label, children }) {
   return (
     <div style={{ marginBottom: 12 }}>
-      <div style={{ fontFamily: F, fontSize: 10, fontWeight: 800, color: C.faint, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 5 }}>{label}</div>
+      <div style={{ fontFamily: F, fontSize: 11.5, fontWeight: 600, color: C.sub, marginBottom: 6 }}>{label}</div>
       {children}
     </div>
   );
 }
 function PrimaryBtn({ children, onClick, disabled, full }) {
-  return <button type="button" onClick={onClick} disabled={disabled} style={{ width: full ? "100%" : "auto", padding: "12px 18px", borderRadius: 10, border: "none",
-    background: disabled ? C.borderStrong : C.primary, color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 13, cursor: disabled ? "default" : "pointer" }}>{children}</button>;
+  return <button type="button" className="g-press" onClick={onClick} disabled={disabled} style={{ width: full ? "100%" : "auto", padding: "12px 18px", borderRadius: 14, border: "none",
+    background: disabled ? "rgba(15,23,42,0.10)" : C.primary, color: disabled ? C.faint : "#fff", fontFamily: F, fontWeight: 650, fontSize: 13.5,
+    boxShadow: disabled ? "none" : "0 6px 18px rgba(59,75,232,0.28)", cursor: disabled ? "default" : "pointer" }}>{children}</button>;
 }
 function GhostBtn({ children, onClick, tone }) {
-  return <button type="button" onClick={onClick} style={{ padding: "10px 14px", borderRadius: 10, cursor: "pointer", border: `1.5px solid ${C.borderStrong}`,
-    background: C.card, color: tone || C.sub, fontFamily: F, fontWeight: 700, fontSize: 12.5 }}>{children}</button>;
+  return <button type="button" className="g-btn g-press" onClick={onClick} style={{ padding: "10px 14px", borderRadius: 14, cursor: "pointer",
+    color: tone || C.sub, fontFamily: F, fontWeight: 600, fontSize: 12.5 }}>{children}</button>;
 }
 function ChipBtn({ on, label, onClick }) {
   return (
-    <button type="button" onClick={onClick} style={{ padding: "7px 11px", borderRadius: 9, cursor: "pointer",
-      border: `1.5px solid ${on ? C.primary : C.border}`, background: on ? C.primarySoft : C.card, color: on ? C.primary : C.sub,
-      fontFamily: F, fontWeight: 700, fontSize: 11.5 }}>{label}</button>
+    <button type="button" className="g-press" onClick={onClick} style={{ padding: "7px 13px", borderRadius: 999, cursor: "pointer",
+      border: `1px solid ${on ? "rgba(59,75,232,0.35)" : C.borderStrong}`, background: on ? C.primarySoft : "rgba(255,255,255,0.7)", color: on ? C.primary : C.sub,
+      fontFamily: F, fontWeight: 600, fontSize: 11.5 }}>{label}</button>
   );
 }
 function MyAccountScreen({ showToast }) {
@@ -986,11 +1066,11 @@ function MyAccountScreen({ showToast }) {
       <ScreenHead title="My Account" blurb="Your login details." />
       <Card>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-          <span style={{ width: 46, height: 46, borderRadius: "50%", background: C.ink, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: F, fontWeight: 800, fontSize: 15 }}>AK</span>
+          <span style={{ width: 46, height: 46, borderRadius: "50%", background: C.primarySoft, color: C.primary, boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.8)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: F, fontWeight: 700, fontSize: 15 }}>AK</span>
           <span style={{ fontFamily: F, fontSize: 12, color: C.sub }}>Group CEO · {GROUP.name} ({GROUP.parent})</span>
         </div>
-        <Field label="Profile name"><input style={inputStyle} value={name} onChange={e => setName(e.target.value)} /></Field>
-        <Field label="Email ID"><input style={inputStyle} value={email} onChange={e => setEmail(e.target.value)} /></Field>
+        <Field label="Profile name"><input className="g-field" style={inputStyle} value={name} onChange={e => setName(e.target.value)} /></Field>
+        <Field label="Email ID"><input className="g-field" style={inputStyle} value={email} onChange={e => setEmail(e.target.value)} /></Field>
         <Field label="Scope"><div style={{ fontFamily: F, fontSize: 12.5, color: C.ink }}>{LOCS.length} outlets · {PEOPLE_COUNT} people · {ZONES.length} zones</div></Field>
         <PrimaryBtn full onClick={() => showToast("Profile updated")}>Save changes</PrimaryBtn>
       </Card>
@@ -1032,14 +1112,14 @@ function AdminFieldsScreen({ cfs, setCfs, showToast }) {
   return (
     <div style={{ padding: "14px 14px 90px" }}>
       <ScreenHead title="Fields" blurb="Fields on locations and people. Values left blank show as Unassigned."
-        right={!creating && <button type="button" onClick={() => setCreating(true)} style={{ display: "inline-flex", alignItems: "center", gap: 4, border: "none", borderRadius: 9, background: C.primary, color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 12, padding: "8px 11px", cursor: "pointer" }}><Plus size={13} />Field</button>} />
+        right={!creating && <button type="button" className="g-press" onClick={() => setCreating(true)} style={{ display: "inline-flex", alignItems: "center", gap: 4, border: "none", borderRadius: 999, background: C.primary, color: "#fff", fontFamily: F, fontWeight: 650, fontSize: 12, padding: "8px 13px", cursor: "pointer", boxShadow: "0 6px 16px rgba(59,75,232,0.25)" }}><Plus size={13} />Field</button>} />
       {creating && (
         <Card>
-          <Field label="Field name"><input style={inputStyle} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Mall outlet" /></Field>
+          <Field label="Field name"><input className="g-field" style={inputStyle} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Mall outlet" /></Field>
           <Field label="Applies to">
             <div style={{ display: "flex", gap: 6 }}>{["Locations", "People"].map(a => <ChipBtn key={a} on={applies === a} label={a} onClick={() => setApplies(a)} />)}</div>
           </Field>
-          <Field label="Values (comma separated)"><input style={inputStyle} value={vals} onChange={e => setVals(e.target.value)} placeholder="e.g. Yes, No" /></Field>
+          <Field label="Values (comma separated)"><input className="g-field" style={inputStyle} value={vals} onChange={e => setVals(e.target.value)} placeholder="e.g. Yes, No" /></Field>
           <div style={{ display: "flex", gap: 8 }}>
             <PrimaryBtn disabled={!name.trim()} onClick={() => {
               const key = "cf_" + name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_") + "_" + (cfs.length + 1);
@@ -1055,13 +1135,13 @@ function AdminFieldsScreen({ cfs, setCfs, showToast }) {
         const cf = cfs.find(c => c.key === f.key);
         const counts = isOpen ? countsFor(f) : [];
         return (
-          <Card key={f.key} style={{ padding: "12px 14px" }}>
+          <Card key={f.key} style={{ padding: "13px 14px", borderRadius: 20, marginBottom: 10 }}>
             <button type="button" data-testid="field-row" onClick={() => setOpenKey(isOpen ? null : f.key)} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left" }}>
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink }}>{f.label}</span>
+                <span style={{ display: "block", fontFamily: F, fontSize: 13.5, fontWeight: 650, color: C.ink }}>{f.label}</span>
                 <span style={{ display: "block", fontFamily: F, fontSize: 10.5, color: C.faint }}>{f.kind} · {f.applies}{f.rule ? ` · ${f.rule}` : cf ? ` · ${cf.source}` : ""}</span>
               </span>
-              <ChevronDown size={14} color={C.ghost} style={{ transform: isOpen ? "rotate(180deg)" : "none" }} />
+              <ChevronDown size={14} color={C.faint} className="g-chev" style={{ transform: isOpen ? "rotate(180deg)" : "none" }} />
             </button>
             {isOpen && (
               <div style={{ marginTop: 10 }}>
@@ -1078,7 +1158,7 @@ function AdminFieldsScreen({ cfs, setCfs, showToast }) {
                     {cf.applies === "Locations" && (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
                         <GhostBtn onClick={() => applyRule(cf)}>Rule: opened in last</GhostBtn>
-                        <input aria-label="Months" type="number" min={1} max={36} value={ruleMonths} onChange={e => setRuleMonths(Number(e.target.value) || 12)} style={{ ...inputStyle, width: 54, padding: "8px 6px" }} />
+                        <input className="g-field" aria-label="Months" type="number" min={1} max={36} value={ruleMonths} onChange={e => setRuleMonths(Number(e.target.value) || 12)} style={{ ...inputStyle, width: 54, padding: "8px 6px" }} />
                         <span style={{ fontFamily: F, fontSize: 11.5, color: C.sub }}>months</span>
                       </span>
                     )}
@@ -1105,7 +1185,7 @@ function AdminRatesScreen({ rates, setRates, showToast }) {
   const gi = withIncome(G, valid ? parsed : rates);
   const unit = (t) => <span style={{ fontFamily: F, fontSize: 12, color: C.sub, whiteSpace: "nowrap" }}>{t}</span>;
   const box = (k, w = 76) => (
-    <input data-testid={`rate-${k}`} inputMode="decimal" value={d[k]} onChange={e => setD(x => ({ ...x, [k]: e.target.value.replace(/[^0-9.]/g, "") }))}
+    <input className="g-field" data-testid={`rate-${k}`} inputMode="decimal" value={d[k]} onChange={e => setD(x => ({ ...x, [k]: e.target.value.replace(/[^0-9.]/g, "") }))}
       style={{ ...inputStyle, width: w, textAlign: "right", borderColor: Number.isFinite(parsed[k]) ? C.borderStrong : C.hot }} />
   );
   const row = (...xs) => <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>{xs.map((x, i) => <React.Fragment key={i}>{x}</React.Fragment>)}</div>;
@@ -1119,12 +1199,12 @@ function AdminRatesScreen({ rates, setRates, showToast }) {
           box("file"), unit("per file"))}</Field>
         <Field label="Accessory margin">{row(box("acc"), unit("% of accessory sales"))}</Field>
         <Field label="River Care margin">{row(box("rc"), unit("% of plan sales"))}</Field>
-        <div data-testid="rates-preview" data-value={gi.totPV} style={{ borderTop: `1px solid ${C.border}`, padding: "11px 0 12px", marginTop: 2 }}>
+        <div data-testid="rates-preview" data-value={gi.totPV} className="g-box in" style={{ padding: "12px 14px", margin: "4px 0 14px" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ flex: 1, fontFamily: F, fontSize: 12.5, fontWeight: 600, color: C.ink }}>Group income per scooter</span>
-            <span style={{ fontFamily: F, fontSize: 15, fontWeight: 800, color: valid ? C.ink : C.faint }}>{rs(gi.totPV)}</span>
+            <span style={{ flex: 1, fontFamily: F, fontSize: 12, fontWeight: 500, color: C.faint }}>Group income per scooter</span>
+            <span style={{ fontFamily: FD, fontSize: 20, fontWeight: 600, letterSpacing: "-0.02em", color: valid ? C.ink : C.faint }}>{rs(gi.totPV)}</span>
           </div>
-          <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, marginTop: 2 }}>
+          <div style={{ fontFamily: F, fontSize: 11, color: C.faint, marginTop: 3 }}>
             {valid ? `insurance ${rs(gi.insPV)} · finance ${rs(gi.finPV)} · add-ons ${rs(gi.addPV)}` : "Enter a number in every box (percentages up to 100)."}
           </div>
         </div>
@@ -1195,13 +1275,14 @@ export default function CEOApp() {
   const top = stack[stack.length - 1];
 
   return (
-    <div style={{ width: "100%", maxWidth: 420, margin: "0 auto", height: "100vh", maxHeight: 900,
-      background: C.bg, display: "flex", flexDirection: "column", position: "relative",
+    <div className="ceo-root ceo-mesh" style={{ width: "100%", maxWidth: 420, margin: "0 auto", height: "100vh", maxHeight: 900,
+      display: "flex", flexDirection: "column", position: "relative",
       borderRadius: 22, overflow: "hidden", boxShadow: "0 10px 40px rgba(0,0,0,.12)" }}>
+      <style>{GLASS_CSS}</style>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "15px 14px 13px",
-        background: C.card, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-        <button aria-label="Menu" data-testid="menu-btn" onClick={() => setMenuOpen(true)}
+      <div className="g-bar" style={{ position: "absolute", top: 0, left: 0, right: 0, height: HEADER_H, boxSizing: "border-box", zIndex: 20,
+        display: "flex", alignItems: "center", gap: 10, padding: "0 14px" }}>
+        <button aria-label="Menu" data-testid="menu-btn" onClick={() => setMenuOpen(true)} className="g-press"
           style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
           <Menu size={20} color={C.ink} />
         </button>
@@ -1209,35 +1290,39 @@ export default function CEOApp() {
           AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: C.primary, marginLeft: 1, marginBottom: 8 }} />
         </span>
         <span style={{ flex: 1 }} />
-        <span style={{ width: 30, height: 30, borderRadius: "50%", background: C.ink, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
-          fontFamily: F, fontWeight: 800, fontSize: 11.5 }}>AK</span>
+        <span className="g-btn" style={{ width: 32, height: 32, boxSizing: "border-box", borderRadius: "50%", color: C.ink, display: "flex", alignItems: "center", justifyContent: "center",
+          fontFamily: F, fontWeight: 700, fontSize: 11.5 }}>AK</span>
       </div>
 
       <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
         <div ref={scrollRef} style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden" }}>
-          {base === "board" && <BoardScreen open={open} />}
-          {base === "finance" && <FinanceScreen key={sub} which={sub} open={open} rates={rates} />}
-          {base === "stock" && <StockScreen open={open} />}
-          {base === "reports" && <ReportsScreen showToast={showToast} />}
-          {base === "account" && <MyAccountScreen showToast={showToast} />}
-          {base === "admin" && (sub === "locations"
-            ? <AdminLocationsScreen cfs={cfs} open={open} />
-            : sub === "rates" ? <AdminRatesScreen rates={rates} setRates={setRates} showToast={showToast} />
-            : <AdminFieldsScreen cfs={cfs} setCfs={setCfs} showToast={showToast} />)}
+          <div style={{ paddingTop: HEADER_H }}>
+            {base === "board" && <BoardScreen open={open} />}
+            {base === "finance" && <FinanceScreen key={sub} which={sub} open={open} rates={rates} />}
+            {base === "stock" && <StockScreen open={open} />}
+            {base === "reports" && <ReportsScreen showToast={showToast} />}
+            {base === "account" && <MyAccountScreen showToast={showToast} />}
+            {base === "admin" && (sub === "locations"
+              ? <AdminLocationsScreen cfs={cfs} open={open} />
+              : sub === "rates" ? <AdminRatesScreen rates={rates} setRates={setRates} showToast={showToast} />
+              : <AdminFieldsScreen cfs={cfs} setCfs={setCfs} showToast={showToast} />)}
+          </div>
         </div>
         {top && (
-          <div key={stack.length} style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden", background: C.bg, zIndex: 10 }}>
-            <OutletScreen id={top} onBack={back} rates={rates} />
+          <div key={stack.length} className="ceo-mesh" style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden", zIndex: 10 }}>
+            <div style={{ paddingTop: HEADER_H }}>
+              <OutletScreen id={top} onBack={back} rates={rates} />
+            </div>
           </div>
         )}
       </div>
 
       {menuOpen && (
         <div style={{ position: "absolute", inset: 0, zIndex: 150, display: "flex" }}>
-          <div onClick={() => setMenuOpen(false)} style={{ position: "absolute", inset: 0, background: "rgba(11,25,70,0.4)" }} />
-          <div style={{ position: "relative", width: "78%", maxWidth: 280, height: "100%", background: C.card,
-            boxShadow: "8px 0 32px rgba(0,0,0,0.18)", display: "flex", flexDirection: "column" }}>
-            <div style={{ padding: "18px 18px 12px" }}>
+          <div onClick={() => setMenuOpen(false)} className="g-dim" style={{ position: "absolute", inset: 0 }} />
+          <div className="g-drawer" style={{ position: "relative", width: "78%", maxWidth: 280, height: "100%",
+            borderRadius: "0 24px 24px 0", display: "flex", flexDirection: "column" }}>
+            <div style={{ padding: "20px 18px 14px" }}>
               <div style={{ fontFamily: F, fontWeight: 900, fontSize: 15.5, color: C.ink, letterSpacing: -0.5 }}>
                 AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: C.primary, marginLeft: 1, marginBottom: 8 }} />
               </div>
@@ -1250,33 +1335,33 @@ export default function CEOApp() {
                 return (
                   <div key={t.key} style={{ marginBottom: 2 }}>
                     <button data-testid={`nav-${t.key}`} onClick={() => { if (!t.subs.length) { go(t.key); return; } setOpenGroup(expanded ? null : t.key); }} style={{
-                      display: "flex", alignItems: "center", gap: 11, width: "100%", padding: "11px 12px", borderRadius: 9, border: "none",
+                      display: "flex", alignItems: "center", gap: 11, width: "100%", padding: "11px 12px", borderRadius: 12, border: "none",
                       background: groupActive ? C.primarySoft : "none", cursor: "pointer", textAlign: "left" }}>
                       <t.Icon size={17} color={groupActive ? C.primary : C.faint} />
-                      <span style={{ flex: 1, fontFamily: F, fontWeight: groupActive ? 700 : 500, fontSize: 14, color: groupActive ? C.primary : C.ink }}>{t.label}</span>
-                      {t.subs.length > 0 && <ChevronDown size={14} color={C.ghost} style={{ transform: expanded ? "rotate(180deg)" : "none" }} />}
+                      <span style={{ flex: 1, fontFamily: F, fontWeight: groupActive ? 650 : 500, fontSize: 14, color: groupActive ? C.primary : C.ink }}>{t.label}</span>
+                      {t.subs.length > 0 && <ChevronDown size={14} color={C.faint} className="g-chev" style={{ transform: expanded ? "rotate(180deg)" : "none" }} />}
                     </button>
                     {expanded && t.subs.map(s => (
                       <button key={s.key} data-testid={`nav-${s.key}`} onClick={() => go(s.key)} style={{
-                        display: "flex", alignItems: "center", width: "100%", padding: "8px 12px 8px 40px", borderRadius: 8, border: "none",
+                        display: "flex", alignItems: "center", width: "100%", padding: "8px 12px 8px 40px", borderRadius: 10, border: "none",
                         background: tab === s.key ? C.primarySoft : "none", cursor: "pointer", textAlign: "left" }}>
-                        <span style={{ flex: 1, fontFamily: F, fontWeight: tab === s.key ? 700 : 500, fontSize: 13, color: tab === s.key ? C.primary : C.sub }}>{s.label}</span>
+                        <span style={{ flex: 1, fontFamily: F, fontWeight: tab === s.key ? 650 : 500, fontSize: 13, color: tab === s.key ? C.primary : C.sub }}>{s.label}</span>
                       </button>
                     ))}
                   </div>
                 );
               })}
             </div>
-            <div style={{ padding: 14, borderTop: `1px solid ${C.border}` }}>
-              <button onClick={() => setMenuOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: F, fontSize: 13, fontWeight: 700, color: C.hot }}>Sign out</button>
+            <div style={{ padding: "14px 18px", borderTop: `1px solid ${C.borderStrong}` }}>
+              <button onClick={() => setMenuOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: F, fontSize: 13, fontWeight: 600, color: C.hot }}>Sign out</button>
             </div>
           </div>
         </div>
       )}
 
       {toast && (
-        <div style={{ position: "absolute", bottom: 22, left: 14, right: 14, background: C.ink, color: "#fff", borderRadius: 11, padding: "12px 14px",
-          fontFamily: F, fontSize: 13, fontWeight: 600, textAlign: "center", zIndex: 300 }}>{toast}</div>
+        <div className="g-toast" style={{ position: "absolute", bottom: "calc(22px + env(safe-area-inset-bottom, 0px))", left: 14, right: 14, color: "#fff", borderRadius: 16, padding: "12px 14px",
+          fontFamily: F, fontSize: 13, fontWeight: 500, textAlign: "center", zIndex: 300 }}>{toast}</div>
       )}
     </div>
   );
