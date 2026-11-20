@@ -6,9 +6,9 @@ const BASE = import.meta.env.BASE_URL;
 // `themed`: the login renders the dealer theme (wrapped in ThemeRoot). Every login gets the
 // theme message; the phone's status bar only goes dark for a themed login in the river theme.
 const ROLES = [
-  { key: "telecaller", label: "Telecaller", short: "Telecaller", sub: "Call queue, follow-ups, qualification", Icon: Headphones, src: `${BASE}telecaller.html` },
-  { key: "sales", label: "Sales Executive", short: "Sales Exec", sub: "Leads, test rides, quotes, bookings", Icon: Bike, src: `${BASE}sales.html` },
-  { key: "manager", label: "Manager + Admin", short: "Manager", sub: "Team board, targets, reports, admin", Icon: LayoutDashboard, src: `${BASE}manager.html` },
+  { key: "telecaller", label: "Telecaller", short: "Telecaller", sub: "Call queue, follow-ups, qualification", Icon: Headphones, src: `${BASE}telecaller.html`, themed: true },
+  { key: "sales", label: "Sales Executive", short: "Sales Exec", sub: "Leads, test rides, quotes, bookings", Icon: Bike, src: `${BASE}sales.html`, themed: true },
+  { key: "manager", label: "Manager + Admin", short: "Manager", sub: "Team board, targets, reports, admin", Icon: LayoutDashboard, src: `${BASE}manager.html`, themed: true },
   { key: "ceo", label: "CEO", short: "CEO", sub: "100 outlets, states, cities, money, stock", Icon: Crown, src: `${BASE}ceo.html`, themed: true },
 ];
 

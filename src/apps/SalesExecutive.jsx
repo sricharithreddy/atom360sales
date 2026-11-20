@@ -33,7 +33,10 @@ const C = {
   // CSS var() strings: never pass them to hex helpers or append alpha suffixes — use mixVar.
   primary: ACCENT.strong,          // interactive text / icons / selected borders on light glass
   primaryDark: ACCENT.strong,
-  primarySoft: ACCENT.soft,        // SELECTED item background (river: solid yellow) — pair with C.primary text
+  // SELECTED item background (river: solid yellow; autoprism: pale indigo laid over milky white so
+  // the indigo label keeps 4.5:1 over the mesh) — pair with C.primary text. A `background` value
+  // (gradient layer + colour), so use it only with the `background` shorthand.
+  primarySoft: `linear-gradient(${ACCENT.soft}, ${ACCENT.soft}), rgba(255,255,255,0.78)`,
   wash: ACCENT.rowOn,              // pale accent wash for informational panels (not a selection)
   fill: ACCENT.primary,            // small solid accent fills (dots, count badges, radio, toggles)
   onFill: ACCENT.ink,              // text / icons on `fill`
@@ -1062,7 +1065,7 @@ function callWaTones(lead) {
   // No stated preference — fall back to usage history.
   const cu = lead.channelUsage || { call: 0, whatsapp: 0 };
   const total = cu.call + cu.whatsapp;
-  if (total < 2 || cu.call === cu.whatsapp) return { call: "call", whatsapp: "whatsapp" };
+  if (total < 2 || cu.call === cu.whatsapp) return { call: "call", whatsapp: "default" };   // one primary per group: Call leads, WhatsApp is a glass secondary
   return cu.call > cu.whatsapp
     ? { call: "prominent", whatsapp: "muted" }
     : { call: "muted", whatsapp: "prominent" };
@@ -4646,7 +4649,7 @@ function LeadsScreen({ currentId, leads, onOpenLead, onCall, onWhatsApp, onCount
           )}
 
           {pinned.length === 0 && timed.length === 0 && (
-            <div style={{ textAlign: "center", padding: "30px 10px", color: C.faint, fontFamily: F, fontSize: 13 }}>
+            <div style={{ textAlign: "center", padding: "30px 10px", color: C.sub, fontFamily: F, fontSize: 13 }}>
               {query || hasActiveLeadFilters || quickFilter ? "No matching items." : "Nothing needs your attention right now — nice work! 🎉"}
             </div>
           )}
@@ -4905,7 +4908,7 @@ function StatusTimeline({ currentStatus, pendingStatus, onSelect }) {
                 width: isCurrent || isPending ? 14 : 11, height: isCurrent || isPending ? 14 : 11, borderRadius: "50%", flexShrink: 0,
                 background: isPending ? "#fff" : reached ? C.fill : "#fff",
                 border: `2px solid ${isPending ? C.warm : reached ? C.fill : C.border}`,
-                boxShadow: isCurrent ? `0 0 0 4px ${C.primarySoft}` : isPending ? `0 0 0 4px ${C.warmSoft}` : "none",
+                boxShadow: isCurrent ? `0 0 0 4px ${ACCENT.soft}` : isPending ? `0 0 0 4px ${C.warmSoft}` : "none",
                 marginTop: 3
               }} />
               {i !== STATUS_ORDER.length - 1 && (
@@ -7629,7 +7632,7 @@ function EarningsPanel({ history }) {
         )}
       </div>
 
-      <div style={{ fontFamily: F, fontSize: 9.5, color: C.faint, lineHeight: 1.5, padding: "0 2px" }}>
+      <div style={{ fontFamily: F, fontSize: 9.5, color: C.sub, lineHeight: 1.5, padding: "0 2px" }}>
         Indicative — settles against the payroll statement. Commission pays on delivery.
       </div>
     </div>
@@ -9589,7 +9592,10 @@ export default function SalesExecutiveApp() {
         input::placeholder, textarea::placeholder { color: #6B7286; }
         input[type="search"]::-webkit-search-cancel-button,
         input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
-        input:focus, textarea:focus, select:focus { outline: none; border-color: var(--focus-border) !important; box-shadow: 0 0 0 3px var(--focus-halo); }
+        input:focus, textarea:focus, select:focus { outline: none; }
+        input:focus:not([style*="border-style: none"]), textarea:focus:not([style*="border-style: none"]), select:focus:not([style*="border-style: none"]) { border-color: var(--focus-border) !important; box-shadow: 0 0 0 3px var(--focus-halo); }
+        /* borderless inputs inside a field wrapper (search bars): the wrapper takes the focus ring */
+        div:has(> input[style*="border-style: none"]:focus), div:has(> textarea[style*="border-style: none"]:focus) { border-color: var(--focus-border) !important; box-shadow: 0 0 0 3px var(--focus-halo) !important; }
         select { appearance: none; -webkit-appearance: none; }
         @media (prefers-reduced-motion: reduce) { .pulse-dot { animation: none; } }
       `}</style>
