@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { stockFor, unitsOf, PUNE_STORES, INVENTORY_AS_OF } from "../data/epicRiverInventory.js";
-import { C as RG, FONT_DISPLAY, TINTS, TONE, BOX_SUB, ACCENT, LINK_DECO, mixVar, ThemeRoot, TintedBox, Metric, MetricGrid } from "../theme/riverGlass.jsx";
 import {
   AlertTriangle, PlayCircle, Headphones, MessageSquare, Flame, TrendingDown, TrendingUp, Settings, Wind, Eye, User, Calendar, MessageCircle, IndianRupee, Heart, RefreshCw,
   Phone, Bike as ScooterIcon, FileText, ChevronLeft, ChevronRight,
@@ -15,42 +14,33 @@ import {
 
 /* ============================== DESIGN TOKENS ============================== */
 const C = {
-  // Surfaces — River Glass: the page is the River mesh (rg-mesh on the root); cards are
-  // rg-glass, and anything still painted with these tokens is see-through so the mesh shows.
-  bg: "rgba(15,23,42,0.045)",      // inset fill (inner panels, tracks) — a faint navy wash on glass
-  card: "rgba(255,255,255,0.62)",  // un-classed small surfaces (chips, toggles, rows)
-  cardHover: "rgba(255,255,255,0.75)",
-  border: "rgba(15,23,42,0.08)",
-  borderStrong: RG.borderStrong,
+  // Surfaces
+  bg: "#F3F4F9",          // warm parchment — not clinical white
+  card: "#FFFFFF",
+  cardHover: "#F8F9FD",
+  border: "#E7EAF3",
+  borderStrong: "#D5DAE8",
 
-  // Typography — the shared River Glass neutrals (≥ 4.5:1 on glass)
-  ink: RG.ink,
-  sub: RG.sub,
-  faint: RG.faint,
-  ghost: RG.ghost,        // disabled / decorative
+  // Typography — four levels, genuinely distinct
+  ink: "#0B1946",         // near-black, warmth from the tiny yellow
+  sub: "#4F5A7D",         // warm mid-grey
+  faint: "#6B7596",       // placeholder / tertiary — 5.0:1 on card, passes AA
+  ghost: "#AEB4CB",       // disabled / decorative
 
-  // Action — the dealer theme's accent (River: ink + yellow; Autoprism: indigo). These are
-  // CSS var() strings: never pass them to hex helpers or append alpha suffixes — use mixVar.
-  primary: ACCENT.strong,          // interactive text / icons / selected borders on light glass
-  primaryDark: ACCENT.strong,
-  // SELECTED item background (river: solid yellow; autoprism: pale indigo laid over milky white so
-  // the indigo label keeps 4.5:1 over the mesh) — pair with C.primary text. A `background` value
-  // (gradient layer + colour), so use it only with the `background` shorthand.
-  primarySoft: `linear-gradient(${ACCENT.soft}, ${ACCENT.soft}), rgba(255,255,255,0.78)`,
-  wash: ACCENT.rowOn,              // pale accent wash for informational panels (not a selection)
-  fill: ACCENT.primary,            // small solid accent fills (dots, count badges, radio, toggles)
-  onFill: ACCENT.ink,              // text / icons on `fill`
-  num: ACCENT.num,                 // big numbers in boxes
+  // Action — orange, one colour for everything interactive
+  primary: "#3B4BE8",
+  primaryDark: "#2F3CC4",
+  primarySoft: "rgba(59,75,232,0.09)",
 
   // Urgency ring colours — used only on the propensity arc
-  urgent: "#A82020",      // overdue / cold — one step deeper than RG.hot so it keeps 4.5:1 on its own soft tint over glass
-  hot: "#A82020",
+  urgent: "#E53935",      // overdue / cold
+  hot: "#E53935",
   hotSoft: "rgba(229,57,53,0.08)",
-  warm: "#9C4A08",        // RG.warm, deepened for small text on glass
+  warm: "#F59E0B",
   warmSoft: "rgba(245,158,11,0.08)",
-  cold: "#0D58AE",
+  cold: "#1E88E5",
   coldSoft: "rgba(30,136,229,0.08)",
-  green: "#24672A",       // RG.green, deepened for small text on glass
+  green: "#2E7D32",
   greenSoft: "rgba(46,125,50,0.08)",
   darkGreen: "#1B5E20",
   darkGreenSoft: "rgba(27,94,32,0.10)",
@@ -63,13 +53,6 @@ const C = {
 };
 
 
-
-// The one primary-button fill — the same computed style as the theme's .rg-btn-primary, for
-// buttons styled through inline style objects (indigo in Autoprism; ink + yellow text in River).
-const PRIMARY_FILL = {
-  background: "var(--accent-grad)", color: ACCENT.ink, border: "none",
-  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.30),inset 0 -1px 0 rgba(0,0,0,0.18),0 6px 18px var(--accent-glow)",
-};
 
 const FONTS = `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');`;
 const F = `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
@@ -1065,7 +1048,7 @@ function callWaTones(lead) {
   // No stated preference — fall back to usage history.
   const cu = lead.channelUsage || { call: 0, whatsapp: 0 };
   const total = cu.call + cu.whatsapp;
-  if (total < 2 || cu.call === cu.whatsapp) return { call: "call", whatsapp: "default" };   // one primary per group: Call leads, WhatsApp is a glass secondary
+  if (total < 2 || cu.call === cu.whatsapp) return { call: "call", whatsapp: "whatsapp" };
   return cu.call > cu.whatsapp
     ? { call: "prominent", whatsapp: "muted" }
     : { call: "muted", whatsapp: "prominent" };
@@ -1111,7 +1094,7 @@ function chipStyle(active, small) {
     fontWeight: 700, fontSize: small ? 10.5 : 11,
     padding: small ? "5px 10px" : "6px 12px", borderRadius: 8,
     border: `1.5px solid ${active ? C.primary : C.borderStrong}`,
-    background: active ? C.primarySoft : "rgba(255,255,255,0.58)",
+    background: active ? C.primarySoft : "#FAFAF8",
     color: active ? C.primary : C.sub, cursor: "pointer",
     letterSpacing: 0.1,
   };
@@ -1120,18 +1103,19 @@ const formInputStyle = {
   border: `1.5px solid ${C.borderStrong}`, borderRadius: 10, padding: "10px 12px",
   fontFamily: F,
   fontSize: 13, fontWeight: 500, color: C.ink, outline: "none",
-  background: "rgba(255,255,255,0.72)", boxSizing: "border-box",
+  background: C.bg, boxSizing: "border-box",
 };
 const cancelBtnStyle = {
   padding: "11px 0", borderRadius: 12, border: `1.5px solid ${C.borderStrong}`,
-  background: "rgba(255,255,255,0.58)",
+  background: C.bg,
   color: C.sub, fontFamily: F,
   fontWeight: 700, fontSize: 13, cursor: "pointer",
 };
 function saveBtnStyle(enabled) {
   return {
     padding: "11px 0", borderRadius: 12, border: "none",
-    ...(enabled ? PRIMARY_FILL : { background: C.borderStrong, color: C.faint }),
+    background: enabled ? C.primary : C.borderStrong,
+    color: enabled ? "#fff" : C.faint,
     fontFamily: F,
     fontWeight: 700, fontSize: 13, cursor: enabled ? "pointer" : "default",
   };
@@ -1162,7 +1146,7 @@ function labelStyle(label) {
 
 function StageBadge({ stage }) {
   const map = {
-    "New": C.faint, "Contacted": C.cold, "Test Ride": ACCENT.level,
+    "New": C.faint, "Contacted": C.cold, "Test Ride": C.primary,
     "Opportunity": C.warm, "Booking": C.green, "Retailed": C.green, "Delivered": C.green, "Lost": C.faint,
   };
   const color = map[stage] || C.sub;
@@ -1212,42 +1196,59 @@ function PropensityTag({ value }) {
   return <StarRating value={value} size={10} />;
 }
 
-function PulseBar({ pct, color }) {
+function PulseBar({ pct, color = C.primary }) {
   return (
-    <div style={{ height: 5, background: "var(--bar-track)", borderRadius: 999, overflow: "hidden" }}>
+    <div style={{ height: 5, background: C.border, borderRadius: 999, overflow: "hidden" }}>
       <div style={{
         width: `${Math.min(100, Math.max(0, pct))}%`, height: "100%",
-        background: color || "var(--bar-fill)", boxShadow: color ? "none" : "inset 0 0 0 1px var(--bar-edge)", borderRadius: 999, transition: "width .6s cubic-bezier(.4,0,.2,1)",
+        background: color, borderRadius: 999, transition: "width .6s cubic-bezier(.4,0,.2,1)",
       }} />
     </div>
   );
 }
 
-// Themed: the recommended channel is the one primary (rg-btn-primary — indigo in Autoprism,
-// ink with yellow text in River); everything else is a glass secondary (rg-btn).
+// CTA button — soft-tint like the rest of the app's badges/chips, with a small solid-color
+// icon dot for the two primary actions (Call, WhatsApp) so they read as primary without
+// the visual weight of a fully solid block.
+// One accent only. The recommended channel is orange; everything else is a neutral
+// outline. Pure black is never used for a CTA — a filled action falls back to charcoal,
+// which sits better against the warm background than #000.
+const CHARCOAL = "#0B1946";
 function IconBtn({ icon: Icon, label, onClick, tone = "default", iconOnly = false }) {
-  const filled = tone === "call" || tone === "whatsapp" || tone === "prominent";
-  const fg = filled ? ACCENT.ink : tone === "muted" ? C.faint : C.sub;
-  const cls = filled ? "rg-btn-primary rg-press" : "rg-btn rg-press";
+  const tones = {
+    default:   { bg: C.card,        fg: C.sub,     border: C.border },
+    muted:     { bg: C.card,        fg: C.ghost,   border: C.border },
+    primary:   { bg: C.primarySoft, fg: C.primary, border: "rgba(59,75,232,0.25)" },
+    // Recommended channel — whether that's the call or the chat, it reads the same way.
+    call:      { bg: C.primary,     fg: "#fff",    border: C.primary },
+    whatsapp:  { bg: C.primary,     fg: "#fff",    border: C.primary },
+    prominent: { bg: C.primary,     fg: "#fff",    border: C.primary },
+    // Reserved for a committed/selected state that isn't a channel recommendation.
+    active:    { bg: CHARCOAL,      fg: "#fff",    border: CHARCOAL },
+  };
+  const t = tones[tone] || tones.default;
+  const filled = t.bg === C.primary || t.bg === CHARCOAL;
   if (iconOnly) {
     return (
-      <button className={cls} onClick={e => { e.stopPropagation(); onClick(); }} style={{
-        width: 32, height: 32, borderRadius: "50%", padding: 0,
+      <button onClick={e => { e.stopPropagation(); onClick(); }} style={{
+        width: 32, height: 32, borderRadius: "50%",
+        background: t.bg, color: t.fg, border: `1.5px solid ${t.border}`,
         display: "flex", alignItems: "center", justifyContent: "center",
         cursor: "pointer", flexShrink: 0,
+        boxShadow: filled ? `0 2px 6px ${t.bg}55` : "none",
       }}>
-        <Icon size={14} color={fg} />
+        <Icon size={14} color={t.fg} />
       </button>
     );
   }
   return (
-    <button className={cls} onClick={e => { e.stopPropagation(); onClick(); }} style={{
+    <button onClick={e => { e.stopPropagation(); onClick(); }} style={{
       display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-      color: fg, borderRadius: 9,
+      background: t.bg, color: t.fg, border: `1.5px solid ${t.border}`, borderRadius: 9,
       padding: "7px 8px", fontSize: 11.5, fontWeight: 700, fontFamily: F,
       cursor: "pointer", flex: 1, whiteSpace: "nowrap",
     }}>
-      <Icon size={13} color={fg} />{label}
+      <Icon size={13} color={t.fg} />{label}
     </button>
   );
 }
@@ -1255,12 +1256,16 @@ function IconBtn({ icon: Icon, label, onClick, tone = "default", iconOnly = fals
 function Toast({ text }) {
   if (!text) return null;
   return (
-    <div className="rg-toast" style={{
-      position: "absolute", bottom: "calc(80px + env(safe-area-inset-bottom, 0px))", left: "50%", transform: "translateX(-50%)",
-      color: "#fff", padding: "11px 16px", borderRadius: 16,
+    <div style={{
+      position: "absolute", bottom: 80, left: "50%", transform: "translateX(-50%)",
+      background: "rgba(255,255,255,0.95)",
+      backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+      border: `1px solid ${C.border}`,
+      borderLeft: `3px solid ${C.primary}`,
+      color: C.ink, padding: "10px 16px", borderRadius: 11,
       fontSize: 12.5, fontWeight: 600,
       fontFamily: F,
-      zIndex: 300, whiteSpace: "nowrap", maxWidth: "calc(100% - 28px)", overflow: "hidden", textOverflow: "ellipsis",
+      zIndex: 70, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", whiteSpace: "nowrap",
     }}>{text}</div>
   );
 }
@@ -1268,29 +1273,30 @@ function Toast({ text }) {
 /* ============================== HEADER ============================== */
 function Header({ screenName, user, onAvatar, onBack, attentionCount, onBellTap, onMenuTap }) {
   return (
-    <div className="rg-bar" style={{
+    <div style={{
       display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "0 16px", height: 52, boxSizing: "border-box",
-      position: "absolute", top: 0, left: 0, right: 0, zIndex: 30,
+      padding: "0 16px", height: 52, background: C.card,
+      borderBottom: `1px solid ${C.border}`,
+      position: "sticky", top: 0, zIndex: 30,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
         {onBack ? (
           <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", marginRight: 4 }}>
-            <ChevronLeft size={22} color={ACCENT.hdrInk} />
+            <ChevronLeft size={22} color={C.ink} />
           </button>
         ) : (
           <button onClick={onMenuTap} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", marginRight: 2 }}>
-            <Menu size={21} color={ACCENT.hdrInk} />
+            <Menu size={21} color={C.ink} />
           </button>
         )}
-        <span style={{ fontFamily: F, fontWeight: 900, fontSize: 16, color: ACCENT.hdrInk, letterSpacing: -0.8, textTransform: "uppercase", display: "flex", alignItems: "center" }}>
-          AUTOPRISM<span className="pulse-dot" style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: ACCENT.dot, marginLeft: 1, marginBottom: 8 }} />
+        <span style={{ fontFamily: F, fontWeight: 900, fontSize: 16, color: C.ink, letterSpacing: -0.8, textTransform: "uppercase", display: "flex", alignItems: "center" }}>
+          AUTOPRISM<span className="pulse-dot" style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: C.primary, marginLeft: 1, marginBottom: 8 }} />
         </span>
-        {screenName && <span style={{ fontFamily: F, fontWeight: 500, fontSize: 13, color: ACCENT.hdrInk }}>/ {screenName}</span>}
+        {screenName && <span style={{ fontFamily: F, fontWeight: 500, fontSize: 13, color: C.faint }}>/ {screenName}</span>}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <button onClick={onBellTap} style={{ position: "relative", background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
-          <Bell size={18} color={ACCENT.hdrInk} strokeWidth={2} />
+          <Bell size={18} color={C.sub} strokeWidth={2} />
           {attentionCount > 0 && (
             <span style={{
               position: "absolute", top: 0, right: 0, minWidth: 14, height: 14, borderRadius: 999,
@@ -1299,9 +1305,9 @@ function Header({ screenName, user, onAvatar, onBack, attentionCount, onBellTap,
             }}>{attentionCount > 9 ? "9+" : attentionCount}</span>
           )}
         </button>
-        <button onClick={onAvatar} className="rg-bar-chip rg-press" style={{
-          width: 32, height: 32, borderRadius: "50%", border: "none", boxSizing: "border-box", padding: 0,
-          cursor: "pointer", fontFamily: F, fontWeight: 700, fontSize: 11.5,
+        <button onClick={onAvatar} style={{
+          width: 28, height: 28, borderRadius: "50%", background: C.ink, color: "#fff",
+          border: "none", cursor: "pointer", fontFamily: F, fontWeight: 700, fontSize: 11,
           display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
         }}>{initials(user.name)}</button>
       </div>
@@ -1342,12 +1348,11 @@ function MenuDrawer({ active, onChange, onClose, onLogout, onQuickQuote, onOpenM
   ];
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 100, display: "flex" }}>
-      <div onClick={onClose} className="rg-dim" style={{ position: "absolute", inset: 0 }} />
-      <div className="rg-drawer" style={{ position: "relative", width: "78%", maxWidth: 280, height: "100%", borderRadius: "0 24px 24px 0", display: "flex", flexDirection: "column" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(14,14,12,0.4)" }} />
+      <div style={{ position: "relative", width: "78%", maxWidth: 280, height: "100%", background: C.card, boxShadow: "8px 0 32px rgba(0,0,0,0.18)", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 18px 14px" }}>
           <span style={{ fontFamily: F, fontWeight: 900, fontSize: 15, color: C.ink, letterSpacing: -0.8, textTransform: "uppercase" }}>
-            AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: ACCENT.dot, marginLeft: 1, marginBottom: 8,
-              boxShadow: `0 0 0 1px ${ACCENT.level}` }} />
+            AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: C.primary, marginLeft: 1, marginBottom: 8 }} />
           </span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }}><X size={19} color={C.faint} /></button>
         </div>
@@ -1363,16 +1368,16 @@ function MenuDrawer({ active, onChange, onClose, onLogout, onQuickQuote, onOpenM
                   if (!t.subs.length) { onChange(t.key); onClose(); return; }
                   setOpenGroup(expanded ? null : t.key);
                 }} style={{
-                  display: "flex", alignItems: "center", gap: 11, width: "100%", padding: "11px 12px",
-                  borderRadius: 12, border: "none", background: groupActive ? ACCENT.soft : "none",
+                  display: "flex", alignItems: "center", gap: 11, width: "100%", padding: "10px 12px",
+                  borderRadius: 9, border: "none", background: groupActive ? C.primarySoft : "none",
                   cursor: "pointer", textAlign: "left",
                 }}>
-                  <t.Icon size={17} color={groupActive ? ACCENT.onSoft : C.faint} strokeWidth={groupActive ? 2.4 : 1.8} />
+                  <t.Icon size={17} color={groupActive ? C.primary : C.faint} strokeWidth={groupActive ? 2.4 : 1.8} />
                   <span style={{ flex: 1, fontFamily: F, fontWeight: groupActive ? 700 : 500, fontSize: 13.5,
-                    color: groupActive ? ACCENT.onSoft : C.ink }}>{t.label}</span>
+                    color: groupActive ? C.primary : C.ink }}>{t.label}</span>
                   {t.subs.length > 0 && (
-                    <ChevronDown size={14} color={groupActive ? ACCENT.onSoft : C.faint} className="rg-chev" style={{
-                      transform: expanded ? "rotate(180deg)" : "none" }} />
+                    <ChevronDown size={14} color={C.ghost} style={{
+                      transform: expanded ? "rotate(180deg)" : "none", transition: "transform .18s" }} />
                   )}
                 </button>
                 {expanded && t.subs.map(sub => {
@@ -1380,11 +1385,11 @@ function MenuDrawer({ active, onChange, onClose, onLogout, onQuickQuote, onOpenM
                   return (
                     <button key={sub.key} onClick={() => { onChange(sub.key); onClose(); }} style={{
                       display: "flex", alignItems: "center", width: "100%", padding: "8px 12px 8px 40px",
-                      borderRadius: 10, border: "none", background: on ? ACCENT.soft : "none",
+                      borderRadius: 8, border: "none", background: on ? C.primarySoft : "none",
                       cursor: "pointer", textAlign: "left",
                     }}>
                       <span style={{ fontFamily: F, fontWeight: on ? 700 : 500, fontSize: 12.5,
-                        color: on ? ACCENT.onSoft : C.sub }}>{sub.label}</span>
+                        color: on ? C.primary : C.sub }}>{sub.label}</span>
                     </button>
                   );
                 })}
@@ -1411,7 +1416,7 @@ function MenuDrawer({ active, onChange, onClose, onLogout, onQuickQuote, onOpenM
             </button>
           </div>
         </div>
-        <div style={{ padding: "12px 12px calc(12px + env(safe-area-inset-bottom, 0px))", borderTop: `1px solid ${C.borderStrong}` }}>
+        <div style={{ padding: 12, borderTop: `1px solid ${C.border}` }}>
           <button onClick={onLogout} style={{ display: "flex", alignItems: "center", gap: 11, width: "100%", padding: "9px 12px", borderRadius: 9, border: "none", background: "none", cursor: "pointer", textAlign: "left" }}>
             <LogOut size={16} color={C.hot} />
             <span style={{ fontFamily: F, fontWeight: 600, fontSize: 13.5, color: C.hot }}>Sign out</span>
@@ -1578,7 +1583,7 @@ function NoteField({ value, onChange, recording, onVoiceNote }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
         <span style={{ fontFamily: F, fontSize: 10.5, color: C.sub, fontWeight: 600 }}>Note (optional)</span>
         <button onClick={onVoiceNote} disabled={recording} style={{
-          display: "flex", alignItems: "center", gap: 4, background: recording ? C.hotSoft : C.wash,
+          display: "flex", alignItems: "center", gap: 4, background: recording ? C.hotSoft : C.primarySoft,
           color: recording ? C.hot : C.primary, border: "none", borderRadius: 999, padding: "4px 8px",
           fontSize: 10, fontWeight: 700, cursor: recording ? "default" : "pointer", fontFamily: F
         }}>
@@ -1969,8 +1974,8 @@ function FilterSheet({ open, onClose, groups, draft, setDraft, onApply, onClearA
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-      <div className="rg-dim" style={{ position: "absolute", inset: 0 }} onClick={onClose} />
-      <div className="rg-sheet" style={{ position: "relative", display: "flex", flexDirection: "column", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} onClick={onClose} />
+      <div style={{ position: "relative", background: C.card, borderRadius: "18px 18px 0 0", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "16px 16px 10px" }}>
           <div style={{ fontFamily: F, fontSize: 17, fontWeight: 800, color: C.ink, marginBottom: 12 }}>Filters</div>
           <div style={{ display: "flex", alignItems: "center", gap: 9, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 999, padding: "10px 14px" }}>
@@ -1996,7 +2001,7 @@ function FilterSheet({ open, onClose, groups, draft, setDraft, onApply, onClearA
                     borderLeft: `3px solid ${on ? C.primary : "transparent"}`,
                   }}>
                     <span style={{ fontFamily: F, fontSize: 12.5, fontWeight: on ? 800 : 500, color: on ? C.primary : C.sub, lineHeight: 1.25 }}>{g.label}</span>
-                    {n > 0 && <span style={{ background: C.fill, color: C.onFill, fontFamily: F, fontSize: 9.5, fontWeight: 800, borderRadius: 999, padding: "1px 6px", flexShrink: 0 }}>{n}</span>}
+                    {n > 0 && <span style={{ background: C.primary, color: "#fff", fontFamily: F, fontSize: 9.5, fontWeight: 800, borderRadius: 999, padding: "1px 6px", flexShrink: 0 }}>{n}</span>}
                   </button>
                 );
               })}
@@ -2025,9 +2030,9 @@ function FilterSheet({ open, onClose, groups, draft, setDraft, onApply, onClearA
                   </span>
                   <span style={{
                     width: 20, height: 20, borderRadius: 5, flexShrink: 0,
-                    border: `2px solid ${sel ? C.fill : C.borderStrong}`, background: sel ? C.fill : "transparent",
+                    border: `2px solid ${sel ? C.primary : C.borderStrong}`, background: sel ? C.primary : "transparent",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>{sel && <Check size={13} color={C.onFill} strokeWidth={3} />}</span>
+                  }}>{sel && <Check size={13} color="#fff" strokeWidth={3} />}</span>
                 </button>
               );
             })}
@@ -2042,7 +2047,7 @@ function FilterSheet({ open, onClose, groups, draft, setDraft, onApply, onClearA
           }}>Clear Filter</button>
           <button onClick={onApply} style={{
             flex: 1.4, padding: "13px 0", borderRadius: 10, border: "none", cursor: "pointer",
-            ...PRIMARY_FILL, fontFamily: F, fontWeight: 800, fontSize: 13.5,
+            background: C.primary, color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 13.5,
           }}>Show {resultCount} lead{resultCount === 1 ? "" : "s"}</button>
         </div>
       </div>
@@ -2482,8 +2487,8 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 220, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-      <div className="rg-dim" style={{ position: "absolute", inset: 0 }} onClick={onClose} />
-      <div className="rg-sheet" style={{ position: "relative", maxHeight: "88%", overflowY: "auto", padding: "16px 16px calc(16px + env(safe-area-inset-bottom, 0px))" }}>
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} onClick={onClose} />
+      <div style={{ position: "relative", background: C.card, borderRadius: "18px 18px 0 0", maxHeight: "88vh", overflowY: "auto", padding: 16 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
           <span style={{ fontFamily: F, fontSize: 16, fontWeight: 800, color: C.ink }}>{waitlistMode ? "Add to waitlist" : "Block this scooter"}</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><X size={18} color={C.sub} /></button>
@@ -2600,7 +2605,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
           onClick={() => canConfirm && onConfirm(unit, picked, mismatches, resolution)}
           style={{
             width: "100%", marginTop: 4, padding: "13px 0", borderRadius: 11, border: "none",
-            ...(canConfirm ? PRIMARY_FILL : { background: C.ghost, color: "#fff" }),
+            background: canConfirm ? C.primary : C.ghost, color: "#fff",
             fontFamily: F, fontWeight: 800, fontSize: 13.5, cursor: canConfirm ? "pointer" : "default",
           }}>
           {!picked ? "Select a customer"
@@ -2693,9 +2698,9 @@ function UnitRow({ unit, onBlock, onRelease, onArrived }) {
               <button onClick={() => onRelease(unit)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: F, fontSize: 11, fontWeight: 700, color: C.hot }}>Release</button>
             </div>
           ) : unit.status === "in_stock" ? (
-            <button onClick={() => onBlock(unit)} className="rg-btn rg-press" style={{
+            <button onClick={() => onBlock(unit)} style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 6, width: "100%",
-              borderRadius: 9,
+              background: C.primarySoft, border: `1.5px solid ${C.primary}44`, borderRadius: 9,
               padding: "9px 0", cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.primary,
             }}>
               <Lock size={12} />Block for a customer
@@ -2991,8 +2996,8 @@ function PhotoStrip({ unit, onAddPhotos }) {
           {unit.photos} photos{enough ? "" : " — too few to share with a customer"}
         </span>
         <button onClick={(e) => { e.stopPropagation(); onAddPhotos && onAddPhotos(unit); }} style={{
-          display: "flex", alignItems: "center", gap: 4, background: enough ? "none" : C.wash,
-          border: `1px solid ${enough ? C.border : mixVar(C.primary, 27)}`, borderRadius: 7,
+          display: "flex", alignItems: "center", gap: 4, background: enough ? "none" : C.primarySoft,
+          border: `1px solid ${enough ? C.border : C.primary + "44"}`, borderRadius: 7,
           padding: "4px 9px", cursor: "pointer",
           fontFamily: F, fontSize: 10, fontWeight: 700, color: enough ? C.sub : C.primary,
         }}><Plus size={10} />Add photos</button>
@@ -3017,8 +3022,8 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
   ).slice(0, 4);
 
   return (
-    <div className="rg-glass" style={{ border: `1px solid ${open ? mixVar(C.primary, 33) : C.border}`,
-      borderRadius: 20, marginBottom: 10, overflow: "hidden" }}>
+    <div style={{ background: C.card, border: `1px solid ${open ? C.primary + "55" : C.border}`,
+      borderRadius: 14, marginBottom: 10, overflow: "hidden" }}>
 
       {/* ---- Collapsed card ---- */}
       <button onClick={() => setOpen(o => !o)} style={{
@@ -3268,8 +3273,7 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
                       </span>
                     </span>
                     <button onClick={() => showToast && showToast(`Shared ${unit.year} ${unit.model} with ${l.name.split(" ")[0]}`)}
-                      className="rg-btn rg-press"
-                      style={{ borderRadius: 7, padding: "6px 10px",
+                      style={{ background: C.primarySoft, border: "none", borderRadius: 7, padding: "6px 10px",
                         cursor: "pointer", fontFamily: F, fontSize: 10.5, fontWeight: 700, color: C.primary }}>
                       Share
                     </button>
@@ -3295,14 +3299,13 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
             ) : (
               <>
                 <button onClick={() => showToast && showToast("Test ride request sent to the branch")}
-                  className="rg-btn rg-press"
-                  style={{ flex: 1, borderRadius: 9,
-                    padding: "10px 0", cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.ink }}>
+                  style={{ flex: 1, background: C.card, border: `1.5px solid ${C.borderStrong}`, borderRadius: 9,
+                    padding: "10px 0", cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.sub }}>
                   Book test ride
                 </button>
                 <button onClick={() => onBlock(unit)} style={{
-                  flex: 1, ...PRIMARY_FILL, borderRadius: 9, padding: "10px 0",
-                  cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 800,
+                  flex: 1, background: C.primary, border: "none", borderRadius: 9, padding: "10px 0",
+                  cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 800, color: "#fff",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                 }}><Lock size={12} />Block for customer</button>
               </>
@@ -3357,9 +3360,9 @@ function WaitlistRow({ entry, index, isMine }) {
       borderBottom: `1px solid ${C.border}` }}>
       <span style={{
         width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
-        background: index === 0 ? C.fill : C.bg,
+        background: index === 0 ? C.primary : C.bg,
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontFamily: F, fontSize: 10, fontWeight: 800, color: index === 0 ? C.onFill : C.sub,
+        fontFamily: F, fontSize: 10, fontWeight: 800, color: index === 0 ? "#fff" : C.sub,
       }}>{index + 1}</span>
       <span style={{ flex: 1, minWidth: 0 }}>
         <span style={{ display: "block", fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.ink }}>
@@ -3411,9 +3414,9 @@ function WaitlistPanel({ model, variant, color, entries, currentUser, waitWeeks,
 
       <button
         onClick={() => canAct ? onJoin({ model, variant, color }) : null}
-        className={canAct ? "rg-btn rg-press" : undefined}
         style={{
-          width: "100%", marginTop: 9, ...(canAct ? null : { background: C.bg, border: `1.5px solid ${C.border}` }), borderRadius: 9,
+          width: "100%", marginTop: 9, background: canAct ? C.primarySoft : C.bg,
+          border: `1.5px solid ${canAct ? C.primary + "44" : C.border}`, borderRadius: 9,
           padding: "9px 0", cursor: canAct ? "pointer" : "default",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
           fontFamily: F, fontSize: 11.5, fontWeight: 700, color: canAct ? C.primary : C.ghost,
@@ -3463,8 +3466,8 @@ function DeclineAllotmentSheet({ allotment, onClose, onConfirm }) {
   const picked = DECLINE_REASONS.find(r => r.key === reason);
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 230, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-      <div className="rg-dim" style={{ position: "absolute", inset: 0 }} onClick={onClose} />
-      <div className="rg-sheet" style={{ position: "relative", padding: "16px 16px calc(16px + env(safe-area-inset-bottom, 0px))", maxHeight: "85%", overflowY: "auto" }}>
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} onClick={onClose} />
+      <div style={{ position: "relative", background: C.card, borderRadius: "18px 18px 0 0", padding: 16, maxHeight: "85vh", overflowY: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
           <span style={{ fontFamily: F, fontSize: 16, fontWeight: 800, color: C.ink }}>Why is it being declined?</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
@@ -3505,7 +3508,7 @@ function DeclineAllotmentSheet({ allotment, onClose, onConfirm }) {
 
         <button onClick={() => reason && onConfirm(allotment, reason)} style={{
           width: "100%", marginTop: 14, padding: "13px 0", borderRadius: 11, border: "none",
-          ...(reason ? PRIMARY_FILL : { background: C.ghost, color: "#fff" }),
+          background: reason ? C.primary : C.ghost, color: "#fff",
           fontFamily: F, fontWeight: 800, fontSize: 13.5, cursor: reason ? "pointer" : "default",
         }}>{reason ? "Confirm decline" : "Pick a reason"}</button>
       </div>
@@ -3521,8 +3524,8 @@ function AddPhotosSheet({ unit, onClose, onAdd }) {
   const toggle = (c) => setPicked(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c]);
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 230, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-      <div className="rg-dim" style={{ position: "absolute", inset: 0 }} onClick={onClose} />
-      <div className="rg-sheet" style={{ position: "relative", padding: "16px 16px calc(16px + env(safe-area-inset-bottom, 0px))" }}>
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} onClick={onClose} />
+      <div style={{ position: "relative", background: C.card, borderRadius: "18px 18px 0 0", padding: 16 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
           <span style={{ fontFamily: F, fontSize: 16, fontWeight: 800, color: C.ink }}>Add photos</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
@@ -3552,7 +3555,7 @@ function AddPhotosSheet({ unit, onClose, onAdd }) {
 
         <button onClick={() => picked.length && onAdd(unit, picked)} style={{
           width: "100%", padding: "13px 0", borderRadius: 11, border: "none",
-          ...(picked.length ? PRIMARY_FILL : { background: C.ghost, color: "#fff" }),
+          background: picked.length ? C.primary : C.ghost, color: "#fff",
           fontFamily: F, fontWeight: 800, fontSize: 13.5, cursor: picked.length ? "pointer" : "default",
         }}>
           {picked.length ? `Capture ${picked.length} set${picked.length > 1 ? "s" : ""}` : "Pick what to shoot"}
@@ -3801,17 +3804,17 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
         const free = onHand.filter(u => !u.blockedFor).length;
         const transit = units.filter(u => u.category === "new" && u.status === "in_transit").length;
         return (
-          <TintedBox tint="yellow" data-testid="inv-branch-split" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "3px 10px",
-            borderRadius: 16, padding: "9px 12px", marginBottom: 10 }}>
+          <div data-testid="inv-branch-split" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "3px 10px", background: C.card,
+            border: `1px solid ${C.border}`, borderRadius: 10, padding: "8px 11px", marginBottom: 10 }}>
             {Object.keys(PUNE_STORES).map(b => (
-              <span key={b} data-branch={b} style={{ fontFamily: F, fontSize: 11, color: TINTS.yellow.label }}>
-                {b} <strong data-count style={{ color: C.num, fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 650, fontVariantNumeric: "tabular-nums" }}>{onHand.filter(u => u.branch === b).length}</strong>
+              <span key={b} data-branch={b} style={{ fontFamily: F, fontSize: 11, color: C.sub }}>
+                {b} <strong data-count style={{ color: C.ink }}>{onHand.filter(u => u.branch === b).length}</strong>
               </span>
             ))}
-            <span style={{ fontFamily: F, fontSize: 10.5, color: BOX_SUB }}>
+            <span style={{ fontFamily: F, fontSize: 10.5, color: C.faint }}>
               {free} free · {onHand.length - free} held{transit ? ` · ${transit} in transit` : ""}
             </span>
-          </TintedBox>
+          </div>
         );
       })()}
 
@@ -3905,7 +3908,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
           )}
 
           {shown.length === 0 && (
-            <div className="rg-glass" style={{ borderRadius: 16,
+            <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12,
               padding: 22, textAlign: "center", fontFamily: F, fontSize: 12.5, color: C.sub }}>
               No pre-owned scooters match these filters.
             </div>
@@ -3920,7 +3923,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
       })()}
 
       {category !== "used" && models.length === 0 && (
-        <div className="rg-glass" style={{ borderRadius: 16, padding: 24, textAlign: "center", fontFamily: F, fontSize: 13, color: C.sub }}>
+        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 24, textAlign: "center", fontFamily: F, fontSize: 13, color: C.sub }}>
           Nothing in {CATEGORIES.find(c => c.key === category).label.toLowerCase()} matching this.
         </div>
       )}
@@ -3931,7 +3934,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
         const roll = rollupStatus(mUnits, model);
         const variants = [...new Set(mUnits.map(u => u.variant))];
         return (
-          <div key={model} className="rg-glass" style={{ border: `1px solid ${mOpen ? mixVar(C.primary, 33) : C.border}`, borderRadius: 18, marginBottom: 8, overflow: "hidden" }}>
+          <div key={model} style={{ background: C.card, border: `1px solid ${mOpen ? C.primary + "55" : C.border}`, borderRadius: 12, marginBottom: 8, overflow: "hidden" }}>
             <button onClick={() => { setOpenModel(mOpen ? null : model); setOpenVariant(null); setOpenColor(null); }} style={{
               display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px",
               background: "none", border: "none", cursor: "pointer", textAlign: "left",
@@ -4059,9 +4062,11 @@ function LeadCard({ lead, onOpen, onCall, onWhatsApp, onLogCall, onLogWhatsApp }
   const urgencyColor = bucket?.color || C.faint;
 
   return (
-    <div onClick={() => onOpen(lead.id)} className="rg-glass rg-press" style={{
-      borderRadius: 20, overflow: "hidden",
-      marginBottom: 10, cursor: "pointer",
+    <div onClick={() => onOpen(lead.id)} style={{
+      background: C.card, borderRadius: 16, overflow: "hidden",
+      marginBottom: 8, cursor: "pointer",
+      boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.06)",
+      transition: "box-shadow 0.15s ease",
     }}>
       <div style={{ display: "flex" }}>
         {/* Left urgency bar — the pre-attentive scan signal */}
@@ -4140,12 +4145,12 @@ function CallQueueRow({ lead, rank, onOpen, onCall, onWhatsApp, onLogCall }) {
   const [expanded, setExpanded] = useState(false);
   const chTones = callWaTones(lead);
   return (
-    <div onClick={() => onOpen(lead.id)} className="rg-glass rg-press" style={{
-      display: "flex", gap: 10, borderRadius: 20,
-      padding: 12, marginBottom: 10, cursor: "pointer"
+    <div onClick={() => onOpen(lead.id)} style={{
+      display: "flex", gap: 10, background: C.card, borderRadius: 14,
+      border: `1px solid ${C.border}`, padding: 12, marginBottom: 9, cursor: "pointer"
     }}>
       <div style={{
-        width: 22, height: 22, borderRadius: "50%", background: C.fill, color: C.onFill,
+        width: 22, height: 22, borderRadius: "50%", background: C.primaryDark, color: "#fff",
         fontFamily: F, fontWeight: 800, fontSize: 11, flexShrink: 0,
         display: "flex", alignItems: "center", justifyContent: "center", marginTop: 1
       }}>{rank}</div>
@@ -4200,8 +4205,8 @@ function TestDriveQueueRow({ lead, onOpen, onCall, onWhatsApp }) {
   const dirUrl = directionsUrl(td.location);
   const chTones = callWaTones(lead);
   return (
-    <div onClick={() => onOpen(lead.id)} className="rg-glass rg-press" style={{
-      borderRadius: 20, padding: 13, marginBottom: 10, cursor: "pointer"
+    <div onClick={() => onOpen(lead.id)} style={{
+      background: C.card, borderRadius: 16, padding: 13, marginBottom: 10, cursor: "pointer", boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05)"
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <span style={{ fontFamily: F, fontWeight: 700, fontSize: 13.5, color: C.ink }}>{lead.name}</span>
@@ -4231,8 +4236,8 @@ function DeliveryQueueRow({ lead, onOpen, onCall, onWhatsApp }) {
   const du = daysUntil(lead.expectedDeliveryDate);
   const chTones = callWaTones(lead);
   return (
-    <div onClick={() => onOpen(lead.id)} className="rg-glass rg-press" style={{
-      borderRadius: 20, padding: 13, marginBottom: 10, cursor: "pointer"
+    <div onClick={() => onOpen(lead.id)} style={{
+      background: C.card, borderRadius: 16, padding: 13, marginBottom: 10, cursor: "pointer", boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05)"
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <span style={{ fontFamily: F, fontWeight: 700, fontSize: 13.5, color: C.ink }}>{lead.name}</span>
@@ -4289,39 +4294,37 @@ function MISReport({ leads, user }) {
 
   return (
     <div>
-      <div className="rg-seg" style={{ display: "flex", gap: 6, marginBottom: 14, borderRadius: 12, padding: 3 }}>
+      <div style={{ display: "flex", gap: 6, marginBottom: 14, background: C.border, borderRadius: 12, padding: 3 }}>
         {["day", "week", "month"].map(p => (
-          <button key={p} onClick={() => setPeriod(p)} className={period === p ? "rg-thumb" : undefined} style={{
+          <button key={p} onClick={() => setPeriod(p)} style={{
             flex: 1, padding: "7px 4px", borderRadius: 9, border: "none", cursor: "pointer",
-            background: period === p ? undefined : "none",
+            background: period === p ? C.card : "none",
             fontFamily: F, fontSize: 11.5, fontWeight: 700,
             color: period === p ? C.primary : C.sub,
+            boxShadow: period === p ? "0 1px 3px rgba(0,0,0,.08)" : "none"
           }}>{p[0].toUpperCase() + p.slice(1)}</button>
         ))}
       </div>
 
-      <div className="rg-glass" style={{ borderRadius: 20, padding: 14, marginBottom: 12 }}>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 12 }}>
         <div style={{ fontFamily: F, fontWeight: 700, fontSize: 14, color: C.ink }}>{user.name}'s Activity</div>
         <div style={{ fontFamily: F, fontSize: 11.5, color: C.sub, marginBottom: 12 }}>{periodLabel} · {fmtFull(today)}</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          {stats.map(s => {
-            // Same tint rule as everywhere: deliveries / conversion = achievement, the rest = pipeline.
-            const tint = s.label === "Deliveries" || s.label === "Conversion" ? "yellow" : "neutral";
-            return (
-              <TintedBox key={s.label} tint={tint} inner style={{ padding: "10px 11px" }}>
-                <s.icon size={14} color={TINTS[tint].label} />
-                <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 650, fontSize: 19, color: C.num, marginTop: 6, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{s.value}</div>
-                <div style={{ fontFamily: F, fontSize: 10.5, fontWeight: 600, color: TINTS[tint].label, marginTop: 1 }}>{s.label}</div>
-              </TintedBox>
-            );
-          })}
+          {stats.map(s => (
+            <div key={s.label} style={{ background: C.bg, borderRadius: 10, padding: 10 }}>
+              <s.icon size={14} color={C.primary} />
+              <div style={{ fontFamily: F, fontWeight: 800, fontSize: 17, color: C.ink, marginTop: 6 }}>{s.value}</div>
+              <div style={{ fontFamily: F, fontSize: 10.5, color: C.sub, marginTop: 1 }}>{s.label}</div>
+            </div>
+          ))}
         </div>
       </div>
 
       <button onClick={handleShare} style={{
         display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%",
-        ...(copied ? { background: C.darkGreen, color: "#fff", border: "none", boxShadow: "0 2px 6px rgba(0,0,0,.14)" } : PRIMARY_FILL), borderRadius: 12,
+        background: copied ? C.darkGreen : C.primary, color: "#fff", border: "none", borderRadius: 12,
         padding: "12px 0", fontFamily: F, fontWeight: 700, fontSize: 13, cursor: "pointer",
+        boxShadow: "0 2px 6px rgba(0,0,0,.14)"
       }}>
         {copied ? <Check size={15} /> : <Share2 size={15} />}
         {copied ? "Copied — ready to share" : "Copy & Share Report"}
@@ -4468,9 +4471,9 @@ function LeadsScreen({ currentId, leads, onOpenLead, onCall, onWhatsApp, onCount
         </button>
         <button onClick={onAddLead} title="Add Lead" style={{
           display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: 11, flexShrink: 0,
-          ...PRIMARY_FILL, cursor: "pointer",
+          border: `1.5px solid ${C.ink}`, background: C.ink, cursor: "pointer",
         }}>
-          <UserPlus size={16} color={ACCENT.ink} />
+          <UserPlus size={16} color="#fff" />
         </button>
       </div>
 
@@ -4499,23 +4502,23 @@ function LeadsScreen({ currentId, leads, onOpenLead, onCall, onWhatsApp, onCount
       />
 
       {/* ---- Single-line monthly target (same compact pattern as the telecaller) ---- */}
-      <TintedBox tint="yellow" style={{ borderRadius: 18, padding: "10px 13px", marginBottom: 10, display: "flex", alignItems: "center", gap: 11 }}>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "9px 12px", marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 3, flexShrink: 0 }}>
-          <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 650, fontSize: 22, color: achieved >= target ? TONE.up : C.num, letterSpacing: "-0.02em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{achieved}</span>
-          <span style={{ fontFamily: F, fontWeight: 500, fontSize: 12, color: BOX_SUB }}>/{target}</span>
+          <span style={{ fontFamily: F, fontWeight: 900, fontSize: 18, color: achieved >= target ? C.darkGreen : C.ink, letterSpacing: -0.5, lineHeight: 1 }}>{achieved}</span>
+          <span style={{ fontFamily: F, fontWeight: 500, fontSize: 11, color: C.ghost }}>/{target}</span>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, marginBottom: 5 }}>
-            <span style={{ fontFamily: F, fontSize: 9.5, fontWeight: 700, color: TINTS.yellow.label, textTransform: "uppercase", letterSpacing: 0.5, minWidth: 0 }}>Scooters retailed · this month</span>
-            <span style={{ fontFamily: F, fontSize: 10.5, fontWeight: 650, color: achieved >= target ? TONE.up : BOX_SUB, whiteSpace: "nowrap" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
+            <span style={{ fontFamily: F, fontSize: 9, fontWeight: 700, color: C.sub, textTransform: "uppercase", letterSpacing: 0.6 }}>Scooters retailed · this month</span>
+            <span style={{ fontFamily: F, fontSize: 10, fontWeight: 700, color: achieved >= target ? C.darkGreen : C.primary }}>
               {achieved >= target ? "Target hit 🎯" : `${target - achieved} more to go`}
             </span>
           </div>
-          <div style={{ height: 5, background: "var(--bar-track)", borderRadius: 999, overflow: "hidden" }}>
-            <div style={{ width: `${Math.min(100, (achieved / target) * 100)}%`, height: "100%", background: achieved >= target ? TONE.up : "var(--bar-fill)", boxShadow: achieved >= target ? "none" : "inset 0 0 0 1px var(--bar-edge)", borderRadius: 999, transition: "width .5s" }} />
+          <div style={{ height: 4, background: C.bg, borderRadius: 999, overflow: "hidden" }}>
+            <div style={{ width: `${Math.min(100, (achieved / target) * 100)}%`, height: "100%", background: achieved >= target ? C.darkGreen : C.primary, borderRadius: 999, transition: "width .5s" }} />
           </div>
         </div>
-      </TintedBox>
+      </div>
 
       {subView === "all" ? (
         /* All Leads is a browse view, not a work queue — a flat list of everyone, with the
@@ -4580,7 +4583,7 @@ function LeadsScreen({ currentId, leads, onOpenLead, onCall, onWhatsApp, onCount
           {/* When a menu sub-view is active, say so — otherwise a filtered list reads as
               missing data rather than a deliberate view. */}
           {subViewTitle && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.wash,
+            <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.primarySoft,
               borderRadius: 9, padding: "8px 11px", margin: "10px 0 8px" }}>
               <span style={{ flex: 1, fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.primary }}>
                 {subViewTitle}
@@ -4640,7 +4643,7 @@ function LeadsScreen({ currentId, leads, onOpenLead, onCall, onWhatsApp, onCount
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
                 <Clock size={13} color={C.primary} />
                 <span style={{ fontFamily: F, fontWeight: 800, fontSize: 13, color: C.ink }}>{t("Today's Schedule", lang)}</span>
-                <Badge color={C.primary} soft={C.wash}>{timed.length}</Badge>
+                <Badge color={C.primary} soft={C.primarySoft}>{timed.length}</Badge>
               </div>
               {timed.map(item => (
                 <LeadCard key={item.lead.id} lead={item.lead} onOpen={onOpenLead} onCall={onCall} onWhatsApp={onWhatsApp} onLogCall={onLogCall} onLogWhatsApp={onLogWhatsApp} />
@@ -4649,7 +4652,7 @@ function LeadsScreen({ currentId, leads, onOpenLead, onCall, onWhatsApp, onCount
           )}
 
           {pinned.length === 0 && timed.length === 0 && (
-            <div style={{ textAlign: "center", padding: "30px 10px", color: C.sub, fontFamily: F, fontSize: 13 }}>
+            <div style={{ textAlign: "center", padding: "30px 10px", color: C.faint, fontFamily: F, fontSize: 13 }}>
               {query || hasActiveLeadFilters || quickFilter ? "No matching items." : "Nothing needs your attention right now — nice work! 🎉"}
             </div>
           )}
@@ -4698,7 +4701,7 @@ function ExchangeCard({ lead, onUpdateField, onAddPhoto, onAppraise }) {
   const labelStyle = { fontFamily: F, fontSize: 10.5, color: C.sub, fontWeight: 600, marginBottom: 4, display: "block" };
 
   return (
-    <div className="rg-glass" style={{ border: `1px solid ${C.teal}55`, borderRadius: 20, padding: 13, marginBottom: 10 }}>
+    <div style={{ background: C.card, border: `1px solid ${C.teal}55`, borderRadius: 14, padding: 13, marginBottom: 10 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
         <TradeInIcon size={14} color={C.teal} />
         <span style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink }}>Exchange Vehicle</span>
@@ -4748,7 +4751,7 @@ function ExchangeCard({ lead, onUpdateField, onAddPhoto, onAppraise }) {
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {Array.from({ length: ex.photos || 0 }).map((_, i) => (
             <div key={i} style={{
-              width: 44, height: 44, borderRadius: 9, background: C.wash,
+              width: 44, height: 44, borderRadius: 9, background: C.primarySoft,
               display: "flex", alignItems: "center", justifyContent: "center"
             }}>
               <Camera size={16} color={C.primary} />
@@ -4815,7 +4818,7 @@ function ExchangeCard({ lead, onUpdateField, onAddPhoto, onAppraise }) {
               </div>
               <button disabled={!canAppraise} onClick={() => onAppraise(lead.id)} style={{
                 marginTop: 9, width: "100%", padding: "8px 0", borderRadius: 9, border: "none",
-                ...(canAppraise ? PRIMARY_FILL : { background: "#E2E8F0", color: C.faint }),
+                background: canAppraise ? C.primary : "#E2E8F0", color: canAppraise ? "#fff" : C.faint,
                 fontFamily: F, fontWeight: 700, fontSize: 11.5,
                 cursor: canAppraise ? "pointer" : "default"
               }}>
@@ -4839,7 +4842,7 @@ function ContactCard({ lead, onUpdateAltPhone, onUpdateCommPref }) {
   const valueStyle = { fontFamily: F, fontSize: 12.5, color: C.ink, fontWeight: 600 };
 
   return (
-    <div className="rg-glass" style={{ borderRadius: 20, padding: 12, marginBottom: 8 }}>
+    <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
       <div style={rowStyle}>
         <span style={labelStyle}>Phone</span>
         <span style={valueStyle}>{lead.phone}</span>
@@ -4853,7 +4856,7 @@ function ContactCard({ lead, onUpdateAltPhone, onUpdateCommPref }) {
               style={{ ...formInputStyle, width: 130 }}
             />
             <button onClick={() => { onUpdateAltPhone(lead.id, val); setEditing(false); }} style={{
-              ...PRIMARY_FILL, borderRadius: 8, padding: "7px 8px", cursor: "pointer", display: "flex"
+              background: C.primary, color: "#fff", border: "none", borderRadius: 8, padding: "7px 8px", cursor: "pointer", display: "flex"
             }}>
               <Check size={12} />
             </button>
@@ -4906,13 +4909,13 @@ function StatusTimeline({ currentStatus, pendingStatus, onSelect }) {
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 16 }}>
               <span style={{
                 width: isCurrent || isPending ? 14 : 11, height: isCurrent || isPending ? 14 : 11, borderRadius: "50%", flexShrink: 0,
-                background: isPending ? "#fff" : reached ? C.fill : "#fff",
-                border: `2px solid ${isPending ? C.warm : reached ? C.fill : C.border}`,
-                boxShadow: isCurrent ? `0 0 0 4px ${ACCENT.soft}` : isPending ? `0 0 0 4px ${C.warmSoft}` : "none",
+                background: isPending ? "#fff" : reached ? C.primary : "#fff",
+                border: `2px solid ${isPending ? C.warm : reached ? C.primary : C.border}`,
+                boxShadow: isCurrent ? `0 0 0 4px ${C.primarySoft}` : isPending ? `0 0 0 4px ${C.warmSoft}` : "none",
                 marginTop: 3
               }} />
               {i !== STATUS_ORDER.length - 1 && (
-                <span style={{ width: 2, flex: 1, minHeight: 18, background: i < currentIndex ? C.fill : C.border, marginTop: 2 }} />
+                <span style={{ width: 2, flex: 1, minHeight: 18, background: i < currentIndex ? C.primary : C.border, marginTop: 2 }} />
               )}
             </div>
             <div style={{ paddingBottom: i === STATUS_ORDER.length - 1 ? 2 : 14 }}>
@@ -5016,7 +5019,7 @@ function QuoteForm({ lead, onCancel, onSubmit, onViewQuote }) {
       <input type="number" min="0" step="500" placeholder="e.g. 2000" value={discount}
         onChange={e => setDiscount(e.target.value)} style={{ ...formInputStyle, width: "100%", marginBottom: 10 }} />
 
-      <div style={{ background: C.wash, borderRadius: 10, padding: 11, marginBottom: 10 }}>
+      <div style={{ background: C.primarySoft, borderRadius: 10, padding: 11, marginBottom: 10 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontFamily: F, fontSize: 12, fontWeight: 700, color: C.primaryDark }}>On-Road Total</span>
           <span style={{ fontFamily: F, fontWeight: 800, fontSize: 17, color: C.ink }}>{formatINR(breakup.total)}</span>
@@ -5091,7 +5094,7 @@ function QuoteDetailSheet({ quote, onClose }) {
 function CompetitorBattleCard({ competitor, ourModel }) {
   const card = COMPETITOR_BATTLE_CARDS[competitor] || COMPETITOR_BATTLE_CARDS["Other"];
   return (
-    <div style={{ background: C.wash, border: `1px solid ${mixVar(C.primary, 20)}`, borderRadius: 12, padding: 12, marginTop: 10 }}>
+    <div style={{ background: C.primarySoft, border: `1px solid #DBEAFE`, borderRadius: 12, padding: 12, marginTop: 10 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8 }}>
         <Target size={13} color={C.primaryDark} />
         <span style={{ fontFamily: F, fontWeight: 800, fontSize: 11, color: C.primaryDark, textTransform: "uppercase", letterSpacing: .4 }}>
@@ -5213,7 +5216,7 @@ function PaymentBreakdownFields({ value, onChange }) {
   const labelStyle = { fontFamily: F, fontSize: 10, color: C.faint, fontWeight: 600, marginBottom: 4, display: "block" };
 
   return (
-    <div className="rg-glass" style={{ borderRadius: 16, padding: 12, width: "100%", boxSizing: "border-box" }}>
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 12, width: "100%", boxSizing: "border-box" }}>
       <div style={{ fontFamily: F, fontSize: 10, fontWeight: 800, color: C.faint, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 9 }}>Payment Breakdown</div>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 9 }}>
@@ -5282,7 +5285,7 @@ function PaymentBreakdownFields({ value, onChange }) {
       })()}
 
       <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 11, marginBottom: 12 }}>
-        <div style={{ background: C.wash, borderRadius: 10, padding: "8px 11px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <div style={{ background: C.primarySoft, borderRadius: 10, padding: "8px 11px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
           <span style={{ fontFamily: F, fontSize: 11, fontWeight: 700, color: C.primary, flexShrink: 0 }}>Total Payment</span>
           <span style={{ fontFamily: F, fontSize: 15, fontWeight: 800, color: C.ink, textAlign: "right" }}>{formatINR(paymentBreakdownTotal(pd))}</span>
         </div>
@@ -5337,11 +5340,11 @@ function PaymentBreakdownFields({ value, onChange }) {
         ))}
         <button onClick={addAddon} style={{
           display: "flex", alignItems: "center", justifyContent: "center", gap: 7, width: "100%", boxSizing: "border-box",
-          background: C.wash, border: `1.5px dashed ${mixVar(C.primary, 40)}`, borderRadius: 8, padding: "8px 0", cursor: "pointer",
+          background: C.primarySoft, border: `1.5px dashed ${C.primary}66`, borderRadius: 8, padding: "8px 0", cursor: "pointer",
 
         }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 17, height: 17, borderRadius: 999, background: C.fill, flexShrink: 0 }}>
-            <Plus size={11} color={C.onFill} strokeWidth={3} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 17, height: 17, borderRadius: 999, background: C.primary, flexShrink: 0 }}>
+            <Plus size={11} color="#fff" strokeWidth={3} />
           </div>
           <span style={{ fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.primary }}>Add another add-on</span>
         </button>
@@ -5627,7 +5630,7 @@ function FinanceCard({ lead, onUpdateField }) {
   const fin = lead.finance || { loanAmount: "", bank: "", status: "" };
   const labelStyle = { fontFamily: F, fontSize: 10.5, color: C.sub, fontWeight: 600, marginBottom: 4, display: "block" };
   return (
-    <div className="rg-glass" style={{ border: `1px solid ${C.teal}55`, borderRadius: 20, padding: 13, marginBottom: 10 }}>
+    <div style={{ background: C.card, border: `1px solid ${C.teal}55`, borderRadius: 14, padding: 13, marginBottom: 10 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
         <Landmark size={14} color={C.teal} />
         <span style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink }}>Finance</span>
@@ -5693,7 +5696,7 @@ function DrivingLicenseBlock({ lead, onToggle, onShareLink }) {
         <span style={{ fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.ink }}>Driving License</span>
         {dl.done ? (
           <button onClick={() => setPreviewOpen(true)} style={{ background: "none", border: "none", cursor: "pointer" }}>
-            <Badge color={C.primary} soft={C.wash}><Check size={10} />{dl.via === "customer" ? "Uploaded" : "Collected"}</Badge>
+            <Badge color={C.primary} soft={C.primarySoft}><Check size={10} />{dl.via === "customer" ? "Uploaded" : "Collected"}</Badge>
           </button>
         ) : (
           <button onClick={() => onToggle(lead.id)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: F, fontSize: 11, fontWeight: 700, color: C.sub }}>
@@ -5713,9 +5716,9 @@ function DrivingLicenseBlock({ lead, onToggle, onShareLink }) {
             }}>
               {copied ? <Check size={12} color={C.darkGreen} /> : <Copy size={12} />}{copied ? "Copied" : "Copy Link"}
             </button>
-            <button onClick={() => onShareLink(lead)} className="rg-btn rg-press" style={{
+            <button onClick={() => onShareLink(lead)} style={{
               flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-              borderRadius: 9, padding: "7px 0",
+              background: C.primarySoft, border: `1px solid #DBEAFE`, borderRadius: 9, padding: "7px 0",
               fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.primaryDark, cursor: "pointer"
             }}>
               <WhatsAppIcon size={12} />Send via WhatsApp
@@ -5769,7 +5772,7 @@ function DocumentsCard({ lead, onToggle, onShareLink, embedded }) {
       </div>
       )}
       <div style={{ marginBottom: 11 }}>
-        <PulseBar pct={(collected / DOCUMENT_ITEMS.length) * 100} color={complete ? C.darkGreen : undefined} />
+        <PulseBar pct={(collected / DOCUMENT_ITEMS.length) * 100} color={complete ? C.darkGreen : C.primary} />
       </div>
 
       <div style={{ background: C.bg, borderRadius: 10, padding: 10, marginBottom: 11 }}>
@@ -5789,9 +5792,9 @@ function DocumentsCard({ lead, onToggle, onShareLink, embedded }) {
           }}>
             {copied ? <Check size={12} color={C.darkGreen} /> : <Copy size={12} />}{copied ? "Copied" : "Copy Link"}
           </button>
-          <button onClick={() => onShareLink(lead)} className="rg-btn rg-press" style={{
+          <button onClick={() => onShareLink(lead)} style={{
             flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-            borderRadius: 9, padding: "7px 0",
+            background: C.primarySoft, border: `1px solid #DBEAFE`, borderRadius: 9, padding: "7px 0",
             fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.primaryDark, cursor: "pointer"
           }}>
             <WhatsAppIcon size={12} />Send via WhatsApp
@@ -5814,7 +5817,7 @@ function DocumentsCard({ lead, onToggle, onShareLink, embedded }) {
             </button>
             {state.done && state.via === "customer" && (
               <button onClick={() => setPreviewDoc(d)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                <Badge color={C.primary} soft={C.wash}><Link2 size={9} />Link</Badge>
+                <Badge color={C.primary} soft={C.primarySoft}><Link2 size={9} />Link</Badge>
               </button>
             )}
           </div>
@@ -5849,7 +5852,7 @@ function EditableRow({ label, value, placeholder, onSave }) {
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <input value={val} onChange={e => setVal(e.target.value)} placeholder={placeholder} autoFocus style={{ ...formInputStyle, width: 130 }} />
           <button onClick={() => { onSave(val); setEditing(false); }} style={{
-            ...PRIMARY_FILL, borderRadius: 8, padding: "7px 8px", cursor: "pointer", display: "flex"
+            background: C.primary, color: "#fff", border: "none", borderRadius: 8, padding: "7px 8px", cursor: "pointer", display: "flex"
           }}>
             <Check size={12} />
           </button>
@@ -5991,7 +5994,7 @@ function DeliveryPhotosCard({ lead, onAddPhoto, onShare }) {
   };
 
   return (
-    <div className="rg-glass" style={{ borderRadius: 20, padding: 12, marginBottom: 8 }}>
+    <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 11 }}>
         <Camera size={14} color={C.primary} />
         <span style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink }}>Delivery Photos</span>
@@ -6012,8 +6015,8 @@ function DeliveryPhotosCard({ lead, onAddPhoto, onShare }) {
       {photos.length > 0 && (
         <button onClick={() => onShare(lead)} style={{
           display: "flex", alignItems: "center", justifyContent: "center", gap: 6, width: "100%",
-          ...PRIMARY_FILL, borderRadius: 10, padding: "10px 0",
-          fontFamily: F, fontWeight: 700, fontSize: 12.5, cursor: "pointer"
+          background: C.primary, color: "#fff", border: "none", borderRadius: 10, padding: "10px 0",
+          fontFamily: F, fontWeight: 700, fontSize: 12.5, cursor: "pointer", boxShadow: "0 2px 6px rgba(37,99,235,.25)"
         }}>
           <Share2 size={14} />Share to Social Media
         </button>
@@ -6088,7 +6091,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
   return (
     <div style={{ padding: 12 }}>
       {/* Header card */}
-      <div className="rg-glass" style={{ borderRadius: 20, padding: 14, marginBottom: 10 }}>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           {nameEditing ? (
             <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0 }}>
@@ -6112,9 +6115,9 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
               <button
                 disabled={!nameDraft.trim()}
                 onClick={() => { onUpdateLeadField(lead.id, "name", nameDraft.trim()); setNameEditing(false); }}
-                style={{ ...PRIMARY_FILL, borderRadius: 8, padding: "5px 7px", cursor: "pointer", display: "flex", flexShrink: 0 }}
+                style={{ background: C.primary, border: "none", borderRadius: 8, padding: "5px 7px", cursor: "pointer", display: "flex", flexShrink: 0 }}
               >
-                <Check size={13} color={ACCENT.ink} />
+                <Check size={13} color="#fff" />
               </button>
             </div>
           ) : (
@@ -6155,7 +6158,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
 
       {/* Status — kept visually more prominent (accent border, larger heading) since it's the
           single most important thing about a lead's position in the pipeline. */}
-      <div className="rg-glass" style={{ border: `1.5px solid ${mixVar(C.primary, 25)}`, borderRadius: 20, padding: 14, marginBottom: 10 }}>
+      <div style={{ background: C.card, border: `1.5px solid ${C.primary}40`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: stagePickerOpen ? 12 : 0 }}>
           <span style={{ fontFamily: F, fontWeight: 700, fontSize: 13.5, color: C.ink, display: "flex", alignItems: "center", gap: 6 }}>
             <ClipboardList size={14} color={C.primary} />Status
@@ -6301,7 +6304,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
       )}
 
       {callLogExpanded && (
-        <div className="rg-glass" style={{ borderRadius: 20, padding: 12, marginBottom: 8 }}>
+        <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
           <CallLogForm
             lead={lead}
             voiceFirst={voiceFirst}
@@ -6311,7 +6314,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
         </div>
       )}
       {waLogExpanded && (
-        <div className="rg-glass" style={{ borderRadius: 20, padding: 12, marginBottom: 8 }}>
+        <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
           <WhatsAppLogForm
             onCancel={() => setWaLogExpanded(false)}
             onSubmit={payload => { onLogWhatsApp(lead.id, payload); setWaLogExpanded(false); setTimeout(onDone, 500); }}
@@ -6319,7 +6322,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
         </div>
       )}
       {quoteFormOpen && (
-        <div className="rg-glass" style={{ borderRadius: 20, padding: 12, marginBottom: 8 }}>
+        <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
           <QuoteForm
             lead={lead}
             onCancel={() => setQuoteFormOpen(false)}
@@ -6330,7 +6333,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
       )}
 
       {lead.testDrive && !testDriveExpanded && (
-        <div className="rg-glass" style={{ borderRadius: 20, padding: 12, marginBottom: 8 }}>
+        <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <div style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink }}>Test Ride Scheduled</div>
@@ -6376,7 +6379,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
       )}
 
       {testDriveExpanded && (
-        <div className="rg-glass" style={{ borderRadius: 20, padding: 12, marginBottom: 8 }}>
+        <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
           <div style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink }}>
             {lead.testDrive ? "Reschedule Test Ride" : "Schedule Test Ride"}
           </div>
@@ -6394,7 +6397,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
 
       {/* Signals — always expanded so the SE can mark them in one tap mid-call. AI-detected
           suggestions from call analysis surface here as an accept/dismiss banner. */}
-      <div className="rg-glass" style={{ borderRadius: 20, padding: 12, marginBottom: 8 }}>
+      <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
         <span style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink }}>Signals</span>
         {(lead.suggestedSignals || []).map(sug => (
           <div key={sug.signal} style={{
@@ -6406,8 +6409,8 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
               <div style={{ fontFamily: F, fontSize: 11.5, color: C.ink, lineHeight: 1.4 }}>{sug.reason}</div>
               <div style={{ display: "flex", gap: 6, marginTop: 7 }}>
                 <button onClick={() => onAcceptSuggestedSignal(lead.id, sug.signal)} style={{
-                  fontFamily: F, fontSize: 11, fontWeight: 700, ...PRIMARY_FILL,
-                  borderRadius: 8, padding: "6px 12px", cursor: "pointer"
+                  fontFamily: F, fontSize: 11, fontWeight: 700, color: "#fff", background: C.primary,
+                  border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer"
                 }}>Add "{sug.signal}"</button>
                 <button onClick={() => onDismissSuggestedSignal(lead.id, sug.signal)} style={{
                   fontFamily: F, fontSize: 11, fontWeight: 700, color: C.sub, background: "none",
@@ -6433,7 +6436,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
             return (
               <button key={opt} onClick={handleClick} style={{
                 fontFamily: F, fontSize: 11.5, fontWeight: 600, padding: "6px 11px", borderRadius: 999,
-                border: `1px solid ${on ? statusColor.color : C.border}`, background: on ? statusColor.soft : "rgba(255,255,255,0.72)",
+                border: `1px solid ${on ? statusColor.color : C.border}`, background: on ? statusColor.soft : "#fff",
                 color: on ? statusColor.color : C.sub, cursor: "pointer", display: "flex", alignItems: "center", gap: 4
               }}>
                 {on && (initiated ? <CheckCircle2 size={12} /> : <Check size={11} />)}{opt}
@@ -6450,7 +6453,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
               <button onClick={() => setDocumentsOpen(v => !v)} style={{
                 fontFamily: F, fontSize: 11.5, fontWeight: 600, padding: "6px 11px", borderRadius: 999,
                 border: `1px solid ${started ? (complete ? C.darkGreen : C.primaryDark) : C.border}`,
-                background: started ? (complete ? C.darkGreenSoft : C.primarySoft) : "rgba(255,255,255,0.72)",
+                background: started ? (complete ? C.darkGreenSoft : C.primarySoft) : "#fff",
                 color: started ? (complete ? C.darkGreen : C.primaryDark) : C.sub, cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
               }}>
                 {started && (complete ? <CheckCircle2 size={12} /> : <Check size={11} />)}Documents
@@ -6501,7 +6504,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
       </div>
 
       {/* Vehicle / budget details — one-line summary by default, expands to fully editable fields */}
-      <div className="rg-glass" style={{ borderRadius: 20, marginBottom: 10, padding: "13px 13px 0" }}>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, marginBottom: 10, padding: "13px 13px 0" }}>
             <button onClick={() => setDetailsOpen(v => !v)} style={{
               display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%",
               background: "none", border: "none", cursor: "pointer", padding: "0 0 13px", textAlign: "left",
@@ -6548,7 +6551,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
           return matchQ && matchF;
         });
         return (
-      <div className="rg-glass" style={{ borderRadius: 20, padding: 12 }}>
+      <div style={{ background: C.card, borderRadius: 14, padding: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
         <div style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink, marginBottom: 10 }}>Timeline</div>
         <div style={{ display: "flex", alignItems: "center", gap: 7, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, padding: "7px 10px", marginBottom: 8 }}>
           <Search size={12} color={C.faint} />
@@ -6575,9 +6578,9 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
             <div key={i} style={{ display: "flex", gap: 10, position: "relative", paddingBottom: i === filteredTimeline.length - 1 ? 0 : 16 }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                 <span style={{
-                  width: 26, height: 26, borderRadius: "50%", background: ACCENT.iconBg, display: "flex",
+                  width: 26, height: 26, borderRadius: "50%", background: C.primarySoft, display: "flex",
                   alignItems: "center", justifyContent: "center", flexShrink: 0
-                }}><Icon size={13} color={ACCENT.iconInk} /></span>
+                }}><Icon size={13} color={C.primary} /></span>
                 {i !== lead.timeline.length - 1 && <span style={{ width: 1.5, flex: 1, background: C.border, marginTop: 2 }} />}
               </div>
               <Wrapper
@@ -6640,7 +6643,7 @@ function BarRows({ data, accent, maxLabel = 96, showZero = true }) {
           <span style={{ flex: 1, height: 16, background: C.bg, borderRadius: 4, overflow: "hidden", position: "relative" }}>
             <span style={{
               display: "block", width: `${(d.value / max) * 100}%`, height: "100%",
-              background: d.color || accent || ACCENT.level, borderRadius: 4, transition: "width .4s",
+              background: d.color || accent || C.primary, borderRadius: 4, transition: "width .4s",
             }} />
           </span>
           <span style={{ fontFamily: F, fontSize: 11, fontWeight: 800, color: C.ink, width: 30, textAlign: "right", flexShrink: 0 }}>
@@ -6654,7 +6657,7 @@ function BarRows({ data, accent, maxLabel = 96, showZero = true }) {
 
 // Sparkline with an area fill. Used for "how has this moved over the last N days" — the
 // shape matters more than exact values, so there are no gridlines.
-function TrendChart({ points, labels, accent = ACCENT.level, height = 64, target }) {
+function TrendChart({ points, labels, accent = C.primary, height = 64, target }) {
   const max = Math.max(1, ...points, target || 0);
   const w = 300, pad = 4;
   const step = points.length > 1 ? (w - pad * 2) / (points.length - 1) : 0;
@@ -6669,10 +6672,10 @@ function TrendChart({ points, labels, accent = ACCENT.level, height = 64, target
           <line x1={pad} x2={w - pad} y1={y(target)} y2={y(target)}
             stroke={C.faint} strokeWidth="1" strokeDasharray="4 4" opacity="0.7" />
         )}
-        <path d={area} style={{ fill: accent }} opacity="0.12" />
-        <path d={line} fill="none" style={{ stroke: accent }} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+        <path d={area} fill={accent} opacity="0.12" />
+        <path d={line} fill="none" stroke={accent} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
         {coords.map(([x, yy], i) => (
-          <circle key={i} cx={x} cy={yy} r={i === coords.length - 1 ? 3.5 : 2} style={{ fill: accent }} />
+          <circle key={i} cx={x} cy={yy} r={i === coords.length - 1 ? 3.5 : 2} fill={accent} />
         ))}
       </svg>
       {labels && (
@@ -6703,7 +6706,7 @@ function FunnelChart({ stages }) {
               <span style={{ flex: 1, height: 20, background: C.bg, borderRadius: 4, overflow: "hidden" }}>
                 <span style={{
                   display: "flex", alignItems: "center", justifyContent: "flex-end",
-                  width: `${Math.max(pct, 6)}%`, height: "100%", background: s.color || ACCENT.level,
+                  width: `${Math.max(pct, 6)}%`, height: "100%", background: s.color || C.primary,
                   borderRadius: 4, paddingRight: 6, boxSizing: "border-box", transition: "width .4s",
                 }}>
                   <span style={{ fontFamily: F, fontSize: 10, fontWeight: 800, color: "#fff" }}>{s.value}</span>
@@ -6762,7 +6765,7 @@ function DonutChart({ data, size = 108 }) {
 // one-line "what this tells you", then the chart.
 function ChartCard({ title, hint, children, action }) {
   return (
-    <div className="rg-glass" style={{ borderRadius: 20, padding: 14, marginBottom: 10 }}>
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: hint ? 2 : 10 }}>
         <span style={{ fontFamily: F, fontSize: 12.5, fontWeight: 800, color: C.ink }}>{title}</span>
         {action}
@@ -6837,7 +6840,7 @@ function BreakdownTable({ rows, columns, onRowTap }) {
                   <span key={c.key} style={{
                     width: 34, flexShrink: 0, textAlign: "center",
                     fontFamily: F, fontSize: 11, fontWeight: v ? 800 : 500,
-                    color: v ? (c.color || C.ink) : C.faint,
+                    color: v ? (c.color || C.ink) : C.ghost,
                   }}>{v}</span>
                 );
               })}
@@ -6850,7 +6853,7 @@ function BreakdownTable({ rows, columns, onRowTap }) {
                 const v = r.values[c.key] || 0;
                 const pct = first ? (v / first) * 100 : 0;
                 return pct > 0 ? (
-                  <span key={c.key} title={`${c.label}: ${v}`} style={{ width: `${pct}%`, background: c.color || ACCENT.level, opacity: 0.85 }} />
+                  <span key={c.key} title={`${c.label}: ${v}`} style={{ width: `${pct}%`, background: c.color || C.primary, opacity: 0.85 }} />
                 ) : null;
               })}
             </div>
@@ -6985,7 +6988,7 @@ function FunnelTable({ rows, dimension, onPickRow, activeRow, totals }) {
             return (
               <button key={r.label} onClick={() => onPickRow && onPickRow(on ? null : r.label)} style={{
                 display: "flex", width: "100%", alignItems: "stretch", padding: "7px 0",
-                borderBottom: `1px solid ${C.border}`, background: on ? ACCENT.rowOn : "none",
+                borderBottom: `1px solid ${C.border}`, background: on ? C.primarySoft : "none",
                 border: "none", borderRadius: on ? 6 : 0, cursor: onPickRow ? "pointer" : "default", textAlign: "left",
               }}>
                 <span style={{ width: 96, flexShrink: 0, display: "flex", alignItems: "center",
@@ -7170,27 +7173,27 @@ function InsightCard({ insight }) {
 }
 
 // KPI tile with a like-for-like comparison against the equivalent prior period.
-// A headline KPI in a tinted River Glass box (tint = what kind of number it is; the number is River Ink).
-function KpiTile({ label, value, prev, tint = "neutral" }) {
+function KpiTile({ label, value, prev, accent }) {
   const d = delta(value, prev);
   const up = d != null && d > 0;
   return (
-    <TintedBox tint={tint} style={{ flex: "1 1 45%", padding: "12px 13px 11px" }}>
-      <div style={{ fontFamily: F, fontSize: 9.5, fontWeight: 700, color: (TINTS[tint] || TINTS.neutral).label,
+    <div style={{ flex: "1 1 45%", background: C.card, border: `1px solid ${C.border}`,
+      borderRadius: 12, padding: "11px 12px" }}>
+      <div style={{ fontFamily: F, fontSize: 9, fontWeight: 800, color: C.faint,
         textTransform: "uppercase", letterSpacing: 0.4 }}>{label}</div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 5 }}>
-        <span style={{ fontFamily: FONT_DISPLAY, fontSize: 23, fontWeight: 650, color: C.num,
-          letterSpacing: "-0.02em", lineHeight: 1.05, fontVariantNumeric: "tabular-nums" }}>{value}</span>
+        <span style={{ fontFamily: F, fontSize: 22, fontWeight: 900, color: accent || C.ink,
+          letterSpacing: -0.5, lineHeight: 1 }}>{value}</span>
         {d != null && (
-          <span style={{ fontFamily: F, fontSize: 10.5, fontWeight: 700, color: up ? TONE.up : TONE.down }}>
+          <span style={{ fontFamily: F, fontSize: 10, fontWeight: 800, color: up ? C.green : C.hot }}>
             {up ? "▲" : "▼"}{Math.abs(d)}%
           </span>
         )}
       </div>
-      <div style={{ fontFamily: F, fontSize: 10.5, color: BOX_SUB, marginTop: 4 }}>
+      <div style={{ fontFamily: F, fontSize: 9.5, color: C.faint, marginTop: 3 }}>
         {prev != null ? `${prev} previous period` : "no prior data"}
       </div>
-    </TintedBox>
+    </div>
   );
 }
 
@@ -7464,17 +7467,15 @@ function EarningsPanel({ history }) {
       )}
 
       {/* Headline */}
-      <div className="rg-glass" style={{ borderRadius: 20, padding: 15, marginBottom: 10 }}>
-        <TintedBox tint="mint" inner style={{ padding: "12px 13px 12px" }}>
-          <div style={{ fontFamily: F, fontSize: 9.5, fontWeight: 700, color: TINTS.mint.label,
-            textTransform: "uppercase", letterSpacing: 0.6 }}>Earned · {rangeLabel}</div>
-          <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "2px 8px", marginTop: 5 }}>
-            <span style={{ fontFamily: FONT_DISPLAY, fontSize: 32, fontWeight: 650, color: C.num, letterSpacing: "-0.02em", lineHeight: 1.05, fontVariantNumeric: "tabular-nums" }}>
-              {inrShort(total)}
-            </span>
-            <span style={{ fontFamily: F, fontSize: 11.5, color: BOX_SUB }}>on {units} deliveries</span>
-          </div>
-        </TintedBox>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 15, marginBottom: 10 }}>
+        <div style={{ fontFamily: F, fontSize: 9.5, fontWeight: 800, color: C.faint,
+          textTransform: "uppercase", letterSpacing: 0.6 }}>Earned · {rangeLabel}</div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 5 }}>
+          <span style={{ fontFamily: F, fontSize: 34, fontWeight: 900, color: C.ink, letterSpacing: -1.4, lineHeight: 1 }}>
+            {inrShort(total)}
+          </span>
+          <span style={{ fontFamily: F, fontSize: 11.5, color: C.sub }}>on {units} deliveries</span>
+        </div>
 
         {/* Where it came from — three lines, each traceable below. */}
         <div style={{ marginTop: 13, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
@@ -7483,7 +7484,7 @@ function EarningsPanel({ history }) {
             { l: `Add-ons · ${attachCount} attached`, v: attachTotal, c: C.green },
             { l: singleMonth ? (tier ? `Volume bonus · ${tier.at}+ tier` : "Volume bonus · not reached")
                              : `Volume bonus · ${monthsInRange.length} months`,
-              v: bonus, c: bonus ? C.primary : C.faint },
+              v: bonus, c: bonus ? C.primary : C.ghost },
           ].map(r => (
             <div key={r.l} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
               <span style={{ fontFamily: F, fontSize: 11.5, color: C.sub }}>{r.l}</span>
@@ -7506,7 +7507,7 @@ function EarningsPanel({ history }) {
       </div>
 
       {/* Volume bonus, explained rather than asserted. */}
-      <div className="rg-glass" style={{ borderRadius: 20, padding: 14, marginBottom: 10 }}>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
         <div style={{ fontFamily: F, fontSize: 12.5, fontWeight: 800, color: C.ink, marginBottom: 3 }}>
           How the volume bonus works
         </div>
@@ -7520,12 +7521,12 @@ function EarningsPanel({ history }) {
           return (
             <div key={t.at} style={{
               display: "flex", alignItems: "center", gap: 10, padding: "9px 11px", marginBottom: 6,
-              borderRadius: 10, background: current ? ACCENT.rowOn : C.bg,
+              borderRadius: 10, background: current ? C.primarySoft : C.bg,
               border: `1.5px solid ${current ? C.primary : "transparent"}`,
             }}>
               <span style={{
                 width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
-                background: reached ? C.green : C.faint,
+                background: reached ? C.green : C.borderStrong,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
                 {reached ? <Check size={12} color="#fff" strokeWidth={3} />
@@ -7541,7 +7542,7 @@ function EarningsPanel({ history }) {
                 )}
               </span>
               <span style={{ fontFamily: F, fontSize: 12.5, fontWeight: 800,
-                color: reached ? C.green : C.faint }}>{inrShort(t.bonus)}</span>
+                color: reached ? C.green : C.ghost }}>{inrShort(t.bonus)}</span>
             </div>
           );
         })}
@@ -7558,14 +7559,14 @@ function EarningsPanel({ history }) {
       </div>
 
       {deals.length === 0 && (
-        <div className="rg-glass" style={{ borderRadius: 16,
+        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12,
           padding: 22, textAlign: "center", fontFamily: F, fontSize: 12.5, color: C.sub, marginBottom: 10 }}>
           No retails in this range.
         </div>
       )}
 
       {/* The ledger. Every rupee traceable to a scooter. */}
-      <div className="rg-glass" style={{ borderRadius: 20, padding: 14, marginBottom: 10 }}>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
         <div style={{ fontFamily: F, fontSize: 12.5, fontWeight: 800, color: C.ink, marginBottom: 3 }}>
           What each scooter paid
         </div>
@@ -7632,7 +7633,7 @@ function EarningsPanel({ history }) {
         )}
       </div>
 
-      <div style={{ fontFamily: F, fontSize: 9.5, color: C.sub, lineHeight: 1.5, padding: "0 2px" }}>
+      <div style={{ fontFamily: F, fontSize: 9.5, color: C.faint, lineHeight: 1.5, padding: "0 2px" }}>
         Indicative — settles against the payroll statement. Commission pays on delivery.
       </div>
     </div>
@@ -7721,11 +7722,11 @@ function SEDashboardScreen({ leads, user }) {
       {tab === "funnel" && (<>
 
       {/* ---- KPI strip: always this month vs last ---- */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
-        <KpiTile label="Contacted · this month" value={thisM.contacted} prev={lastM.contacted} tint="neutral" />
-        <KpiTile label="Test rides · this month" value={thisM.visit} prev={lastM.visit} tint="neutral" />
-        <KpiTile label="Bookings · this month" value={thisM.booking} prev={lastM.booking} tint="neutral" />
-        <KpiTile label="Retailed · this month" value={thisM.retailed} prev={lastM.retailed} tint="yellow" />
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+        <KpiTile label="Contacted · this month" value={thisM.contacted} prev={lastM.contacted} />
+        <KpiTile label="Test rides · this month" value={thisM.visit} prev={lastM.visit} accent={C.primary} />
+        <KpiTile label="Bookings · this month" value={thisM.booking} prev={lastM.booking} accent={C.warm} />
+        <KpiTile label="Retailed · this month" value={thisM.retailed} prev={lastM.retailed} accent={C.darkGreen} />
       </div>
 
       {/* ---- Period ---- */}
@@ -7744,7 +7745,7 @@ function SEDashboardScreen({ leads, user }) {
       </div>
 
       {/* ---- The main table ---- */}
-      <div className="rg-glass" style={{ borderRadius: 20, padding: 13, marginBottom: 10 }}>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 13, marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
           <span style={{ flex: 1, fontFamily: F, fontSize: 12.5, fontWeight: 800, color: C.ink }}>Lead funnel</span>
           <span style={{ fontFamily: F, fontSize: 10, color: C.faint }}>
@@ -7771,7 +7772,7 @@ function SEDashboardScreen({ leads, user }) {
 
       {/* Tapping a row explains that slice on its own terms. */}
       {drillRow && (
-        <div style={{ background: C.wash, border: `1px solid ${mixVar(C.primary, 20)}`, borderRadius: 12,
+        <div style={{ background: C.primarySoft, border: `1px solid ${C.primary}33`, borderRadius: 12,
           padding: 12, marginBottom: 10 }}>
           <div style={{ fontFamily: F, fontSize: 12, fontWeight: 800, color: C.primary, marginBottom: 6 }}>
             {drillRow.label}
@@ -7868,13 +7869,14 @@ function ActivityScreen({ leads, onOpenLead }) {
           }}>Clear</button>
         )}
       </div>
-      <div className="rg-seg" style={{ display: "flex", gap: 6, marginBottom: 14, borderRadius: 12, padding: 3 }}>
+      <div style={{ display: "flex", gap: 6, marginBottom: 14, background: C.border, borderRadius: 12, padding: 3 }}>
         {tabs.map(t => (
-          <button key={t.key} onClick={() => setSub(t.key)} className={sub === t.key ? "rg-thumb" : undefined} style={{
+          <button key={t.key} onClick={() => setSub(t.key)} style={{
             flex: 1, padding: "7px 4px", borderRadius: 9, border: "none", cursor: "pointer",
-            background: sub === t.key ? undefined : "none",
+            background: sub === t.key ? C.card : "none",
             fontFamily: F, fontSize: 11.5, fontWeight: 700,
             color: sub === t.key ? C.primary : C.sub,
+            boxShadow: sub === t.key ? "0 1px 3px rgba(0,0,0,.08)" : "none"
           }}>{t.label}</button>
         ))}
       </div>
@@ -7885,15 +7887,15 @@ function ActivityScreen({ leads, onOpenLead }) {
         </div>
       )}
 
-      {activeTab.data.length > 0 && <div className="rg-glass" style={{ padding: 6, borderRadius: 20, marginBottom: 12 }}>
       {activeTab.data.map((row, i) => (
-        <div key={i} onClick={() => onOpenLead(row.lead.id)} className="rg-list-row" style={{
-          gap: 11, borderRadius: 14, padding: "10px 10px", cursor: "pointer"
+        <div key={i} onClick={() => onOpenLead(row.lead.id)} style={{
+          display: "flex", alignItems: "center", gap: 11, background: C.card, border: `1px solid ${C.border}`,
+          borderRadius: 12, padding: "10px 12px", marginBottom: 8, cursor: "pointer"
         }}>
           <span style={{
-            width: 34, height: 34, borderRadius: "50%", background: ACCENT.iconBg, display: "flex",
+            width: 34, height: 34, borderRadius: "50%", background: C.primarySoft, display: "flex",
             alignItems: "center", justifyContent: "center", flexShrink: 0
-          }}><activeTab.icon size={16} color={ACCENT.iconInk} /></span>
+          }}><activeTab.icon size={16} color={C.primary} /></span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: F, fontWeight: 700, fontSize: 13, color: C.ink }}>{row.lead.name}</div>
             <div style={{ fontFamily: F, fontSize: 11.5, color: C.sub, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -7906,7 +7908,6 @@ function ActivityScreen({ leads, onOpenLead }) {
           </div>
         </div>
       ))}
-      </div>}
     </div>
   );
 }
@@ -8111,8 +8112,8 @@ function ProductReference() {
       {shown.map(m => {
         const open = openModel === m.model;
         return (
-          <div key={m.model} className="rg-glass" style={{ border: `1px solid ${open ? mixVar(C.primary, 33) : C.border}`,
-            borderRadius: 18, marginBottom: 9, overflow: "hidden" }}>
+          <div key={m.model} style={{ background: C.card, border: `1px solid ${open ? C.primary + "55" : C.border}`,
+            borderRadius: 12, marginBottom: 9, overflow: "hidden" }}>
             <button onClick={() => { setOpenModel(open ? null : m.model); setOpenRival(null); }} style={{
               display: "flex", alignItems: "center", gap: 10, width: "100%", padding: 14,
               background: "none", border: "none", cursor: "pointer", textAlign: "left",
@@ -8135,7 +8136,7 @@ function ProductReference() {
 
             {open && (
               <div style={{ padding: "0 14px 14px" }}>
-                <div style={{ background: C.wash, borderRadius: 9, padding: "10px 11px", marginBottom: 11 }}>
+                <div style={{ background: C.primarySoft, borderRadius: 9, padding: "10px 11px", marginBottom: 11 }}>
                   <span style={{ fontFamily: F, fontSize: 12, fontWeight: 700, color: C.primary, lineHeight: 1.45 }}>
                     {m.pitch}
                   </span>
@@ -8213,7 +8214,7 @@ function ProductReference() {
       })}
 
       {shown.length === 0 && (
-        <div className="rg-glass" style={{ borderRadius: 16,
+        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12,
           padding: 22, textAlign: "center", fontFamily: F, fontSize: 12.5, color: C.sub }}>
           Nothing matches "{q}".
         </div>
@@ -8260,23 +8261,24 @@ function LearningScreen({ assigned = [] }) {
 
       {view === "skills" && (<>
       {/* ---- Hours. One number, one bar, two comparisons. ---- */}
-      <TintedBox tint="yellow" style={{ padding: 15, marginBottom: 12 }}>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16,
+        padding: 15, marginBottom: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
           <div>
-            <div style={{ fontFamily: F, fontSize: 10, fontWeight: 700, color: TINTS.yellow.label,
+            <div style={{ fontFamily: F, fontSize: 10, fontWeight: 800, color: C.faint,
               textTransform: "uppercase", letterSpacing: 0.6 }}>Learning time · this month</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 7, marginTop: 5 }}>
-              <span style={{ fontFamily: FONT_DISPLAY, fontSize: 30, fontWeight: 650, color: C.num,
-                letterSpacing: "-0.02em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{fmtH(totalMins)}</span>
-              <span style={{ fontFamily: F, fontSize: 12, fontWeight: 700,
-                color: deltaM >= 0 ? TONE.up : TONE.down }}>
+              <span style={{ fontFamily: F, fontSize: 30, fontWeight: 900, color: C.ink,
+                letterSpacing: -1.2, lineHeight: 1 }}>{fmtH(totalMins)}</span>
+              <span style={{ fontFamily: F, fontSize: 12, fontWeight: 800,
+                color: deltaM >= 0 ? C.green : C.hot }}>
                 {deltaM >= 0 ? "▲" : "▼"}{fmtH(Math.abs(deltaM))}
               </span>
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontFamily: F, fontSize: 11, color: BOX_SUB }}>{done.length} completed</div>
-            <div style={{ fontFamily: F, fontSize: 11, color: BOX_SUB, marginTop: 2 }}>
+            <div style={{ fontFamily: F, fontSize: 11, color: C.sub }}>{done.length} completed</div>
+            <div style={{ fontFamily: F, fontSize: 11, color: C.faint, marginTop: 2 }}>
               team {fmtH(teamAvg)}
             </div>
           </div>
@@ -8293,26 +8295,26 @@ function LearningScreen({ assigned = [] }) {
           {LEARN_CATS.map(c => (
             <span key={c.key} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
               <span style={{ width: 7, height: 7, borderRadius: 2, background: c.color }} />
-              <span style={{ fontFamily: F, fontSize: 10.5, color: BOX_SUB }}>
-                {c.label} <strong style={{ color: C.num }}>{fmtH(LEARN_LOG[c.key])}</strong>
+              <span style={{ fontFamily: F, fontSize: 10.5, color: C.sub }}>
+                {c.label} <strong style={{ color: C.ink }}>{fmtH(LEARN_LOG[c.key])}</strong>
               </span>
             </span>
           ))}
         </div>
 
-        <div style={{ height: 5, background: "var(--bar-track)", borderRadius: 999, overflow: "hidden" }}>
+        <div style={{ height: 5, background: C.bg, borderRadius: 999, overflow: "hidden" }}>
           <div style={{ width: `${Math.min(100, (totalMins / goalMins) * 100)}%`, height: "100%",
-            background: totalMins >= goalMins ? TONE.up : "var(--bar-fill)", boxShadow: totalMins >= goalMins ? "none" : "inset 0 0 0 1px var(--bar-edge)", borderRadius: 999 }} />
+            background: totalMins >= goalMins ? C.green : C.primary, borderRadius: 999 }} />
         </div>
-        <div style={{ fontFamily: F, fontSize: 10.5, color: BOX_SUB, marginTop: 6 }}>
+        <div style={{ fontFamily: F, fontSize: 10.5, color: C.sub, marginTop: 6 }}>
           {totalMins >= goalMins
             ? `Past the ${fmtH(goalMins)} monthly goal.`
             : `${fmtH(goalMins - totalMins)} short of the ${fmtH(goalMins)} monthly goal.`}
         </div>
-      </TintedBox>
+      </div>
 
       {assignedItems.length > 0 && (
-        <div style={{ background: C.wash, border: `1px solid ${mixVar(C.primary, 20)}`, borderRadius: 12,
+        <div style={{ background: C.primarySoft, border: `1px solid ${C.primary}33`, borderRadius: 12,
           padding: 12, marginBottom: 12 }}>
           <div style={{ fontFamily: F, fontSize: 10.5, fontWeight: 800, color: C.primary,
             textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Picked out for you</div>
@@ -8341,7 +8343,7 @@ function LearningScreen({ assigned = [] }) {
               <span style={{ fontFamily: F, fontSize: 10.5, fontWeight: 700, color: on ? c.color : C.sub }}>
                 {c.label}
               </span>
-              <span style={{ fontFamily: F, fontSize: 9.5, color: on ? c.color : C.faint }}>{n}</span>
+              <span style={{ fontFamily: F, fontSize: 9.5, color: on ? c.color : C.faint, opacity: .8 }}>{n}</span>
             </button>
           );
         })}
@@ -8387,16 +8389,16 @@ function LearningScreen({ assigned = [] }) {
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button onClick={() => setDone(d => isDone ? d.filter(x => x !== m.id) : [...d, m.id])}
-                    className="rg-btn rg-press"
-                    style={{ padding: "9px 14px", borderRadius: 9, cursor: "pointer", color: C.ink,
+                    style={{ padding: "9px 14px", borderRadius: 9, cursor: "pointer",
+                      border: `1.5px solid ${C.borderStrong}`, background: C.card, color: C.sub,
                       fontFamily: F, fontWeight: 700, fontSize: 12 }}>
                     {isDone ? "Undo" : "Mark done"}
                   </button>
                   <button style={{ flex: 1, padding: "9px 0", borderRadius: 9, cursor: "pointer",
-                    ...PRIMARY_FILL,
+                    border: "none", background: meta.color, color: "#fff",
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                     fontFamily: F, fontWeight: 800, fontSize: 12 }}>
-                    {React.createElement(meta.Icon, { size: 14, color: ACCENT.ink })}
+                    {React.createElement(meta.Icon, { size: 14, color: "#fff" })}
                     {meta.verb} · {m.mins} min
                   </button>
                 </div>
@@ -8504,30 +8506,31 @@ function LeaderboardScreen({ currentId }) {
   return (
     <div style={{ padding: "12px 12px 90px", position: "relative" }}>
       {/* North star */}
-      <TintedBox tint="yellow" style={{ padding: "14px 16px 14px", marginBottom: 12 }}>
+      <div style={{ background: `linear-gradient(135deg, ${C.primary} 0%, ${C.primaryDark} 100%)`,
+        borderRadius: 16, padding: 17, marginBottom: 12, color: "#fff" }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
           <div>
-            <div style={{ fontFamily: F, fontSize: 11, fontWeight: 700, color: TINTS.yellow.label,
-              textTransform: "uppercase", letterSpacing: 0.6 }}>Retails · this month</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginTop: 6 }}>
-              <span style={{ fontFamily: FONT_DISPLAY, fontSize: 38, fontWeight: 650, color: C.num, letterSpacing: "-0.02em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+            <div style={{ fontFamily: F, fontSize: 11, fontWeight: 700, opacity: 0.9,
+              textTransform: "uppercase", letterSpacing: 0.7 }}>Retails · this month</div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginTop: 6 }}>
+              <span style={{ fontFamily: F, fontSize: 40, fontWeight: 900, letterSpacing: -1.8, lineHeight: 1 }}>
                 {me.achieved}
               </span>
-              <span style={{ fontFamily: F, fontSize: 16, fontWeight: 500, color: BOX_SUB }}>/{me.target}</span>
+              <span style={{ fontFamily: F, fontSize: 17, fontWeight: 500, opacity: 0.75 }}>/{me.target}</span>
             </div>
-            <div style={{ fontFamily: F, fontSize: 13, fontWeight: 650, color: C.num, marginTop: 8 }}>
+            <div style={{ fontFamily: F, fontSize: 13, fontWeight: 700, marginTop: 8 }}>
               #{myRank} of {ranked.length} on the floor
             </div>
-            <div style={{ fontFamily: F, fontSize: 12, color: BOX_SUB, marginTop: 3 }}>
+            <div style={{ fontFamily: F, fontSize: 12, opacity: 0.92, marginTop: 3 }}>
               {above ? `${gap} more ${gap === 1 ? "scooter" : "scooters"} to pass ${above.name.split(" ")[0]}.` : "Top of the floor."}
             </div>
           </div>
-          <Trophy size={28} color={C.num} style={{ opacity: 0.75, flexShrink: 0 }} />
+          <Trophy size={30} color="#fff" style={{ opacity: 0.9, flexShrink: 0 }} />
         </div>
-      </TintedBox>
+      </div>
 
       {/* The table */}
-      <div className="rg-glass" style={{ borderRadius: 20,
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14,
         padding: "12px 10px", marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8,
           borderBottom: `1.5px solid ${C.borderStrong}`, marginBottom: 2 }}>
@@ -8536,7 +8539,7 @@ function LeaderboardScreen({ currentId }) {
           {COLS.map(c => (
             <span key={c.key} style={{
               width: c.hero ? 58 : 50, textAlign: "center", fontFamily: F, fontSize: 10,
-              fontWeight: c.hero ? 800 : 700, color: c.hero ? C.ink : C.sub,
+              fontWeight: c.hero ? 800 : 700, color: c.hero ? C.primary : C.sub,
               textTransform: "uppercase", letterSpacing: 0.3,
             }}>{c.label}</span>
           ))}
@@ -8548,7 +8551,7 @@ function LeaderboardScreen({ currentId }) {
             <div key={u.id} style={{
               display: "flex", alignItems: "center", padding: "11px 0",
               borderBottom: i < ranked.length - 1 ? `1px solid ${C.border}` : "none",
-              background: isMe ? ACCENT.rowOn : "none",
+              background: isMe ? C.primarySoft : "none",
               borderRadius: isMe ? 8 : 0,
             }}>
               <span style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, paddingLeft: 4 }}>
@@ -8567,12 +8570,12 @@ function LeaderboardScreen({ currentId }) {
                 return (
                   <span key={c.key} style={{ width: c.hero ? 58 : 50, textAlign: "center" }}>
                     <span style={{ display: "block", fontFamily: F, fontSize: c.hero ? 19 : 14,
-                      fontWeight: c.hero ? 800 : 500, color: C.ink, lineHeight: 1.1 }}>
+                      fontWeight: c.hero ? 900 : 500, color: c.hero ? C.primary : C.ink, lineHeight: 1.1 }}>
                       {v}
                     </span>
                     {share != null && (
                       <span style={{ display: "block", fontFamily: F, fontSize: 10,
-                        color: C.sub, marginTop: 2 }}>
+                        color: c.hero ? C.primary : C.sub, opacity: c.hero ? 0.85 : 1, marginTop: 2 }}>
                         {share}%
                       </span>
                     )}
@@ -8596,8 +8599,8 @@ function LeaderboardScreen({ currentId }) {
           {advice.map(a => {
             const done = added.includes(a.module);
             return (
-              <div key={a.title} className="rg-glass" style={{
-                borderRadius: 18, padding: 14, marginBottom: 9 }}>
+              <div key={a.title} style={{ background: C.card, border: `1px solid ${C.border}`,
+                borderRadius: 12, padding: 14, marginBottom: 9 }}>
                 <div style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink, lineHeight: 1.35 }}>
                   {a.title}
                 </div>
@@ -8616,7 +8619,7 @@ function LeaderboardScreen({ currentId }) {
                   style={{
                     display: "flex", alignItems: "center", gap: 6, marginTop: 11, padding: "8px 13px",
                     borderRadius: 8, border: "none", cursor: done ? "default" : "pointer",
-                    background: done ? C.greenSoft : C.wash, color: done ? C.green : C.primary,
+                    background: done ? C.greenSoft : C.primarySoft, color: done ? C.green : C.primary,
                     fontFamily: F, fontWeight: 800, fontSize: 11.5,
                   }}>
                   <GraduationCap size={13} />
@@ -8629,8 +8632,8 @@ function LeaderboardScreen({ currentId }) {
       )}
 
       {toast && (
-        <div className="rg-toast" style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom, 0px))", left: 20, right: 20, color: "#fff",
-          borderRadius: 16, padding: "12px 14px", fontFamily: F, fontSize: 12.5, fontWeight: 600,
+        <div style={{ position: "fixed", bottom: 90, left: 20, right: 20, background: C.ink, color: "#fff",
+          borderRadius: 11, padding: "12px 14px", fontFamily: F, fontSize: 12.5, fontWeight: 600,
           textAlign: "center", zIndex: 300 }}>{toast}</div>
       )}
     </div>
@@ -8647,9 +8650,9 @@ function ProfileScreen({ user, onLogout, voiceFirst, onToggleVoiceFirst, lang, o
   ];
   return (
     <div style={{ padding: 12 }}>
-      <div className="rg-glass" style={{ borderRadius: 20, padding: 20, textAlign: "center", marginBottom: 12 }}>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, textAlign: "center", marginBottom: 12 }}>
         <span style={{
-          width: 64, height: 64, borderRadius: "50%", background: C.fill, color: C.onFill,
+          width: 64, height: 64, borderRadius: "50%", background: C.primary, color: "#fff",
           fontFamily: F, fontWeight: 800, fontSize: 22, display: "inline-flex",
           alignItems: "center", justifyContent: "center"
         }}>{initials(user.name)}</span>
@@ -8658,7 +8661,7 @@ function ProfileScreen({ user, onLogout, voiceFirst, onToggleVoiceFirst, lang, o
       </div>
 
       {/* Language Switcher */}
-      <div className="rg-glass" style={{ borderRadius: 20, padding: 14, marginBottom: 12 }}>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
           <span style={{ width: 34, height: 34, borderRadius: 9, background: C.bg, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <Globe size={16} color={C.faint} />
@@ -8676,11 +8679,11 @@ function ProfileScreen({ user, onLogout, voiceFirst, onToggleVoiceFirst, lang, o
         </div>
       </div>
 
-      <div className="rg-glass" style={{ borderRadius: 20, padding: 14, marginBottom: 12 }}>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-            <span style={{ width: 34, height: 34, borderRadius: 9, background: voiceFirst ? ACCENT.iconBg : C.bg, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <Mic size={16} color={voiceFirst ? ACCENT.iconInk : C.faint} />
+            <span style={{ width: 34, height: 34, borderRadius: 9, background: voiceFirst ? C.primarySoft : C.bg, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <Mic size={16} color={voiceFirst ? C.primary : C.faint} />
             </span>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: F, fontSize: 13, fontWeight: 700, color: C.ink }}>Voice-first logging</div>
@@ -8691,7 +8694,7 @@ function ProfileScreen({ user, onLogout, voiceFirst, onToggleVoiceFirst, lang, o
           </div>
           <button onClick={onToggleVoiceFirst} style={{
             width: 46, height: 26, borderRadius: 999, border: "none", cursor: "pointer", flexShrink: 0,
-            background: voiceFirst ? C.fill : C.borderStrong, position: "relative", padding: 0,
+            background: voiceFirst ? C.primary : C.borderStrong, position: "relative", padding: 0,
           }}>
             <span style={{
               position: "absolute", top: 3, left: voiceFirst ? 23 : 3, width: 20, height: 20,
@@ -8701,7 +8704,7 @@ function ProfileScreen({ user, onLogout, voiceFirst, onToggleVoiceFirst, lang, o
         </div>
       </div>
 
-      <div className="rg-glass" style={{ borderRadius: 20, padding: 4, marginBottom: 12 }}>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 4, marginBottom: 12 }}>
         {[
           { icon: Mail, label: "Email", value: user.email },
           { icon: Phone, label: "Phone", value: user.phone },
@@ -8716,7 +8719,7 @@ function ProfileScreen({ user, onLogout, voiceFirst, onToggleVoiceFirst, lang, o
         ))}
       </div>
 
-      <div className="rg-glass" style={{ borderRadius: 20, padding: 4, marginBottom: 12 }}>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 4, marginBottom: 12 }}>
         {rows.map((r, i) => (
           <button key={i} style={{
             display: "flex", alignItems: "center", gap: 10, padding: "12px 10px", width: "100%",
@@ -8743,18 +8746,21 @@ function ProfileScreen({ user, onLogout, voiceFirst, onToggleVoiceFirst, lang, o
 /* ============================== BOTTOM SHEET (shared wrapper) ============================== */
 function BottomSheet({ title, subtitle, onClose, children }) {
   return (
-    <div onClick={onClose} className="rg-dim" style={{
-      position: "absolute", inset: 0, zIndex: 80,
+    <div onClick={onClose} style={{
+      position: "absolute", inset: 0, background: "rgba(14,14,12,0.28)", zIndex: 80,
       display: "flex", alignItems: "flex-end",
     }}>
-      <div onClick={e => e.stopPropagation()} className="rg-sheet" style={{
-        width: "100%", padding: "4px 18px calc(18px + env(safe-area-inset-bottom, 0px))",
+      <div onClick={e => e.stopPropagation()} style={{
+        background: "#FFFFFF",
+        border: `1px solid ${C.borderStrong}`,
+        boxShadow: "0 -4px 32px rgba(0,0,0,0.10)",
+        width: "100%", borderRadius: "20px 20px 0 0", padding: 18,
         maxHeight: "85%", overflowY: "auto", boxSizing: "border-box",
       }}>
-        <div className="rg-grabber" style={{ marginBottom: 14 }} />
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: C.borderStrong, margin: "0 auto 16px", opacity: 0.6 }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: subtitle ? 4 : 14 }}>
           <span style={{ fontFamily: F, fontWeight: 800, fontSize: 15.5, color: C.ink }}>{title}</span>
-          <button onClick={onClose} className="rg-btn rg-press" style={{ cursor: "pointer", padding: 6, borderRadius: 10, display: "flex" }}>
+          <button onClick={onClose} style={{ background: C.bg, border: `1.5px solid ${C.borderStrong}`, cursor: "pointer", padding: 6, borderRadius: 8, display: "flex" }}>
             <X size={15} color={C.faint} />
           </button>
         </div>
@@ -8872,7 +8878,7 @@ function QuickQuoteSheet({ onClose, onConvert }) {
       </button>
 
       {result && (
-        <div style={{ marginTop: 14, background: C.wash, borderRadius: 12, padding: 13 }}>
+        <div style={{ marginTop: 14, background: C.primarySoft, borderRadius: 12, padding: 13 }}>
           <div style={{ fontFamily: F, fontSize: 11.5, color: C.primary, fontWeight: 700 }}>Estimated On-Road Price</div>
           {discountVal > 0 ? (
             <>
@@ -9006,8 +9012,8 @@ function BookingCelebration({ data, repName, onClose }) {
   };
 
   return (
-    <div className="rg-dim" style={{ position: "absolute", inset: 0, zIndex: 80, display: "flex", alignItems: "flex-end" }}>
-      <div className="rg-sheet" style={{ width: "100%", padding: "20px 20px calc(20px + env(safe-area-inset-bottom, 0px))", boxSizing: "border-box" }}>
+    <div style={{ position: "absolute", inset: 0, background: "rgba(14,14,12,0.28)", zIndex: 80, display: "flex", alignItems: "flex-end" }}>
+      <div style={{ width: "100%", background: C.card, borderRadius: "20px 20px 0 0", padding: 20, boxSizing: "border-box", boxShadow: "0 -4px 32px rgba(0,0,0,0.10)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
           <div style={{ width: 44, height: 44, borderRadius: 12, background: C.greenSoft, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <CheckCircle2 size={22} color={C.green} />
@@ -9572,13 +9578,14 @@ export default function SalesExecutiveApp() {
 
   return (
     <LangCtx.Provider value={lang}>
-    <ThemeRoot style={{
+    <div style={{
       width: "100%", maxWidth: 420, margin: "0 auto", height: "100vh", maxHeight: 860,
+      background: C.bg,
       display: "flex", flexDirection: "column", position: "relative",
       fontFamily: F,
       overflow: "hidden",
-      boxShadow: "0 10px 40px rgba(0,0,0,.12)",
-      borderRadius: 22,
+      boxShadow: `0 0 0 1px ${C.borderStrong}, 0 24px 64px rgba(14,14,12,0.16)`,
+      borderRadius: 20,
     }}>
       <style>{FONTS}{`
         * { box-sizing: border-box; }
@@ -9589,13 +9596,10 @@ export default function SalesExecutiveApp() {
         @keyframes celebrationPop { 0% { transform: scale(.7); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         @keyframes carBounce { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.05); } }
         @keyframes shimmer { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
-        input::placeholder, textarea::placeholder { color: #6B7286; }
+        input::placeholder, textarea::placeholder { color: #A8A69F; }
         input[type="search"]::-webkit-search-cancel-button,
         input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
-        input:focus, textarea:focus, select:focus { outline: none; }
-        input:focus:not([style*="border-style: none"]), textarea:focus:not([style*="border-style: none"]), select:focus:not([style*="border-style: none"]) { border-color: var(--focus-border) !important; box-shadow: 0 0 0 3px var(--focus-halo); }
-        /* borderless inputs inside a field wrapper (search bars): the wrapper takes the focus ring */
-        div:has(> input[style*="border-style: none"]:focus), div:has(> textarea[style*="border-style: none"]:focus) { border-color: var(--focus-border) !important; box-shadow: 0 0 0 3px var(--focus-halo) !important; }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: rgba(59,75,232,0.45) !important; box-shadow: 0 0 0 3px rgba(59,75,232,0.07); }
         select { appearance: none; -webkit-appearance: none; }
         @media (prefers-reduced-motion: reduce) { .pulse-dot { animation: none; } }
       `}</style>
@@ -9610,9 +9614,7 @@ export default function SalesExecutiveApp() {
         onMenuTap={() => setMenuOpen(true)}
       />
 
-      <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
-      <div style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden" }}>
-      <div style={{ paddingTop: 52 }}>
+      <div style={{ flex: 1, overflowY: "auto" }}>
         {showProfile ? (
           <ProfileScreen user={user} onLogout={() => showToast("Logged out (mock) — restarting demo")}
             voiceFirst={voiceFirst}
@@ -9700,10 +9702,10 @@ export default function SalesExecutiveApp() {
               { key: "language", label: "Language", value: "English" },
               { key: "email",    label: "Email ID", value: (userById(currentUserId)?.name || "user").toLowerCase().replace(/\s+/g, ".") + "@autoprism.in" },
             ].map(row => (
-              <div key={row.key} className="rg-glass" style={{
+              <div key={row.key} style={{
                 display: "flex", alignItems: "center", gap: 10, padding: "13px 14px", marginBottom: 8,
-                border: `1.5px solid ${subView === row.key ? C.primary : C.border}`,
-                borderRadius: 16,
+                background: C.card, border: `1.5px solid ${subView === row.key ? C.primary : C.border}`,
+                borderRadius: 12,
               }}>
                 <span style={{ flex: 1, fontFamily: F, fontSize: 13, fontWeight: 700, color: C.ink }}>{row.label}</span>
                 <span style={{ fontFamily: F, fontSize: 12, color: C.sub }}>{row.value}</span>
@@ -9717,8 +9719,6 @@ export default function SalesExecutiveApp() {
         ) : (
           <LeaderboardScreen currentId={currentUserId} />
         )}
-      </div>
-      </div>
       </div>
 
       {menuOpen && (
@@ -9750,7 +9750,7 @@ export default function SalesExecutiveApp() {
       )}
 
       <Toast text={toast} />
-    </ThemeRoot>
+    </div>
     </LangCtx.Provider>
   );
 }
