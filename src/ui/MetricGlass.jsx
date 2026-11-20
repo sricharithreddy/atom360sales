@@ -15,9 +15,11 @@ const CSS = `
     linear-gradient(135deg, rgba(59,75,232,0.16) 0%, rgba(59,75,232,0.05) 100%),
     rgba(255,255,255,0.72);
   -webkit-backdrop-filter:blur(16px) saturate(180%);backdrop-filter:blur(16px) saturate(180%);
-  border:1px solid rgba(255,255,255,0.7);
-  box-shadow:0 0 0 1px rgba(59,75,232,0.10), inset 0 1px 0 rgba(255,255,255,0.9),
-    0 8px 24px rgba(59,75,232,0.12), 0 1px 2px rgba(11,25,70,0.06);
+  /* All colour stays inside the box: a crisp border on the edge, highlights drawn inward only,
+     no outer shadow or glow on the page around it. */
+  border:1px solid rgba(59,75,232,0.20);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.95), inset 0 0 0 1px rgba(255,255,255,0.55);
+  overflow:hidden;
   font-family:'Inter',-apple-system,system-ui,sans-serif}
 .amg-span{grid-column:1/-1}
 .amg-label{font-size:11px;font-weight:600;color:#2F3CC0;line-height:1.3;letter-spacing:0.01em;
