@@ -3,7 +3,7 @@ import { unitsOf, PUNE_STORES, VARIANTS as INV_VARIANTS, COLOURS as INV_COLOURS 
 import {
   AlertTriangle, ArrowRight, BarChart3, Bell, Bike as Car, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, Clock, FileText, GraduationCap, Headphones, History, IndianRupee, Lock, Mail, MapPin, Menu, MessageSquare, Pause, Pencil, Phone, PlayCircle, Plus, Search, Send, Settings, ShieldAlert, ShieldCheck, Sparkles, Target, Trash2, Upload, User, UserPlus, Users, X,
 } from "lucide-react";
-import { C as RG, FONT, FONT_DISPLAY, RIVER, BOX_SUB, TINTS, RiverGlassStyles, TintedBox, Metric, MetricGrid } from "../theme/riverGlass.jsx";
+import { C as RG, FONT, FONT_DISPLAY, RIVER, BOX_SUB, TINTS, ACCENT, mixVar, ThemeRoot, TintedBox, Metric, MetricGrid } from "../theme/riverGlass.jsx";
 
 /* ==================================================================================
    AUTOPRISM — SALES MANAGER
@@ -20,7 +20,11 @@ import { C as RG, FONT, FONT_DISPLAY, RIVER, BOX_SUB, TINTS, RiverGlassStyles, T
 // translucent fills are local (pills/tracks and inputs sit on glass, never on a solid page).
 // hot/green/warm one step deeper than the theme's: this app puts them on small status pills
 // (hotSoft/greenSoft/warmSoft) over glass, where the theme shades measured just under 4.5:1.
-const C = { ...RG, bg: "rgba(15,23,42,0.05)", card: "rgba(255,255,255,0.72)", hot: "#B3261E", green: "#256B2B", warm: "#9A4A08" };
+// primary / primarySoft follow the dealer theme (ACCENT CSS vars): interactive text, selected
+// borders and selected-chip fills are indigo in autoprism and River Ink / solid yellow in river.
+// They are var() strings — never feed them to hex helpers; use mixVar() for alpha.
+const C = { ...RG, bg: "rgba(15,23,42,0.05)", card: "rgba(255,255,255,0.72)", hot: "#B3261E", green: "#256B2B", warm: "#9A4A08",
+  primary: ACCENT.strong, primarySoft: ACCENT.soft };
 const F = FONT;
 const shadow = "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)";
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
@@ -327,7 +331,7 @@ function LeadScreen({ lead, onBack, showToast, handling, onTakeOver, onReassign 
           {steps.map((st, i) => (
             <span key={st} style={{ flex: 1, textAlign: "center" }}>
               <span style={{ display: "block", height: 4, borderRadius: 999,
-                background: i <= at ? C.primary : C.border, marginBottom: 5 }} />
+                background: i <= at ? "var(--bar-fill)" : "var(--bar-track)", boxShadow: i <= at ? "inset 0 0 0 1px var(--bar-edge)" : "none", marginBottom: 5 }} />
               <span style={{ fontFamily: F, fontSize: 9, fontWeight: i === at ? 800 : 500,
                 color: i === at ? C.primary : C.faint }}>{st}</span>
             </span>
@@ -418,10 +422,10 @@ function LeadScreen({ lead, onBack, showToast, handling, onTakeOver, onReassign 
             <button className="rg-btn" onClick={() => { setTaking(false); setWhy(""); }} style={{ padding: "10px 14px",
               borderRadius: 9, cursor: "pointer", 
               color: C.sub, fontFamily: F, fontWeight: 700, fontSize: 12 }}>Back</button>
-            <button disabled={why.trim().length <= 3} onClick={() => onTakeOver(lead, why.trim())}
+            <button className="rg-btn-primary rg-press" disabled={why.trim().length <= 3} onClick={() => onTakeOver(lead, why.trim())}
               style={{ flex: 1, padding: "10px 0", borderRadius: 9, border: "none",
                 cursor: why.trim().length > 3 ? "pointer" : "default",
-                background: why.trim().length > 3 ? C.primary : C.borderStrong, color: "#fff",
+                
                 fontFamily: F, fontWeight: 800, fontSize: 12 }}>Confirm</button>
           </div>
         </div>
@@ -433,7 +437,7 @@ function LeadScreen({ lead, onBack, showToast, handling, onTakeOver, onReassign 
               fontFamily: F, fontWeight: 700, fontSize: 13 }}>Reassign</button>
           <button className="rg-btn-primary" onClick={() => setTaking(true)}
             style={{ flex: 1.4, padding: "14px 0", borderRadius: 11, border: "none", 
-              color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
+              fontFamily: F, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
             Take over the close
           </button>
         </div>
@@ -475,7 +479,7 @@ function DrillScreen({ drill, onBack, onOpenLead, handling }) {
 // Depth is shown by a role-coloured left bar and a background step — NOT by indenting.
 // Four levels of indent would leave no width for the numbers on a phone, and the parent
 // name in the sub-line carries the relationship better than whitespace does.
-const DEPTH_BG = ["rgba(59,75,232,0.07)", "transparent", "rgba(15,23,42,0.025)", "rgba(15,23,42,0.05)"];
+const DEPTH_BG = [ACCENT.rowOn, "transparent", "rgba(15,23,42,0.025)", "rgba(15,23,42,0.05)"];
 const ROLE_TONE = { "Sales Manager": "#0B1946", "Team Leader": "#00695C", "Sales Executive": "#AEB4CB" };
 
 function TargetRow({ node, depth, expanded, onToggle, onPick, parent, onDrill }) {
@@ -644,7 +648,7 @@ function ActionCard({ item, onResolve, onOpenLead, onLogFollowUp }) {
           </button>
           <button className="rg-btn-primary" onClick={() => setPending(decision ? "approve" : "resolve")} style={{
             flex: 1.3, padding: "9px 0", borderRadius: 9, cursor: "pointer", border: "none",
-            color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 12 }}>
+            fontFamily: F, fontWeight: 800, fontSize: 12 }}>
             {decision ? "Approve" : "Resolve"}
           </button>
         </div>
@@ -1037,7 +1041,7 @@ function ReportsScreen({ showToast }) {
               fontFamily: F, fontWeight: 700, fontSize: 11.5 }}>PDF</button>
             <button className="rg-btn-primary" onClick={() => showToast(`${r2.name} scheduled — every Monday 9am`)} style={{
               flex: 1.2, padding: "8px 0", borderRadius: 8, cursor: "pointer", border: "none",
-              color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 11.5 }}>Schedule</button>
+              fontFamily: F, fontWeight: 800, fontSize: 11.5 }}>Schedule</button>
           </div>
         </div>
       ))}
@@ -1121,7 +1125,7 @@ function ProductReference({ showToast }) {
       {shown.map(m => {
         const open = openModel === m.model;
         return (
-          <div className="rg-glass" key={m.model} style={{ border: `1px solid ${open ? C.primary + "55" : C.border}`,
+          <div className="rg-glass" key={m.model} style={{ border: `1px solid ${open ? mixVar(C.primary, 33) : C.border}`,
             borderRadius: 16, marginBottom: 9, overflow: "hidden" }}>
             <button onClick={() => { setOpenModel(open ? null : m.model); setOpenRival(null); }} style={{
               display: "flex", alignItems: "center", gap: 10, width: "100%", padding: 14,
@@ -1144,7 +1148,7 @@ function ProductReference({ showToast }) {
 
             {open && (
               <div style={{ padding: "0 14px 14px" }}>
-                <div style={{ background: C.primarySoft, borderRadius: 9, padding: "10px 11px", marginBottom: 11 }}>
+                <div style={{ background: ACCENT.rowOn, borderRadius: 9, padding: "10px 11px", marginBottom: 11 }}>
                   <span style={{ fontFamily: F, fontSize: 12.5, fontWeight: 700, color: C.primary, lineHeight: 1.45 }}>
                     {m.pitch}
                   </span>
@@ -1355,15 +1359,15 @@ function LearningScreen({ assigned = [], showToast }) {
           <div style={{ fontFamily: F, fontSize: 10, fontWeight: 700, color: TINTS.yellow.label,
             textTransform: "uppercase", letterSpacing: 0.6 }}>Learning time · this month</div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 7, marginTop: 4 }}>
-            <span style={{ fontFamily: FONT_DISPLAY, fontSize: 24.5, fontWeight: 700, color: RIVER.ink,
+            <span style={{ fontFamily: FONT_DISPLAY, fontSize: 24.5, fontWeight: 700, color: ACCENT.num,
               letterSpacing: -0.6, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{fmtH(totalMins)}</span>
             <span style={{ fontFamily: F, fontSize: 11.5, color: BOX_SUB }}>of {fmtH(goalMins)}</span>
           </div>
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ height: 5, background: "rgba(55,52,9,0.10)", borderRadius: 999, overflow: "hidden" }}>
+          <div style={{ height: 5, background: "var(--bar-track)", borderRadius: 999, overflow: "hidden" }}>
             <div style={{ width: `${Math.min(100, (totalMins / goalMins) * 100)}%`, height: "100%",
-              background: RIVER.ink, opacity: 0.85, borderRadius: 999 }} />
+              background: "var(--bar-fill)", boxShadow: "inset 0 0 0 1px var(--bar-edge)", borderRadius: 999 }} />
           </div>
           <div style={{ fontFamily: F, fontSize: 10.5, color: BOX_SUB, marginTop: 5, textAlign: "right" }}>
             {done.length} completed
@@ -1372,7 +1376,7 @@ function LearningScreen({ assigned = [], showToast }) {
       </TintedBox>
 
       {assignedItems.length > 0 && (
-        <div style={{ background: C.primarySoft, border: `1px solid ${C.primary}33`, borderRadius: 12,
+        <div style={{ background: ACCENT.rowOn, border: `1px solid ${mixVar(C.primary, 20)}`, borderRadius: 12,
           padding: 12, marginBottom: 12 }}>
           <div style={{ fontFamily: F, fontSize: 11, fontWeight: 800, color: C.primary,
             textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Picked out for you</div>
@@ -1611,7 +1615,7 @@ function TransferScreen({ showToast, onTransferred, transfers }) {
             padding: "8px 10px", fontFamily: F, fontSize: 12, color: C.ink, background: C.card, outline: "none",
             resize: "none", marginBottom: 10 }} />
         <button className="rg-btn-primary" onClick={commit} style={{ width: "100%", padding: "14px 0", borderRadius: 11, border: "none",
-          color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
+          fontFamily: F, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
           Move {selected.length} {selected.length === 1 ? "lead" : "leads"}
         </button>
       </div>
@@ -1661,11 +1665,11 @@ function TransferScreen({ showToast, onTransferred, transfers }) {
               return (
                 <div key={l.id} onClick={() => togglePick(l.id)} style={{ display: "flex", alignItems: "center", gap: 9,
                   padding: "8px 10px", borderBottom: `1px solid ${C.border}`, cursor: "pointer",
-                  background: picked.has(l.id) ? C.primarySoft : "none" }}>
+                  background: picked.has(l.id) ? ACCENT.rowOn : "none" }}>
                   <span style={{ width: 15, height: 15, borderRadius: 4, flexShrink: 0,
-                    border: `1.5px solid ${on ? C.primary : C.borderStrong}`, background: on ? C.primary : C.card,
+                    border: `1.5px solid ${on ? C.primary : C.borderStrong}`, background: on ? ACCENT.primary : C.card,
                     display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {on && <Check size={10} color="#fff" />}
+                    {on && <Check size={10} color={ACCENT.ink} />}
                   </span>
                   <span style={{ flex: 1, minWidth: 0, fontFamily: F, fontSize: 12, color: C.ink,
                     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -1703,7 +1707,7 @@ function TransferScreen({ showToast, onTransferred, transfers }) {
 
       {targets.length > 0 && selected.length > 0 && (
         <button className="rg-btn-primary" onClick={() => setStep(2)} style={{ width: "100%", padding: "14px 0", borderRadius: 11, border: "none",
-          color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
+          fontFamily: F, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
           Review {selected.length} {selected.length === 1 ? "lead" : "leads"} → {targets.map(t2 => t2.name.split(" ")[0]).join(", ")}
         </button>
       )}
@@ -1769,9 +1773,9 @@ function TeamMembersScreen({ showToast }) {
                 style={{ padding: "12px 14px", borderRadius: 10, cursor: "pointer", 
                   color: C.sub, fontFamily: F, fontWeight: 700, fontSize: 12.5 }}>Deactivate</button>
             )}
-            <button onClick={save} disabled={!form.name.trim()} style={{ flex: 1, padding: "12px 0", borderRadius: 10,
+            <button className="rg-btn-primary rg-press" onClick={save} disabled={!form.name.trim()} style={{ flex: 1, padding: "12px 0", borderRadius: 10,
               border: "none", cursor: form.name.trim() ? "pointer" : "default",
-              background: form.name.trim() ? C.primary : C.borderStrong, color: "#fff",
+              
               fontFamily: F, fontWeight: 800, fontSize: 13 }}>
               {editing === "new" ? "Create login" : "Save changes"}
             </button>
@@ -1790,7 +1794,7 @@ function TeamMembersScreen({ showToast }) {
           </span>
         </span>
         <button className="rg-btn-primary" onClick={() => open("new")} style={{ padding: "9px 13px", borderRadius: 9, border: "none",
-          color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 12, cursor: "pointer",
+          fontFamily: F, fontWeight: 800, fontSize: 12, cursor: "pointer",
           whiteSpace: "nowrap" }}>+ Add</button>
       </div>
       {all.slice(1).map(n => (
@@ -2034,7 +2038,7 @@ function TeamStructureScreen({ showToast, org, onMove, history, onRecord, onReve
         </div>
         {to ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.primary}`, borderRadius: 9,
-            padding: "7px 9px", background: C.primarySoft }}>
+            padding: "7px 9px", background: ACCENT.rowOn }}>
             <Avatar r={to.node} size={22} />
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: "block", fontFamily: F, fontSize: 12.5, fontWeight: 700, color: C.ink }}>{to.node.name}</span>
@@ -2078,9 +2082,9 @@ function TeamStructureScreen({ showToast, org, onMove, history, onRecord, onReve
             <button className="rg-btn" type="button" onClick={reset} style={{ padding: "11px 14px", borderRadius: 9, cursor: "pointer",
               color: C.sub, fontFamily: F, fontWeight: 700, fontSize: 12.5 }}>Clear</button>
           )}
-          <button type="button" disabled={!who.length || !to} onClick={() => setConfirm(true)}
+          <button className="rg-btn-primary rg-press" type="button" disabled={!who.length || !to} onClick={() => setConfirm(true)}
             style={{ flex: 1, padding: "11px 0", borderRadius: 9, border: "none",
-              background: who.length && to ? C.primary : C.borderStrong, color: "#fff", fontFamily: F, fontWeight: 800,
+               fontFamily: F, fontWeight: 800,
               fontSize: 13, cursor: who.length && to ? "pointer" : "default" }}>
             {who.length > 1 ? `Move ${who.length} people` : "Move"}
           </button>
@@ -2112,7 +2116,7 @@ function TeamStructureScreen({ showToast, org, onMove, history, onRecord, onReve
             <button key={n.id} type="button" disabled={isRoot} onClick={() => !inMove && addWho(e)} style={{
               display: "flex", alignItems: "center", gap: 8, width: "100%", minHeight: 46, padding: "8px 10px 8px 8px",
               borderBottom: `1px solid ${C.border}`, borderLeft: `3px solid ${ROLE_TONE[n.role]}`,
-              background: inMove ? C.primarySoft : DEPTH_BG[Math.min(Math.max(e.depth, 0), DEPTH_BG.length - 1)],
+              background: inMove ? ACCENT.rowOn : DEPTH_BG[Math.min(Math.max(e.depth, 0), DEPTH_BG.length - 1)],
               border: "none", cursor: isRoot ? "default" : "pointer", textAlign: "left", WebkitTapHighlightColor: "transparent" }}>
               <Avatar r={n} size={e.depth === 0 ? 28 : 24} />
               <span style={{ flex: 1, minWidth: 0 }}>
@@ -2150,7 +2154,7 @@ function TeamStructureScreen({ showToast, org, onMove, history, onRecord, onReve
               <button className="rg-btn" onClick={() => setConfirm(false)} style={{ flex: 1, padding: "13px 0", borderRadius: 11, cursor: "pointer",
                 color: C.sub, fontFamily: F, fontWeight: 700, fontSize: 13 }}>Cancel</button>
               <button className="rg-btn-primary" onClick={doMove} style={{ flex: 1.4, padding: "13px 0", borderRadius: 11, border: "none", 
-                color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>Confirm</button>
+                fontFamily: F, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>Confirm</button>
             </div>
           </div>
         </div>
@@ -2202,7 +2206,7 @@ function TeamStructureScreen({ showToast, org, onMove, history, onRecord, onReve
                         <button className="rg-btn" type="button" onClick={() => setReverseAsk(null)} style={{ padding: "8px 12px", borderRadius: 8, cursor: "pointer",
                           color: C.sub, fontFamily: F, fontWeight: 700, fontSize: 11.5 }}>Keep</button>
                         <button className="rg-btn-primary" type="button" onClick={() => { onReverse([...reverseAsk.dependents, h]); setReverseAsk(null); showToast(`Reversed ${reverseAsk.dependents.length + 1} changes`); }}
-                          style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "none", color: "#fff",
+                          style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "none",
                             fontFamily: F, fontWeight: 800, fontSize: 11.5, cursor: "pointer" }}>Reverse all {reverseAsk.dependents.length + 1}</button>
                       </div>
                     </div>
@@ -2225,7 +2229,7 @@ function TeamStructureScreen({ showToast, org, onMove, history, onRecord, onReve
         <div className="rg-toast" style={{ position: "absolute", left: 14, right: 14, bottom: 18, zIndex: 130, color: "#fff",
           borderRadius: 12, padding: "11px 14px", display: "flex", alignItems: "center", gap: 10, fontFamily: F, fontSize: 12.5 }}>
           <span style={{ flex: 1 }}>Moved {undo.label}</span>
-          <button onClick={undoMove} style={{ background: "none", border: "none", color: C.primary, fontFamily: F, fontWeight: 800, fontSize: 12.5, cursor: "pointer" }}>Undo</button>
+          <button onClick={undoMove} style={{ background: "none", border: "none", color: "#fff", textDecoration: "underline", textUnderlineOffset: 3, fontFamily: F, fontWeight: 800, fontSize: 12.5, cursor: "pointer" }}>Undo</button>
         </div>
       )}
     </div>
@@ -2243,12 +2247,11 @@ const ADMIN_QUEUE_OUTCOMES = ["Connected", "No Answer", "Busy", "Switched Off", 
 
 function ManagerActionBtn({ icon: Icon, label, onClick, filled }) {
   return (
-    <button onClick={e => { e.stopPropagation(); onClick(); }} style={{
+    <button className={filled ? "rg-btn-primary rg-press" : "rg-btn rg-press"} onClick={e => { e.stopPropagation(); onClick(); }} style={{
       display: "flex", alignItems: "center", justifyContent: "center", gap: 5, flex: 1,
-      background: filled ? C.primary : C.card, color: filled ? "#fff" : C.sub,
-      border: `1.5px solid ${filled ? C.primary : C.border}`, borderRadius: 9,
+      ...(filled ? null : { color: C.sub }), borderRadius: 9,
       padding: "8px 0", fontFamily: F, fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>
-      <Icon size={13} color={filled ? "#fff" : C.sub} />{label}
+      <Icon size={13} color={filled ? "currentColor" : C.sub} />{label}
     </button>
   );
 }
@@ -2272,8 +2275,8 @@ function ManagerCallLogForm({ lead, onCancel, onSubmit }) {
       <div style={{ display: "flex", gap: 7 }}>
         <button className="rg-btn" onClick={onCancel} style={{ padding: "8px 13px", borderRadius: 9, cursor: "pointer",
           color: C.sub, fontFamily: F, fontWeight: 700, fontSize: 12 }}>Cancel</button>
-        <button onClick={() => outcome && onSubmit(outcome, note)} disabled={!outcome} style={{ flex: 1, padding: "8px 0", borderRadius: 9,
-          border: "none", background: outcome ? C.primary : C.borderStrong, color: "#fff", fontFamily: F, fontWeight: 800,
+        <button className="rg-btn-primary rg-press" onClick={() => outcome && onSubmit(outcome, note)} disabled={!outcome} style={{ flex: 1, padding: "8px 0", borderRadius: 9,
+          border: "none",  fontFamily: F, fontWeight: 800,
           fontSize: 12, cursor: outcome ? "pointer" : "default" }}>Log call</button>
       </div>
     </div>
@@ -2343,8 +2346,8 @@ function OrgLeadsScreen({ sub, handling, transfers, onOpen, managerActivity = []
           ...managerActivity.map(e => ({ ...e, isManager: true })),
           ...all.flatMap(l => l.timeline.map((e, i) => ({ ...e, lead: l, leadName: l.name, owner: l.owner, k: `${l.id}-${i}` }))),
         ].slice(0, 40).map((e, i) => (
-          <div key={e.k || `m-${i}`} style={{ display: "flex", gap: 10, background: e.isManager ? C.primarySoft : C.card,
-            border: `1px solid ${e.isManager ? C.primary + "44" : C.border}`, borderRadius: 11, padding: "10px 13px", marginBottom: 7 }}>
+          <div key={e.k || `m-${i}`} style={{ display: "flex", gap: 10, background: e.isManager ? ACCENT.rowOn : C.card,
+            border: `1px solid ${e.isManager ? mixVar(C.primary, 27) : C.border}`, borderRadius: 11, padding: "10px 13px", marginBottom: 7 }}>
             <span style={{ width: 52, flexShrink: 0, fontFamily: F, fontSize: 11, color: e.isManager ? C.primary : C.faint, fontWeight: e.isManager ? 700 : 400 }}>{e.when}</span>
             <span style={{ minWidth: 0 }}>
               <span style={{ display: "block", fontFamily: F, fontSize: 12.5, color: C.ink }}>{e.what}</span>
@@ -2544,7 +2547,7 @@ function InventoryScreen({ sub }) {
         </span>
         {(view === "preowned" || view === "demo") && (
           <button className="rg-btn-primary" onClick={() => setAdding(true)} style={{ padding: "8px 12px", borderRadius: 9, border: "none",
-            color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 12, cursor: "pointer",
+            fontFamily: F, fontWeight: 800, fontSize: 12, cursor: "pointer",
             whiteSpace: "nowrap", flexShrink: 0 }}>+ Add a scooter</button>
         )}
       </div>
@@ -2845,9 +2848,9 @@ function AdminSelect({ value, onChange, options, placeholder }) {
 }
 function AdminPrimaryButton({ children, onClick, disabled, full }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled} style={{
+    <button className="rg-btn-primary rg-press" type="button" onClick={onClick} disabled={disabled} style={{
       width: full ? "100%" : "auto", padding: "12px 18px", borderRadius: 10, border: "none",
-      background: disabled ? C.borderStrong : C.primary, color: "#fff", fontFamily: F, fontWeight: 800,
+       fontFamily: F, fontWeight: 800,
       fontSize: 13, cursor: disabled ? "default" : "pointer" }}>{children}</button>
   );
 }
@@ -2888,8 +2891,8 @@ function AdminPrivilegeToggle({ icon: Icon, label, sub, on, onClick }) {
         <span style={{ display: "block", fontFamily: F, fontSize: 11, color: C.faint, marginTop: 1 }}>{sub}</span>
       </span>
       <span style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, border: `1.5px solid ${on ? C.primary : C.borderStrong}`,
-        background: on ? C.primary : "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {on && <Check size={11} color="#fff" />}
+        background: on ? ACCENT.primary : "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {on && <Check size={11} color={ACCENT.ink} />}
       </span>
     </button>
   );
@@ -2989,7 +2992,7 @@ function AdminUsersScreen({ showToast }) {
   const UserRow = ({ u, isLast }) => (
     <button onClick={() => setEditing(u)} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%",
       padding: "11px 12px", borderBottom: isLast ? "none" : `1px solid ${C.border}`,
-      background: u.active ? "none" : "rgba(59,75,232,0.06)", border: "none", cursor: "pointer", textAlign: "left",
+      background: u.active ? "none" : ACCENT.rowOn, border: "none", cursor: "pointer", textAlign: "left",
       opacity: u.active ? 1 : 0.6 }}>
       <AdminAvatar n={u} />
       <span style={{ flex: 1, minWidth: 0 }}>
@@ -3013,7 +3016,7 @@ function AdminUsersScreen({ showToast }) {
     <div style={{ padding: "14px 14px 90px" }}>
       <AdminScreenHeader title="Users & Roles" blurb={`${users.filter(u => u.active).length} active logins across ${ADMIN_ROLE_DEFS.length} roles.`}
         action={<button className="rg-btn-primary" onClick={() => setEditing("new")} style={{ padding: "9px 13px", borderRadius: 9, border: "none",
-          color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 12, cursor: "pointer",
+          fontFamily: F, fontWeight: 800, fontSize: 12, cursor: "pointer",
           whiteSpace: "nowrap" }}>+ Add</button>} />
 
       <div style={{ display: "flex", gap: 5, marginBottom: 12 }}>
@@ -3107,8 +3110,8 @@ function AdminLevelDropdown({ values, onChange }) {
                 gap: 8, width: "100%", padding: "9px 11px", background: "none", border: "none",
                 borderBottom: `1px solid ${C.border}`, cursor: "pointer", textAlign: "left" }}>
                 <span style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, border: `1.5px solid ${on ? C.primary : C.borderStrong}`,
-                  background: on ? C.primary : "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {on && <Check size={11} color="#fff" />}
+                  background: on ? ACCENT.primary : "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {on && <Check size={11} color={ACCENT.ink} />}
                 </span>
                 <span style={{ fontFamily: F, fontSize: 12.5, fontWeight: 600, color: C.ink }}>{o.label}</span>
               </button>
@@ -3182,7 +3185,7 @@ function AdminShowroomPicker({ value, onChange }) {
   if (value && !open) {
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.primary}`, borderRadius: 9,
-        padding: "9px 11px", background: C.primarySoft }}>
+        padding: "9px 11px", background: ACCENT.rowOn }}>
         <MapPin size={14} color={C.primary} />
         <span style={{ flex: 1, fontFamily: F, fontSize: 13, fontWeight: 700, color: C.ink }}>{value}</span>
         <button type="button" onClick={() => setOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
@@ -3261,7 +3264,7 @@ function AdminRuleBuilder({ existing, blockedBy, onSave, onCancel }) {
   const canSave = showroom && !bothAll && !blocker;
 
   return (
-    <div className="rg-glass" style={{ border: `1.5px solid ${C.primary}44`, padding: 14, marginBottom: 12 }}>
+    <div className="rg-glass" style={{ border: `1.5px solid ${mixVar(C.primary, 27)}`, padding: 14, marginBottom: 12 }}>
       <AdminField label="Showroom"><AdminShowroomPicker value={showroom} onChange={(s) => { setShowroom(s); setPeople([]); }} /></AdminField>
       <AdminDivider />
       <AdminField label="Models">
@@ -3466,7 +3469,7 @@ function AdminLeadRulesScreen({ showToast }) {
             border: `1.5px solid ${method === k ? C.primary : C.border}`, background: method === k ? C.primarySoft : C.card }}>
             <span style={{ width: 17, height: 17, borderRadius: "50%", flexShrink: 0, marginTop: 1,
               border: `1.5px solid ${method === k ? C.primary : C.borderStrong}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {method === k && <span style={{ width: 8, height: 8, borderRadius: "50%", background: C.primary }} />}
+              {method === k && <span style={{ width: 8, height: 8, borderRadius: "50%", background: ACCENT.primary }} />}
             </span>
             <span style={{ minWidth: 0 }}>
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -3562,7 +3565,7 @@ function AdminLocationsScreen({ showToast }) {
     <div style={{ padding: "14px 14px 90px" }}>
       <AdminScreenHeader title="Locations" blurb={`${locs.length} branches.`}
         action={<button className="rg-btn-primary" onClick={() => setEditing("new")} style={{ padding: "9px 13px", borderRadius: 9, border: "none",
-          color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 12, cursor: "pointer",
+          fontFamily: F, fontWeight: 800, fontSize: 12, cursor: "pointer",
           whiteSpace: "nowrap" }}>+ Add</button>} />
       {locs.map(l => <AdminLocationCard key={l.id} loc={l} onEdit={setEditing} />)}
     </div>
@@ -3665,7 +3668,7 @@ function AdminExtractReview({ sourceName, rows, onDiscard, onConfirm }) {
   const [edited, setEdited] = useState(rows);
   const set = (i, k, v) => setEdited(e => e.map((r, ix) => ix === i ? { ...r, [k]: k === "name" || k === "model" ? v : Number(v.replace(/[^0-9]/g, "")) } : r));
   return (
-    <div className="rg-glass" style={{ border: `1.5px solid ${C.primary}44`, padding: 14, marginBottom: 14 }}>
+    <div className="rg-glass" style={{ border: `1.5px solid ${mixVar(C.primary, 27)}`, padding: 14, marginBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
         <CheckCircle2 size={14} color={C.green} />
         <span style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink }}>
@@ -3724,7 +3727,7 @@ function AdminAccessoryExtractReview({ sourceName, rows, onDiscard, onConfirm })
   const [edited, setEdited] = useState(rows);
   const set = (i, k, v) => setEdited(e => e.map((r, ix) => ix === i ? { ...r, [k]: k === "price" ? Number(v.replace(/[^0-9]/g, "")) : v } : r));
   return (
-    <div className="rg-glass" style={{ border: `1.5px solid ${C.primary}44`, padding: 14, marginBottom: 14 }}>
+    <div className="rg-glass" style={{ border: `1.5px solid ${mixVar(C.primary, 27)}`, padding: 14, marginBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
         <CheckCircle2 size={14} color={C.green} />
         <span style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink }}>{edited.length} accessories read from {sourceName}</span>
@@ -4061,9 +4064,9 @@ function BoardScreen({ actions, onResolve, onPick, org, onDrill, onOpenLead, han
       </MetricGrid>
       <div className="rg-glass" style={{ padding: "14px 10px", marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4, paddingLeft: 4 }}>
-          <span style={{ width: 28, height: 28, borderRadius: "50%", background: C.primarySoft, flexShrink: 0,
+          <span style={{ width: 28, height: 28, borderRadius: "50%", background: ACCENT.iconBg, flexShrink: 0,
             display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Target size={15} color={C.primary} />
+            <Target size={15} color={ACCENT.iconInk} />
           </span>
           <span style={{ flex: 1, fontFamily: FONT_DISPLAY, fontSize: 15, fontWeight: 700, letterSpacing: -0.2, color: C.ink }}>
             Target achievement
@@ -4182,12 +4185,12 @@ function RepSheet({ rep, onClose, showToast }) {
             <X size={18} color={C.sub} />
           </button>
         </div>
-        <TintedBox tint="grey" inner style={{ display: "flex", marginBottom: 14, padding: "11px 4px 10px" }}>
+        <TintedBox tint="neutral" inner style={{ display: "flex", marginBottom: 14, padding: "11px 4px 10px" }}>
           {funnel.map(([l, v], i) => (
             <span key={l} style={{ flex: 1, textAlign: "center" }}>
-              <span style={{ display: "block", fontFamily: FONT_DISPLAY, fontSize: 17, fontWeight: 700, color: RIVER.ink,
+              <span style={{ display: "block", fontFamily: FONT_DISPLAY, fontSize: 17, fontWeight: 700, color: ACCENT.num,
                 fontVariantNumeric: "tabular-nums" }}>{v}</span>
-              <span style={{ display: "block", fontFamily: F, fontSize: 10, fontWeight: 600, color: TINTS.grey.label,
+              <span style={{ display: "block", fontFamily: F, fontSize: 10, fontWeight: 600, color: TINTS.neutral.label,
                 textTransform: "uppercase", marginTop: 2 }}>{l}</span>
               {i > 0 && <span style={{ display: "block", fontFamily: F, fontSize: 9.5, color: BOX_SUB,
                 marginTop: 1 }}>{pct(v, funnel[i - 1][1])}%</span>}
@@ -4214,7 +4217,7 @@ function RepSheet({ rep, onClose, showToast }) {
               fontFamily: F, fontWeight: 700, fontSize: 13 }}>Transfer leads</button>
           <button className="rg-btn-primary" onClick={() => { showToast(`1:1 scheduled with ${rep.name.split(" ")[0]}`); onClose(); }}
             style={{ flex: 1.3, padding: "13px 0", borderRadius: 11, border: "none", 
-              color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
+              fontFamily: F, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
             Schedule a 1:1
           </button>
         </div>
@@ -4514,7 +4517,7 @@ function BulkMessageScreen({ channel, onBack, showToast }) {
           {recipients > 0 ? `Review · ${recipients.toLocaleString("en-IN")} recipients` : "No recipients match yet"}
         </AdminPrimaryButton>
       ) : (
-        <div className="rg-glass" style={{ border: `1.5px solid ${C.primary}44`, padding: 14 }}>
+        <div className="rg-glass" style={{ border: `1.5px solid ${mixVar(C.primary, 27)}`, padding: 14 }}>
           <div style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink, marginBottom: 3 }}>
             Send to {recipients.toLocaleString("en-IN")} people?
           </div>
@@ -4566,9 +4569,9 @@ function AdminMessagingScreen({ showToast }) {
           library rather than inside it. */}
       <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
         {["SMS", "WhatsApp"].map(c => (
-          <button key={c} onClick={() => setBulk(c)} style={{ flex: 1, display: "flex", alignItems: "center",
+          <button key={c} className="rg-btn rg-press" onClick={() => setBulk(c)} style={{ flex: 1, display: "flex", alignItems: "center",
             justifyContent: "center", gap: 6, padding: "12px 0", borderRadius: 11, cursor: "pointer",
-            border: "none", background: C.ink, color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 13 }}>
+            color: C.ink, fontFamily: F, fontWeight: 800, fontSize: 13 }}>
             <Send size={13} />Bulk {c}
           </button>
         ))}
@@ -4577,7 +4580,7 @@ function AdminMessagingScreen({ showToast }) {
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9 }}>
         <span style={{ flex: 1, fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink }}>Templates</span>
         <button className="rg-btn-primary" onClick={() => setEditing("new")} style={{ padding: "8px 12px", borderRadius: 9, border: "none",
-          color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 11.5, cursor: "pointer",
+          fontFamily: F, fontWeight: 800, fontSize: 11.5, cursor: "pointer",
           whiteSpace: "nowrap" }}>+ Add</button>
       </div>
 
@@ -4741,7 +4744,7 @@ function AdminSecurityScreen({ showToast }) {
           <div style={{ display: "flex", gap: 6 }}>
             <AdminInput value={rpq} onChange={e => { setRpq(e.target.value); setRpqResult(null); }} placeholder="Search name or phone" style={{ flex: 1 }} />
             <button className="rg-btn-primary" onClick={searchForReset} style={{ padding: "0 14px", borderRadius: 9, border: "none",
-              color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 12, cursor: "pointer" }}>
+              fontFamily: F, fontWeight: 800, fontSize: 12, cursor: "pointer" }}>
               <Search size={14} /></button>
           </div>
         </AdminField>
@@ -4857,7 +4860,7 @@ function AdminSecurityScreen({ showToast }) {
           <div style={{ display: "flex", gap: 6 }}>
             <AdminInput value={bq} onChange={e => { setBq(e.target.value); setBqResult(null); }} placeholder="Search or paste one in" style={{ flex: 1 }} />
             <button className="rg-btn-primary" onClick={searchToBlacklist} style={{ padding: "0 14px", borderRadius: 9, border: "none",
-              color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 12.5, cursor: "pointer" }}>
+              fontFamily: F, fontWeight: 800, fontSize: 12.5, cursor: "pointer" }}>
               <Search size={14} /></button>
           </div>
         </AdminField>
@@ -4955,7 +4958,7 @@ function AdminSecurityScreen({ showToast }) {
           <div style={{ display: "flex", gap: 6 }}>
             <AdminInput value={dq} onChange={e => setDq(e.target.value)} placeholder="Search name or phone" style={{ flex: 1 }} />
             <button className="rg-btn-primary" onClick={searchCustomer} style={{ padding: "0 14px", borderRadius: 9, border: "none",
-              color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 12.5, cursor: "pointer" }}>
+              fontFamily: F, fontWeight: 800, fontSize: 12.5, cursor: "pointer" }}>
               <Search size={14} /></button>
           </div>
         </AdminField>
@@ -5088,7 +5091,7 @@ function adminComputeIncentive(rep, tiers, volumeOn, modelBonus, modelOn, varian
 function AdminOnOffToggle({ on, onClick }) {
   return (
     <button type="button" onClick={onClick} style={{ width: 40, height: 23, borderRadius: 12, border: "none",
-      background: on ? C.primary : C.borderStrong, position: "relative", cursor: "pointer", flexShrink: 0, padding: 0 }}>
+      background: on ? ACCENT.primary : C.borderStrong, position: "relative", cursor: "pointer", flexShrink: 0, padding: 0 }}>
       <span style={{ position: "absolute", top: 2, left: on ? 19 : 2, width: 19, height: 19, borderRadius: "50%",
         background: "#fff", transition: "left .15s" }} />
     </button>
@@ -5467,12 +5470,12 @@ function AdminAgentsScreen({ showToast }) {
     <div style={{ padding: "14px 14px 90px" }}>
       <AdminScreenHeader title="AI Agents" blurb="Robo calls and Voice AI — what's running, and what it's worth."
         action={<button className="rg-btn-primary" onClick={() => setAdding(true)} style={{ padding: "9px 13px", borderRadius: 9, border: "none",
-          color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 12, cursor: "pointer",
+          fontFamily: F, fontWeight: 800, fontSize: 12, cursor: "pointer",
           whiteSpace: "nowrap" }}>+ Add</button>} />
 
       {/* Pipeline count → grey, ₹ spent → blue, ₹ earned back → mint. */}
       <MetricGrid cols={3} style={{ gap: 8 }}>
-        {[["Running", `${running}/${agents.length}`, "grey"], ["Cost this month", inr(totalCost), "blue"], ["Value captured", inr(totalValue), "mint"]].map(([l, v, t]) => (
+        {[["Running", `${running}/${agents.length}`, "neutral"], ["Cost this month", inr(totalCost), "blue"], ["Value captured", inr(totalValue), "mint"]].map(([l, v, t]) => (
           <Metric key={l} label={l} value={v} tint={t} inner style={{ padding: "10px 10px 9px" }} />
         ))}
       </MetricGrid>
@@ -5525,7 +5528,7 @@ function AdminWalletScreen({ showToast }) {
         <div style={{ fontFamily: F, fontSize: 11, color: TINTS.blue.label, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>
           Wallet balance
         </div>
-        <div style={{ fontFamily: FONT_DISPLAY, fontSize: 30.5, fontWeight: 700, letterSpacing: "-0.02em", color: RIVER.ink, marginTop: 4,
+        <div style={{ fontFamily: FONT_DISPLAY, fontSize: 30.5, fontWeight: 700, letterSpacing: "-0.02em", color: ACCENT.num, marginTop: 4,
           fontVariantNumeric: "tabular-nums" }}>
           ₹{balance.toLocaleString("en-IN")}
         </div>
@@ -5536,11 +5539,11 @@ function AdminWalletScreen({ showToast }) {
           </div>
         )}
         <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
-          <span style={{ fontFamily: F, fontSize: 12.5, color: RIVER.ink, alignSelf: "center" }}>₹</span>
+          <span style={{ fontFamily: F, fontSize: 12.5, color: ACCENT.num, alignSelf: "center" }}>₹</span>
           <input className="rg-input" inputMode="numeric" value={rechargeAmt} onChange={e => setRechargeAmt(num(e.target.value))} style={{
             flex: 1, borderRadius: 9, padding: "9px 11px" }} />
           <button className="rg-btn-primary" onClick={recharge} style={{ padding: "0 16px", borderRadius: 9, border: "none", 
-            color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 12.5, cursor: "pointer" }}>Recharge</button>
+            fontFamily: F, fontWeight: 800, fontSize: 12.5, cursor: "pointer" }}>Recharge</button>
         </div>
       </TintedBox>
 
@@ -5657,7 +5660,7 @@ function AdminTargetsScreen({ org, onSetTarget }) {
         </div>
         <AdminTargetRow node={org} depth={0} expanded={expanded} onToggle={toggle} onSetTarget={onSetTarget} />
       </div>
-      <div style={{ fontFamily: F, fontSize: 11, color: C.faint, marginTop: 9, textAlign: "center" }}>
+      <div style={{ fontFamily: F, fontSize: 11, color: C.sub, marginTop: 9, textAlign: "center" }}>
         Dealership total: {r.target} scooters this month.
       </div>
     </div>
@@ -5799,7 +5802,7 @@ function AdminCommissionsScreen({ showToast, org }) {
           onFlat={(v) => setTargetBonus(x => ({ ...x, flat: v }))} onPct={(v) => setTargetBonus(x => ({ ...x, pct: v }))} />
       </div>
 
-      <div className="rg-glass" style={{ border: `1.5px solid ${C.primary}44`, padding: 14, marginBottom: 14 }}>
+      <div className="rg-glass" style={{ border: `1.5px solid ${mixVar(C.primary, 27)}`, padding: 14, marginBottom: 14 }}>
         <div style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink, marginBottom: 9 }}>See it for someone</div>
         <AdminSelect value={rep.name} onChange={v => { const s = ses.find(x => x.name === v); if (s) setPreviewId(s.id); }}
           options={ses.map(s => s.name)} />
@@ -5942,7 +5945,7 @@ function PlaceholderScreen({ title, blurb, Icon }) {
 /* Local: the focus ring of rg-field/rg-input for this app's many inline-styled bordered inputs
    (borderless inputs inside chip pickers are left alone). Theme tokens only. */
 const MG_FOCUS_CSS = `.rg-root input:not([type=checkbox]):not([type=radio]):not([style*="border: none"]):focus,
-.rg-root textarea:not([style*="border: none"]):focus,.rg-root select:focus{border-color:rgba(59,75,232,0.55)!important;box-shadow:0 0 0 3px rgba(59,75,232,0.14)!important;}`;
+.rg-root textarea:not([style*="border: none"]):focus,.rg-root select:focus{border-color:var(--focus-border)!important;box-shadow:0 0 0 3px var(--focus-halo)!important;}`;
 
 export default function ManagerApp() {
   const [tab, setTab] = useState("board");
@@ -6079,24 +6082,23 @@ export default function ManagerApp() {
   const [base, sub] = String(tab).split(":");
 
   return (
-    <div className="rg-root rg-mesh" style={{ width: "100%", maxWidth: 420, margin: "0 auto", height: "100vh", maxHeight: 900,
+    <ThemeRoot style={{ width: "100%", maxWidth: 420, margin: "0 auto", height: "100vh", maxHeight: 900,
       display: "flex", flexDirection: "column", position: "relative",
       borderRadius: 22, overflow: "hidden", boxShadow: "0 10px 40px rgba(0,0,0,.12)" }}>
-      <RiverGlassStyles />
       <style>{MG_FOCUS_CSS}</style>
 
       <div className="rg-bar" style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 20, height: 58, boxSizing: "border-box",
         display: "flex", alignItems: "center", gap: 10, padding: "0 14px" }}>
         <button className="mg-menu-btn" onClick={() => setMenuOpen(true)}
           style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
-          <Menu size={20} color={C.ink} />
+          <Menu size={20} color={ACCENT.hdrInk} />
         </button>
-        <span style={{ fontFamily: F, fontWeight: 900, fontSize: 16, letterSpacing: -0.8, color: C.ink }}>
-          AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: C.primary, marginLeft: 1, marginBottom: 8 }} />
+        <span style={{ fontFamily: F, fontWeight: 900, fontSize: 16, letterSpacing: -0.8, color: ACCENT.hdrInk }}>
+          AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: ACCENT.dot, marginLeft: 1, marginBottom: 8 }} />
         </span>
         <span style={{ flex: 1 }} />
         <span style={{ position: "relative", display: "flex" }}>
-          <Bell size={18} color={C.sub} />
+          <Bell size={18} color={ACCENT.hdrInk} />
           {actions.length > 0 && (
             <span style={{ position: "absolute", top: -4, right: -5, minWidth: 14, height: 14,
               borderRadius: 7, background: C.hot, color: "#fff", fontFamily: F, fontSize: 9,
@@ -6104,7 +6106,7 @@ export default function ManagerApp() {
               padding: "0 3px" }}>{actions.length}</span>
           )}
         </span>
-        <span style={{ width: 30, height: 30, borderRadius: "50%", background: C.ink, color: "#fff",
+        <span className="rg-bar-chip" style={{ width: 30, height: 30, borderRadius: "50%",
           display: "flex", alignItems: "center", justifyContent: "center",
           fontFamily: F, fontWeight: 800, fontSize: 11.5 }}>PN</span>
       </div>
@@ -6179,7 +6181,8 @@ export default function ManagerApp() {
             borderRadius: "0 24px 24px 0", display: "flex", flexDirection: "column" }}>
             <div style={{ padding: "18px 18px 12px" }}>
               <div style={{ fontFamily: F, fontWeight: 900, fontSize: 15.5, color: C.ink, letterSpacing: -0.5 }}>
-                AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: C.primary, marginLeft: 1, marginBottom: 8 }} />
+                AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: ACCENT.dot, marginLeft: 1, marginBottom: 8,
+                  boxShadow: `0 0 0 1px ${ACCENT.level}` }} />
               </div>
               <div style={{ fontFamily: F, fontSize: 11.5, color: C.faint, marginTop: 3 }}>
                 Priya Nambiar · Sales Manager
@@ -6196,21 +6199,21 @@ export default function ManagerApp() {
                       setOpenGroup(expanded ? null : t.key);
                     }} style={{
                       display: "flex", alignItems: "center", gap: 11, width: "100%", padding: "11px 12px",
-                      borderRadius: 9, border: "none", background: groupActive ? C.primarySoft : "none",
+                      borderRadius: 9, border: "none", background: groupActive ? ACCENT.soft : "none",
                       cursor: "pointer", textAlign: "left" }}>
-                      <t.Icon size={17} color={groupActive ? C.primary : C.faint} />
+                      <t.Icon size={17} color={groupActive ? ACCENT.onSoft : C.faint} />
                       <span style={{ flex: 1, fontFamily: F, fontWeight: groupActive ? 700 : 500,
-                        fontSize: 14, color: groupActive ? C.primary : C.ink }}>{t.label}</span>
+                        fontSize: 14, color: groupActive ? ACCENT.onSoft : C.ink }}>{t.label}</span>
                       {t.subs.length > 0 && <ChevronDown size={14} color={C.ghost}
                         style={{ transform: expanded ? "rotate(180deg)" : "none" }} />}
                     </button>
                     {expanded && t.subs.map(sub => (
                       <button key={sub.key} onClick={() => { setLead(null); setDrill(null); setTab(sub.key); setMenuOpen(false); }} style={{
                         display: "flex", width: "100%", padding: "8px 12px 8px 40px", borderRadius: 8,
-                        border: "none", background: tab === sub.key ? C.primarySoft : "none",
+                        border: "none", background: tab === sub.key ? ACCENT.soft : "none",
                         cursor: "pointer", textAlign: "left" }}>
                         <span style={{ fontFamily: F, fontWeight: tab === sub.key ? 700 : 500,
-                          fontSize: 13, color: tab === sub.key ? C.primary : C.sub }}>{sub.label}</span>
+                          fontSize: 13, color: tab === sub.key ? ACCENT.onSoft : C.sub }}>{sub.label}</span>
                       </button>
                     ))}
                   </div>
@@ -6234,6 +6237,6 @@ export default function ManagerApp() {
           color: "#fff", borderRadius: 14, padding: "12px 14px", fontFamily: F, fontSize: 13,
           fontWeight: 600, textAlign: "center", zIndex: 300 }}>{toast}</div>
       )}
-    </div>
+    </ThemeRoot>
   );
 }
