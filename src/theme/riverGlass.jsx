@@ -132,16 +132,16 @@ const MESH_AUTOPRISM = [
   "linear-gradient(180deg, #EEF0FA 0%, #F5F5FA 45%, #F1F4F6 100%)",
 ].join(",");
 /* River: an ink band behind the header (the header is light-on-dark ink glass, with a yellow
-   hairline), a large soft River-yellow field top-left, Monsoon-blue and mint glows lower down,
-   on a warm off-white base. The band ends exactly at the 58px header edge, so no body text
+   hairline), then a calm neutral base with faint Monsoon-blue and mint glows. No yellow wash:
+   pale yellow over a large area reads as a stain, so yellow is only used solid and small. The band ends exactly at the 58px header edge, so no body text
    sits on the dark part; it keeps the header dark while light cards scroll under it. */
 const MESH_RIVER = [
   "linear-gradient(180deg, #2A2805 0px, #373409 58px, rgba(55,52,9,0) 58px)",
-  "radial-gradient(88% 36% at -12% 12%, rgba(247,236,43,0.66) 0%, rgba(247,236,43,0.26) 48%, rgba(247,236,43,0) 76%)",
-  "radial-gradient(62% 30% at 112% 52%, rgba(61,111,182,0.36) 0%, rgba(61,111,182,0) 100%)",
-  "radial-gradient(62% 26% at 108% 96%, rgba(61,111,182,0.22) 0%, rgba(61,111,182,0) 100%)",
-  "radial-gradient(76% 30% at -8% 96%, rgba(59,176,143,0.34) 0%, rgba(59,176,143,0) 100%)",
-  "#F8F6EC",
+  "radial-gradient(70% 30% at 108% 30%, rgba(61,111,182,0.20) 0%, rgba(61,111,182,0) 100%)",
+  "radial-gradient(60% 26% at 106% 96%, rgba(61,111,182,0.14) 0%, rgba(61,111,182,0) 100%)",
+  "radial-gradient(70% 28% at -10% 70%, rgba(59,176,143,0.16) 0%, rgba(59,176,143,0) 100%)",
+  "radial-gradient(60% 24% at -8% 100%, rgba(55,52,9,0.06) 0%, rgba(55,52,9,0) 100%)",
+  "linear-gradient(180deg, #F1F2F4 0%, #F5F5F4 50%, #EFF1F2 100%)",
 ].join(",");
 
 /* One block per theme. :root carries the product default so unthemed apps keep working. */
@@ -163,7 +163,7 @@ const THEME_VARS = {
     "--hdr-bg": "linear-gradient(180deg,rgba(255,255,255,0.66) 0%,rgba(255,255,255,0.48) 100%)", "--hdr-line": "rgba(255,255,255,0.75)",
     "--hdr-ink": C.ink, "--hdr-chip-bg": "rgba(255,255,255,0.72)", "--hdr-chip-ink": C.ink, "--hdr-chip-ring": "rgba(15,23,42,0.10)",
     "--toast-bg": "rgba(11,25,70,0.88)",
-    "--dealer-chip-bg": "rgba(247,236,43,0.36)", "--dealer-chip-ring": "rgba(55,52,9,0.12)",
+    "--dealer-chip-bg": "rgba(255,255,255,0.7)", "--dealer-chip-ring": "rgba(55,52,9,0.12)",
     "--mesh": MESH_AUTOPRISM,
   },
   river: {
@@ -174,7 +174,7 @@ const THEME_VARS = {
     "--focus": RIVER.ink, "--focus-border": RIVER.ink, "--focus-halo": "rgba(247,236,43,0.95)",
     "--brand-yellow": RIVER.yellow, "--brand-ink": RIVER.ink,
     "--icon-bg": RIVER.yellow, "--icon-ink": RIVER.ink,
-    "--row-on": "rgba(247,236,43,0.16)", "--num": RIVER.ink, "--level-1": "#6E6300", "--dot": RIVER.yellow,
+    "--row-on": "rgba(55,52,9,0.055)", "--num": RIVER.ink, "--level-1": "#6E6300", "--dot": RIVER.yellow,
     "--seg-thumb": RIVER.yellow, "--seg-ring": "rgba(55,52,9,0.30)", "--seg-on": RIVER.ink,
     "--chip-on-bg": RIVER.yellow, "--chip-on-border": "rgba(55,52,9,0.38)", "--chip-on-ink": RIVER.ink,
     "--sort-ink": RIVER.ink, "--sort-bg": RIVER.yellow,
@@ -226,8 +226,8 @@ ${sel("::after")}{content:"";position:absolute;inset:0;border-radius:inherit;poi
     linear-gradient(135deg,rgba(var(--t),var(--a1)) 0%,rgba(var(--t),var(--a2)) 100%),rgba(255,255,255,0.40);
   box-shadow:inset 0 1px 0 rgba(255,255,255,0.88),inset 0 0 20px rgba(255,255,255,0.24),0 1px 2px rgba(var(--t),0.10),0 14px 34px -8px rgba(var(--t),0.32);}
 /* river: the yellow box is only lightly tinted, so its solid yellow moments (underline, bar) carry the colour */
-[data-theme="river"] .rg-box-tint[data-tint="yellow"]{--a1:0.24!important;--a2:0.08!important;}
-[data-theme="river"] .rg-box-tint.rg-inner[data-tint="yellow"]{--a1:0.15!important;--a2:0.05!important;}
+.rg-box-tint[data-tint="yellow"]{--a1:0!important;--a2:0!important;--tp:rgba(255,255,255,0.92)!important;--t:55,52,9!important;}
+.rg-box-tint.rg-inner[data-tint="yellow"]{--a1:0!important;--a2:0!important;--t:55,52,9!important;}
 .rg-box.rg-box-tint.rg-inner{border-radius:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.8),inset 0 0 14px rgba(255,255,255,0.2),0 4px 14px -4px rgba(var(--t),0.22);}
 .rg-btn{background:${HILITE},${FROST(0.64)};border:1px solid rgba(15,23,42,0.08);box-shadow:inset 0 1px 0 rgba(255,255,255,0.9),0 1px 2px rgba(15,23,42,0.05),0 4px 12px -2px rgba(31,38,135,0.10);}
 .rg-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;border:1px solid rgba(15,23,42,0.10);
