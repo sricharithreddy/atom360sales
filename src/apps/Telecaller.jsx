@@ -19,6 +19,8 @@ const C = {
   // yellow in River), a faint accent wash for larger panels, and the first data-series colour.
   primary: ACCENT.primary, primaryInk: ACCENT.ink, primaryDark: ACCENT.strong, primarySoft: ACCENT.soft, primaryOnSoft: ACCENT.onSoft,
   primaryWash: ACCENT.rowOn, data: ACCENT.level,
+  // selected fill laid over the card fill, so a translucent accent-soft never reads straight off the backdrop
+  primarySel: `linear-gradient(${ACCENT.soft},${ACCENT.soft}),rgba(255,255,255,0.62)`,
   hot: "#B71C1C", hotSoft: "rgba(198,40,40,0.08)",
   warm: "#9A4A0A", warmSoft: "rgba(245,158,11,0.10)",
   cold: "#1565C0", coldSoft: "rgba(21,101,192,0.08)",
@@ -730,7 +732,7 @@ function chipStyle(on, small) {
   return {
     padding: small ? "5px 9px" : "6px 11px", borderRadius: 8, cursor: "pointer",
     border: `1.5px solid ${on ? C.primary : C.borderStrong}`,
-    background: on ? C.primarySoft : C.card, color: on ? C.primaryDark : C.sub,
+    background: on ? C.primarySel : C.card, color: on ? C.primaryDark : C.sub,
     fontFamily: F, fontWeight: 700, fontSize: small ? 10.5 : 11.5, whiteSpace: "nowrap",
   };
 }
@@ -772,7 +774,7 @@ function leadFieldMatchesTerm(lead, term) {
 
 function FilterChip({ label, onRemove }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: C.primarySoft, borderRadius: 999, padding: "5px 8px 5px 10px" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: C.primarySel, borderRadius: 999, padding: "5px 8px 5px 10px" }}>
       <span style={{ fontFamily: F, fontSize: 11, fontWeight: 700, color: C.primaryDark }}>{label}</span>
       <button onClick={onRemove} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
         <X size={11} color={C.primary} />
@@ -1313,7 +1315,7 @@ function MenuDrawer({ active, onChange, onClose }) {
       setOpenGroup(expanded ? null : t.key);
     }} style={{
       display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "12px 12px",
-      borderRadius: 10, border: "none", background: groupActive ? C.primarySoft : "none",
+      borderRadius: 10, border: "none", background: groupActive ? C.primarySel : "none",
       cursor: "pointer", textAlign: "left",
     }}>
       <t.Icon size={18} color={groupActive ? C.primary : C.faint} strokeWidth={groupActive ? 2.4 : 1.8} />
@@ -1326,7 +1328,7 @@ function MenuDrawer({ active, onChange, onClose }) {
       const on = active === sub.key;
       return <button key={sub.key} onClick={() => { onChange(sub.key); onClose(); }} style={{
         display: "flex", alignItems: "center", width: "100%", padding: "9px 12px 9px 42px",
-        borderRadius: 9, border: "none", background: on ? C.primarySoft : "none",
+        borderRadius: 9, border: "none", background: on ? C.primarySel : "none",
         cursor: "pointer", textAlign: "left",
       }}>
         <span style={{ fontFamily: F, fontWeight: on ? 700 : 500, fontSize: 13,
@@ -1571,7 +1573,7 @@ function SourcePicker({ value, onChange, customSources, onAddCustomSource }) {
       gap: 8,
       width: "100%",
       textAlign: "left",
-      background: on ? C.primarySoft : "none",
+      background: on ? C.primarySel : "none",
       border: "none",
       borderBottom: `1px solid ${C.border}`,
       borderRadius: 6,
@@ -1747,7 +1749,7 @@ function TimeSlotPicker({ mode, date, slot, onChange, allLeads, excludeLeadId })
   padding: "8px 10px",
   borderRadius: 7,
   border: `1.5px solid ${on ? C.primary : "transparent"}`,
-  background: on ? C.primarySoft : C.card,
+  background: on ? C.primarySel : C.card,
   color: on ? C.primaryDark : C.ink,
   fontFamily: F,
   fontWeight: on ? 700 : 500,
@@ -2016,7 +2018,7 @@ function SERosterPicker({ selectedSE, onSelect }) {
   alignItems: "center",
   gap: 10,
   width: "100%",
-  background: isSelected ? C.primarySoft : C.card,
+  background: isSelected ? C.primarySel : C.card,
   border: `1.5px solid ${isSelected ? C.primary : C.border}`,
   borderRadius: 10,
   padding: 10,
@@ -2287,7 +2289,7 @@ function CallbackScheduler({ dateValue, onDateChange, timeValue, onTimeChange })
   padding: "7px 0",
   borderRadius: 8,
   border: `1.5px solid ${dateValue === isoDate(new Date(Date.now() + o.days * 864e5)) ? C.primary : C.borderStrong}`,
-  background: dateValue === isoDate(new Date(Date.now() + o.days * 864e5)) ? C.primarySoft : C.card,
+  background: dateValue === isoDate(new Date(Date.now() + o.days * 864e5)) ? C.primarySel : C.card,
   color: dateValue === isoDate(new Date(Date.now() + o.days * 864e5)) ? C.primaryDark : C.sub,
   fontFamily: F,
   fontWeight: 700,
@@ -2401,7 +2403,7 @@ function CallbackScheduler({ dateValue, onDateChange, timeValue, onTimeChange })
   padding: "8px 0",
   borderRadius: 8,
   border: `1.5px solid ${timeValue === t.key ? C.primary : C.borderStrong}`,
-  background: timeValue === t.key ? C.primarySoft : C.card,
+  background: timeValue === t.key ? C.primarySel : C.card,
   color: timeValue === t.key ? C.primaryDark : C.sub,
   fontFamily: F,
   fontWeight: 700,
@@ -3414,7 +3416,7 @@ function QualificationCallForm({ lead, onSave, onCancel, channel, allLeads, show
   padding: "6px 12px",
   borderRadius: 8,
   border: `1.5px solid ${disposition === o.key ? C.primary : C.borderStrong}`,
-  background: disposition === o.key ? C.primarySoft : C.card,
+  background: disposition === o.key ? C.primarySel : C.card,
   color: disposition === o.key ? C.primaryDark : C.sub,
   fontFamily: F,
   fontWeight: 700,
@@ -4462,7 +4464,7 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
   padding: "6px 12px",
   borderRadius: 8,
   border: `1.5px solid ${disposition === o.key ? C.primary : C.borderStrong}`,
-  background: disposition === o.key ? C.primarySoft : C.card,
+  background: disposition === o.key ? C.primarySel : C.card,
   color: disposition === o.key ? C.primaryDark : C.sub,
   fontFamily: F,
   fontWeight: 700,
@@ -5784,7 +5786,7 @@ function TestDriveForm({ onSave, onCancel, allLeads, excludeLeadId, showToast, c
   padding: "9px 0",
   borderRadius: 9,
   border: `1.5px solid ${mode === m.key ? C.primary : C.borderStrong}`,
-  background: mode === m.key ? C.primarySoft : C.card,
+  background: mode === m.key ? C.primarySel : C.card,
   color: mode === m.key ? C.primaryDark : C.sub,
   fontFamily: F,
   fontWeight: 700,
@@ -7379,7 +7381,7 @@ function LeadRow({ lead, onUpdateLead, showToast, focusMode, allLeads }) {
         {lead.phone}
       </span>
       {lead.altPhone ? <button onClick={() => setShowAltPhone(v => !v)} style={{
-  background: showAltPhone ? C.primarySoft : C.bg,
+  background: showAltPhone ? C.primarySel : C.bg,
   border: `1px solid ${showAltPhone ? C.primary : C.borderStrong}`,
   borderRadius: 999,
   width: 17,
@@ -7534,7 +7536,7 @@ function LeadRow({ lead, onUpdateLead, showToast, focusMode, allLeads }) {
   padding: "5px 9px",
   borderRadius: 6,
   border: `1px solid ${on ? "var(--chip-on-border)" : C.borderStrong}`,
-  background: on ? C.primarySoft : "none",
+  background: on ? C.primarySel : "none",
   color: on ? C.primaryOnSoft : C.sub,
   fontFamily: F,
   fontWeight: 700,
@@ -8579,7 +8581,7 @@ function CallQueueScreen({ leads, subView, onUpdateLead, showToast, onEnterFocus
         </div>
         <button onClick={openFilterSheet} className="rg-btn rg-press" style={{
           position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: 12, flexShrink: 0,
-          cursor: "pointer", ...(filtersActive ? { background: C.primarySoft, borderColor: "var(--chip-on-border)" } : {}),
+          cursor: "pointer", ...(filtersActive ? { background: C.primarySel, borderColor: "var(--chip-on-border)" } : {}),
         }}>
           <Filter size={15} color={filtersActive ? C.primaryOnSoft : C.sub} />
           {filtersActive && <span style={{ position: "absolute", top: 6, right: 6, width: 6, height: 6, borderRadius: "50%", background: C.hot }} />}
@@ -8905,10 +8907,10 @@ function rollupStatus(units, model) {
 function StatusPill({ status, detail }) {
   const meta = UNIT_STATUS[status] || UNIT_STATUS.no_stock;
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: meta.soft, borderRadius: 999, padding: "3px 9px", flexShrink: 0 }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: `linear-gradient(${meta.soft},${meta.soft}),rgba(255,255,255,0.5)`, borderRadius: 999, padding: "3px 9px", flexShrink: 0 }}>
       <span style={{ width: 6, height: 6, borderRadius: "50%", background: meta.color }} />
       <span style={{ fontFamily: F, fontSize: 9.5, fontWeight: 800, color: meta.color, whiteSpace: "nowrap" }}>{meta.label}</span>
-      {detail && <span style={{ fontFamily: F, fontSize: 9.5, color: meta.color, opacity: 0.8, whiteSpace: "nowrap" }}>· {detail}</span>}
+      {detail && <span style={{ fontFamily: F, fontSize: 9.5, color: meta.color, whiteSpace: "nowrap" }}>· {detail}</span>}
     </span>
   );
 }
@@ -9570,7 +9572,7 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
               <button key={k} onClick={() => setTab(k)} style={{
                 flex: 1, padding: "6px 0", borderRadius: 7, cursor: "pointer",
                 border: `1.5px solid ${tab === k ? C.primary : C.border}`,
-                background: tab === k ? C.primarySoft : C.card,
+                background: tab === k ? C.primarySel : C.card,
                 color: tab === k ? C.primaryDark : C.sub,
                 fontFamily: F, fontWeight: 700, fontSize: 10,
               }}>{l}</button>
@@ -9873,7 +9875,7 @@ function WaitlistPanel({ model, variant, color, entries, currentUser, waitWeeks,
       <button
         onClick={() => canAct ? onJoin({ model, variant, color }) : null}
         style={{
-          width: "100%", marginTop: 9, background: canAct ? C.primarySoft : C.bg,
+          width: "100%", marginTop: 9, background: canAct ? C.primarySel : C.bg,
           border: `1.5px solid ${canAct ? withA(C.primary, "44") : C.border}`, borderRadius: 9,
           padding: "9px 0", cursor: canAct ? "pointer" : "default",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
@@ -9942,7 +9944,7 @@ function DeclineAllotmentSheet({ allotment, onClose, onConfirm }) {
           return (
             <button key={r.key} onClick={() => setReason(r.key)} style={{
               display: "block", width: "100%", textAlign: "left", marginBottom: 8, cursor: "pointer",
-              background: on ? C.primarySoft : C.card,
+              background: on ? C.primarySel : C.card,
               border: `1.5px solid ${on ? C.primary : C.border}`, borderRadius: 11, padding: "11px 12px",
             }}>
               <span style={{ display: "block", fontFamily: F, fontSize: 12.5, fontWeight: 700, color: on ? C.primaryDark : C.ink }}>
@@ -10001,7 +10003,7 @@ function AddPhotosSheet({ unit, onClose, onAdd }) {
               <button key={c} onClick={() => toggle(c)} style={{
                 flex: "1 1 46%", padding: "14px 8px", borderRadius: 11, cursor: "pointer",
                 border: `1.5px solid ${on ? C.primary : C.borderStrong}`,
-                background: on ? C.primarySoft : C.card,
+                background: on ? C.primarySel : C.card,
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
               }}>
                 <Camera size={17} color={on ? C.primary : C.sub} />
@@ -10234,7 +10236,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
           return (
             <button key={c.key} aria-pressed={on} className="rg-btn rg-press" onClick={() => { setCategory(c.key); setOpenModel(null); setOpenVariant(null); setOpenColor(null); }} style={{
               flex: 1, padding: "8px 4px", borderRadius: 14, cursor: "pointer",
-              ...(on ? { background: C.primarySoft, borderColor: "var(--chip-on-border)" } : {}),
+              ...(on ? { background: C.primarySel, borderColor: "var(--chip-on-border)" } : {}),
               display: "flex", flexDirection: "column", alignItems: "center", gap: 1,
             }}>
               <span style={{ fontFamily: FONT_DISPLAY, fontSize: 14, fontWeight: 700, color: on ? C.primaryDark : C.ink, lineHeight: 1 }}>{n}</span>
@@ -10309,7 +10311,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
             flex: 1, minWidth: 0, boxSizing: "border-box",
             border: `1.5px solid ${value ? C.primary : C.borderStrong}`, borderRadius: 9,
             padding: "8px 9px", fontFamily: F, fontSize: 11.5,
-            color: value ? C.primaryDark : C.sub, background: value ? C.primarySoft : C.card,
+            color: value ? C.primaryDark : C.sub, background: value ? C.primarySel : C.card,
             outline: "none", cursor: "pointer", appearance: "none", WebkitAppearance: "none",
           }}>
             <option value="">{placeholder}</option>
@@ -10327,7 +10329,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
                 <button key={k} onClick={() => { setPreKind(k); setPreBrand(""); setPreModel(""); setPreVariant(""); }} style={{
                   flex: 1, padding: "7px 0", borderRadius: 9, cursor: "pointer",
                   border: `1.5px solid ${on ? C.primary : C.border}`,
-                  background: on ? C.primarySoft : C.card,
+                  background: on ? C.primarySel : C.card,
                   color: on ? C.primaryDark : C.sub,
                   fontFamily: F, fontWeight: 700, fontSize: 11,
                 }}>{l} <span style={{ opacity: .65 }}>{n}</span></button>
@@ -10952,7 +10954,7 @@ function LearningScreen() {
             <button key={k} onClick={() => setView(k)} style={{
               flex: 1, padding: "10px 0", borderRadius: 11, cursor: "pointer",
               border: `1.5px solid ${on ? C.primary : C.border}`,
-              background: on ? C.primarySoft : C.card, color: on ? C.primaryDark : C.sub,
+              background: on ? C.primarySel : C.card, color: on ? C.primaryDark : C.sub,
               fontFamily: F, fontWeight: 800, fontSize: 12.5,
             }}>{l}</button>
           );
@@ -11075,7 +11077,7 @@ function LearningScreen() {
               <button key={c.key} onClick={() => { setCat(c.key); setOpenId(null); }} style={{
                 flex: 1, padding: "10px 2px", borderRadius: 11, cursor: "pointer",
                 border: `1.5px solid ${on ? "var(--chip-on-border)" : C.border}`,
-                background: on ? C.primarySoft : C.card,
+                background: on ? C.primarySel : C.card,
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
               }}>
                 {React.createElement(c.Icon, { size: 16, color: on ? C.primaryOnSoft : c.color })}
@@ -11261,7 +11263,7 @@ function FunnelTable({ rows, dimension, onPickRow, activeRow, totals }) {
             return (
               <button key={r.label} onClick={() => onPickRow && onPickRow(on ? null : r.label)} style={{
                 display: "flex", width: "100%", alignItems: "stretch", padding: "7px 0",
-                borderBottom: `1px solid ${C.border}`, background: on ? C.primarySoft : "none",
+                borderBottom: `1px solid ${C.border}`, background: on ? C.primarySel : "none",
                 border: "none", borderRadius: on ? 6 : 0, cursor: onPickRow ? "pointer" : "default", textAlign: "left",
               }}>
                 <span style={{ width: 96, flexShrink: 0, display: "flex", alignItems: "center",
@@ -11733,7 +11735,7 @@ export default function RelationshipManagerApp() {
         /* River Glass: inputs keep their inline look and get the indigo focus ring. */
         .rm-card input:not([type=checkbox]):not([type=radio]):not([type=range]):focus, .rm-card textarea:focus, .rm-card select:focus { border-color: var(--focus-border) !important; box-shadow: 0 0 0 3px var(--focus-halo) !important; outline: none; }
         .rm-card .rg-input input:focus { box-shadow: none !important; }
-        .rm-card .rg-chip.on { color: var(--chip-on-ink); }
+        .rm-card .rg-chip.on { color: var(--chip-on-ink); background: linear-gradient(var(--chip-on-bg),var(--chip-on-bg)),rgba(255,255,255,0.72); }
         .rm-card .rg-input:focus-within { border-color: var(--focus-border); box-shadow: 0 0 0 3px var(--focus-halo); }
         .rm-content { flex: 1; min-height: 0; min-width: 0; overflow-y: auto; }
         input[type="search"]::-webkit-search-cancel-button,
@@ -11794,7 +11796,7 @@ export default function RelationshipManagerApp() {
       setOpenNavGroup(expanded ? null : t.key);
     }} style={{
       display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "11px 12px",
-      borderRadius: 10, border: "none", background: groupActive ? C.primarySoft : "none",
+      borderRadius: 10, border: "none", background: groupActive ? C.primarySel : "none",
       cursor: "pointer", textAlign: "left",
     }}>
       <t.Icon size={17} color={groupActive ? C.primary : C.faint} strokeWidth={groupActive ? 2.4 : 1.8} />
@@ -11807,7 +11809,7 @@ export default function RelationshipManagerApp() {
       const on = activeTab === sub.key;
       return <button key={sub.key} onClick={() => { setActiveTab(sub.key); setDrawerOpen(false); }} style={{
         display: "flex", alignItems: "center", width: "100%", padding: "8px 12px 8px 39px",
-        borderRadius: 8, border: "none", background: on ? C.primarySoft : "none",
+        borderRadius: 8, border: "none", background: on ? C.primarySel : "none",
         cursor: "pointer", textAlign: "left",
       }}>
         <span style={{ fontFamily: F, fontWeight: on ? 700 : 500, fontSize: 12.5,
