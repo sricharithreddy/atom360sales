@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { GROUP, ZONES, LOCATIONS, monthsOpen } from "../data/epicRiverLocations.js";
 import { stockFor, VARIANTS, COLOURS } from "../data/epicRiverInventory.js";
-import { C, TINTS, FONT, FONT_DISPLAY, rgba, deepen, RiverGlassStyles, GlassCard, Metric, MetricGrid, Seg, RiverChip } from "../theme/riverGlass.jsx";
+import { C, TINTS, ACCENT, LINK_DECO, FONT, FONT_DISPLAY, mixVar, ThemeRoot, GlassCard, Metric, MetricGrid, Seg, RiverChip } from "../theme/riverGlass.jsx";
 
 /* ==================================================================================
    AUTOPRISM — CEO (Epic River, Raam Group)
@@ -20,11 +20,11 @@ import { C, TINTS, FONT, FONT_DISPLAY, rgba, deepen, RiverGlassStyles, GlassCard
    ================================================================================== */
 
 /* The look (tokens, glass CSS, tinted metric boxes, segmented control) is the shared River Glass
-   theme in src/theme/riverGlass.jsx — every login uses the same module. */
+   theme in src/theme/riverGlass.jsx — every login uses the same module. Accent colours come from
+   ACCENT (CSS vars), so the dealer theme (river / autoprism) switches them live. */
 const F = FONT, FD = FONT_DISPLAY;
-const tint = rgba;
 const HEADER_H = 58;   // the glass header floats over the scrolling content
-const ROW_TINT = "rgba(99,102,241,0.06)";
+const ROW_TINT = ACCENT.rowOn;
 
 /* ---------------- Formatting (Indian units) ---------------- */
 const ok = (x) => x != null && Number.isFinite(x);
@@ -430,8 +430,8 @@ function CardHead({ Icon, title, right, hint, testid }) {
   return (
     <>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, paddingLeft: 4 }}>
-        <span style={{ width: 24, height: 24, borderRadius: "50%", background: C.primarySoft, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Icon size={13} color={C.primary} />
+        <span style={{ width: 24, height: 24, borderRadius: "50%", background: ACCENT.iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon size={13} color={ACCENT.iconInk} />
         </span>
         <span data-testid={testid} style={{ flex: 1, minWidth: 0, fontFamily: FD, fontSize: 15, fontWeight: 650, letterSpacing: "-0.01em", color: C.ink }}>{title}</span>
         {right}
@@ -460,8 +460,8 @@ function BackBar({ title, sub, onBack }) {
    pill on the left (no indenting), a faint tint on the group row and on open parents, a rotating
    chevron, a soft tinted initials avatar, name over a one-line sub. */
 const LEVEL_TONE = {
-  CEO: C.ink, ZH: C.primary, AM: C.purple, SM: C.ink, TL: C.teal, SE: C.ghost,
-  GROUP: C.ink, STATE: C.primary, CITY: C.purple, OUTLET: C.teal,
+  CEO: C.ink, ZH: ACCENT.level, AM: C.purple, SM: C.ink, TL: C.teal, SE: C.ghost,
+  GROUP: C.ink, STATE: ACCENT.level, CITY: C.purple, OUTLET: C.teal,
 };
 const AVATAR_BG = { ...LEVEL_TONE, SE: C.sub };
 const LEGEND = {
@@ -473,10 +473,11 @@ const shortName = (name) => { const [a, ...b] = name.split(" "); return b.length
 
 function Avatar({ t, size }) {
   const tone = AVATAR_BG[t.kind];
-  const box = { width: size, height: size, borderRadius: "50%", background: tint(tone, 0.09), color: deepen(tone), display: "flex", alignItems: "center",
-    justifyContent: "center", flexShrink: 0, fontFamily: F, fontWeight: 700, fontSize: size * 0.36, boxShadow: `inset 0 0 0 1px ${tint(tone, 0.12)}` };
-  if (t.kind === "CITY") return <span style={box}><MapPin size={size * 0.5} color={deepen(tone)} /></span>;
-  if (t.kind === "OUTLET") return <span style={box}><Store size={size * 0.5} color={deepen(tone)} /></span>;
+  const deep = mixVar(tone, 70, C.ink);   // 70% tone + 30% navy ink (works for var() tones)
+  const box = { width: size, height: size, borderRadius: "50%", background: mixVar(tone, 9), color: deep, display: "flex", alignItems: "center",
+    justifyContent: "center", flexShrink: 0, fontFamily: F, fontWeight: 700, fontSize: size * 0.36, boxShadow: `inset 0 0 0 1px ${mixVar(tone, 12)}` };
+  if (t.kind === "CITY") return <span style={box}><MapPin size={size * 0.5} color={deep} /></span>;
+  if (t.kind === "OUTLET") return <span style={box}><Store size={size * 0.5} color={deep} /></span>;
   const txt = t.kind === "GROUP" ? "ER" : t.kind === "STATE" ? STATE_ABBR[t.name] || initials(t.name) : initials(t.name);
   return <span style={box}>{txt}</span>;
 }
@@ -534,12 +535,12 @@ function TreeRow({ t, depth, expanded, onToggle, onOutlet, parent, cols, agg, cm
           background: "none", border: "none", cursor: clickable ? "pointer" : "default", textAlign: "left", WebkitTapHighlightColor: "transparent" }}>
         {t.hasKids
           ? <ChevronRight size={12} color={C.faint} className="rg-chev" style={{ flexShrink: 0, transform: open ? "rotate(90deg)" : "none" }} />
-          : isOutlet ? <ChevronRight size={12} color={C.primary} style={{ flexShrink: 0 }} />
+          : isOutlet ? <ChevronRight size={12} color={ACCENT.link} style={{ flexShrink: 0 }} />
           : <span style={{ width: 12, flexShrink: 0 }} />}
         <Avatar t={t} size={depth === 0 ? 26 : 23} />
         <span style={{ minWidth: 0 }}>
           <span style={{ display: "block", fontFamily: F, fontSize: 12.5, fontWeight: depth === 0 ? 700 : 600,
-            color: isOutlet ? C.primary : C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            color: isOutlet ? ACCENT.link : C.ink, ...(isOutlet ? LINK_DECO : null), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {displayName(t)}
           </span>
           <span style={{ display: "block", fontFamily: F, fontSize: 10, color: C.faint, marginTop: 1,
@@ -591,11 +592,13 @@ function TreeHead({ cols, sort, onSort }) {
   const h = { fontFamily: F, fontSize: 9, fontWeight: 700, color: C.sub, textTransform: "uppercase", letterSpacing: 0.2 };
   const btn = { background: "none", border: "none", padding: 0, margin: 0, cursor: "pointer", lineHeight: "inherit", WebkitTapHighlightColor: "transparent" };
   const arrow = (k) => sort && sort.key === k
-    ? <span style={{ position: "absolute", left: 0, right: 0, top: "100%", paddingTop: 1, fontSize: 6.5, lineHeight: 1, color: C.primary,
+    ? <span style={{ position: "absolute", left: 0, right: 0, top: "100%", paddingTop: 1, fontSize: 6.5, lineHeight: 1, color: ACCENT.sortInk,
         textAlign: "inherit", paddingLeft: "inherit", paddingRight: "inherit" }}>{sort.dir === "desc" ? "▼" : "▲"}</span> : null;
+  // Active sort column: arrow in the accent, and (river) the label on a solid yellow mark.
+  const mark = { background: ACCENT.sortBg, boxShadow: `0 0 0 2px ${ACCENT.sortBg}`, borderRadius: 2, color: C.ink };
   const cell = (k, label, style) => onSort
     ? <button type="button" data-testid={`sort-${k}`} data-sort={sort && sort.key === k ? sort.dir : ""} onClick={() => onSort(k)}
-        style={{ ...h, ...btn, position: "relative", ...style }}>{label}{arrow(k)}</button>
+        style={{ ...h, ...btn, position: "relative", ...style }}><span style={sort && sort.key === k ? mark : undefined}>{label}</span>{arrow(k)}</button>
     : <span style={{ ...h, ...style }}>{label}</span>;
   return (
     <div style={{ display: "flex", alignItems: "flex-end", padding: "4px 0 7px", borderBottom: `1px solid ${C.borderStrong}` }}>
@@ -888,7 +891,7 @@ function OutletScreen({ id, onBack, rates }) {
   const a = withIncome(derive(sumIdx(l.ses)), rates);
   const gi = aggWith(rates)(LOC_ROOT);
   const line = (k, v, tone, gv, sub) => (
-    <Metric key={k} inner testid="outlet-fin-row" label={k} value={v} tone={tone} sub={`group ${gv}`} sub2={sub} />
+    <Metric key={k} inner tint="neutral" testid="outlet-fin-row" label={k} value={v} tone={tone} sub={`group ${gv}`} sub2={sub} />
   );
   return (
     <div data-testid="outlet-page" style={{ padding: "14px 14px 90px" }}>
@@ -933,14 +936,14 @@ function ReportsScreen({ showToast }) {
       <ScreenHead title="Reports" blurb="Group reports as a sheet, sent to your email." />
       {reps.map(([t, s]) => (
         <Card key={t} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 20, marginBottom: 10 }}>
-          <span style={{ width: 32, height: 32, borderRadius: "50%", background: C.primarySoft, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <FileText size={15} color={C.primary} />
+          <span style={{ width: 32, height: 32, borderRadius: "50%", background: ACCENT.iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <FileText size={15} color={ACCENT.iconInk} />
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: F, fontSize: 13.5, fontWeight: 650, color: C.ink }}>{t}</div>
             <div style={{ fontFamily: F, fontSize: 11, color: C.faint, marginTop: 1 }}>{s}</div>
           </div>
-          <button type="button" className="rg-btn rg-press" onClick={() => showToast(`${t} — CSV sent to your email`)} style={{ borderRadius: 999, padding: "6px 12px", fontFamily: F, fontSize: 11.5, fontWeight: 600, color: C.primary, cursor: "pointer" }}>CSV</button>
+          <button type="button" className="rg-btn rg-press" onClick={() => showToast(`${t} — CSV sent to your email`)} style={{ borderRadius: 999, padding: "6px 12px", fontFamily: F, fontSize: 11.5, fontWeight: 650, color: ACCENT.strong, cursor: "pointer" }}>CSV</button>
         </Card>
       ))}
     </div>
@@ -958,9 +961,8 @@ function Field({ label, children }) {
   );
 }
 function PrimaryBtn({ children, onClick, disabled, full }) {
-  return <button type="button" className="rg-press" onClick={onClick} disabled={disabled} style={{ width: full ? "100%" : "auto", padding: "12px 18px", borderRadius: 14, border: "none",
-    background: disabled ? "rgba(15,23,42,0.10)" : C.primary, color: disabled ? C.faint : "#fff", fontFamily: F, fontWeight: 650, fontSize: 13.5,
-    boxShadow: disabled ? "none" : "0 6px 18px rgba(59,75,232,0.28)", cursor: disabled ? "default" : "pointer" }}>{children}</button>;
+  return <button type="button" className="rg-btn-primary rg-press" onClick={onClick} disabled={disabled} style={{ width: full ? "100%" : "auto", padding: "12px 18px", borderRadius: 14,
+    fontFamily: F, fontWeight: 650, fontSize: 13.5, cursor: disabled ? "default" : "pointer" }}>{children}</button>;
 }
 function GhostBtn({ children, onClick, tone }) {
   return <button type="button" className="rg-btn rg-press" onClick={onClick} style={{ padding: "10px 14px", borderRadius: 14, cursor: "pointer",
@@ -968,9 +970,7 @@ function GhostBtn({ children, onClick, tone }) {
 }
 function ChipBtn({ on, label, onClick }) {
   return (
-    <button type="button" className="rg-press" onClick={onClick} style={{ padding: "7px 13px", borderRadius: 999, cursor: "pointer",
-      border: `1px solid ${on ? "rgba(59,75,232,0.35)" : C.borderStrong}`, background: on ? C.primarySoft : "rgba(255,255,255,0.7)", color: on ? C.primary : C.sub,
-      fontFamily: F, fontWeight: 600, fontSize: 11.5 }}>{label}</button>
+    <button type="button" aria-pressed={on} className={`rg-chip rg-press${on ? " on" : ""}`} onClick={onClick} style={{ padding: "7px 13px", cursor: "pointer" }}>{label}</button>
   );
 }
 function MyAccountScreen({ showToast }) {
@@ -981,7 +981,7 @@ function MyAccountScreen({ showToast }) {
       <ScreenHead title="My Account" blurb="Your login details." />
       <Card>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-          <span style={{ width: 46, height: 46, borderRadius: "50%", background: C.primarySoft, color: C.primary, boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.8)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: F, fontWeight: 700, fontSize: 15 }}>AK</span>
+          <span style={{ width: 46, height: 46, borderRadius: "50%", background: ACCENT.iconBg, color: ACCENT.iconInk, boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.8)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: F, fontWeight: 700, fontSize: 15 }}>AK</span>
           <span style={{ fontFamily: F, fontSize: 12, color: C.sub }}>Group CEO · {GROUP.name} ({GROUP.parent})</span>
         </div>
         <Field label="Profile name"><input className="rg-field" style={inputStyle} value={name} onChange={e => setName(e.target.value)} /></Field>
@@ -1027,7 +1027,7 @@ function AdminFieldsScreen({ cfs, setCfs, showToast }) {
   return (
     <div style={{ padding: "14px 14px 90px" }}>
       <ScreenHead title="Fields" blurb="Fields on locations and people. Values left blank show as Unassigned."
-        right={!creating && <button type="button" className="rg-press" onClick={() => setCreating(true)} style={{ display: "inline-flex", alignItems: "center", gap: 4, border: "none", borderRadius: 999, background: C.primary, color: "#fff", fontFamily: F, fontWeight: 650, fontSize: 12, padding: "8px 13px", cursor: "pointer", boxShadow: "0 6px 16px rgba(59,75,232,0.25)" }}><Plus size={13} />Field</button>} />
+        right={!creating && <button type="button" className="rg-btn-primary rg-press" onClick={() => setCreating(true)} style={{ display: "inline-flex", alignItems: "center", gap: 4, borderRadius: 999, fontFamily: F, fontWeight: 650, fontSize: 12, padding: "8px 13px", cursor: "pointer" }}><Plus size={13} />Field</button>} />
       {creating && (
         <Card>
           <Field label="Field name"><input className="rg-field" style={inputStyle} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Mall outlet" /></Field>
@@ -1190,22 +1190,21 @@ export default function CEOApp() {
   const top = stack[stack.length - 1];
 
   return (
-    <div className="rg-root rg-mesh" style={{ width: "100%", maxWidth: 420, margin: "0 auto", height: "100vh", maxHeight: 900,
+    <ThemeRoot style={{ width: "100%", maxWidth: 420, margin: "0 auto", height: "100vh", maxHeight: 900,
       display: "flex", flexDirection: "column", position: "relative",
       borderRadius: 22, overflow: "hidden", boxShadow: "0 10px 40px rgba(0,0,0,.12)" }}>
-      <RiverGlassStyles />
 
       <div className="rg-bar" style={{ position: "absolute", top: 0, left: 0, right: 0, height: HEADER_H, boxSizing: "border-box", zIndex: 20,
         display: "flex", alignItems: "center", gap: 10, padding: "0 14px" }}>
         <button aria-label="Menu" data-testid="menu-btn" onClick={() => setMenuOpen(true)} className="rg-press"
           style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
-          <Menu size={20} color={C.ink} />
+          <Menu size={20} color={ACCENT.hdrInk} />
         </button>
-        <span style={{ fontFamily: F, fontWeight: 900, fontSize: 16, letterSpacing: -0.8, color: C.ink }}>
-          AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: C.primary, marginLeft: 1, marginBottom: 8 }} />
+        <span style={{ fontFamily: F, fontWeight: 900, fontSize: 16, letterSpacing: -0.8, color: ACCENT.hdrInk }}>
+          AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: ACCENT.dot, marginLeft: 1, marginBottom: 8 }} />
         </span>
         <span style={{ flex: 1 }} />
-        <span className="rg-btn" style={{ width: 32, height: 32, boxSizing: "border-box", borderRadius: "50%", color: C.ink, display: "flex", alignItems: "center", justifyContent: "center",
+        <span className="rg-bar-chip" style={{ width: 32, height: 32, boxSizing: "border-box", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
           fontFamily: F, fontWeight: 700, fontSize: 11.5 }}>AK</span>
       </div>
 
@@ -1239,7 +1238,8 @@ export default function CEOApp() {
             borderRadius: "0 24px 24px 0", display: "flex", flexDirection: "column" }}>
             <div style={{ padding: "20px 18px 14px" }}>
               <div style={{ fontFamily: F, fontWeight: 900, fontSize: 15.5, color: C.ink, letterSpacing: -0.5 }}>
-                AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: C.primary, marginLeft: 1, marginBottom: 8 }} />
+                AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: ACCENT.dot, marginLeft: 1, marginBottom: 8,
+                  boxShadow: `0 0 0 1px ${ACCENT.level}` }} />
               </div>
               <div style={{ fontFamily: F, fontSize: 11.5, color: C.faint, marginTop: 3 }}>{CEO_NODE.name} · Group CEO, {GROUP.name}</div>
             </div>
@@ -1251,16 +1251,16 @@ export default function CEOApp() {
                   <div key={t.key} style={{ marginBottom: 2 }}>
                     <button data-testid={`nav-${t.key}`} onClick={() => { if (!t.subs.length) { go(t.key); return; } setOpenGroup(expanded ? null : t.key); }} style={{
                       display: "flex", alignItems: "center", gap: 11, width: "100%", padding: "11px 12px", borderRadius: 12, border: "none",
-                      background: groupActive ? C.primarySoft : "none", cursor: "pointer", textAlign: "left" }}>
-                      <t.Icon size={17} color={groupActive ? C.primary : C.faint} />
-                      <span style={{ flex: 1, fontFamily: F, fontWeight: groupActive ? 650 : 500, fontSize: 14, color: groupActive ? C.primary : C.ink }}>{t.label}</span>
+                      background: groupActive ? ACCENT.soft : "none", cursor: "pointer", textAlign: "left" }}>
+                      <t.Icon size={17} color={groupActive ? ACCENT.onSoft : C.faint} />
+                      <span style={{ flex: 1, fontFamily: F, fontWeight: groupActive ? 650 : 500, fontSize: 14, color: groupActive ? ACCENT.onSoft : C.ink }}>{t.label}</span>
                       {t.subs.length > 0 && <ChevronDown size={14} color={C.faint} className="rg-chev" style={{ transform: expanded ? "rotate(180deg)" : "none" }} />}
                     </button>
                     {expanded && t.subs.map(s => (
                       <button key={s.key} data-testid={`nav-${s.key}`} onClick={() => go(s.key)} style={{
                         display: "flex", alignItems: "center", width: "100%", padding: "8px 12px 8px 40px", borderRadius: 10, border: "none",
-                        background: tab === s.key ? C.primarySoft : "none", cursor: "pointer", textAlign: "left" }}>
-                        <span style={{ flex: 1, fontFamily: F, fontWeight: tab === s.key ? 650 : 500, fontSize: 13, color: tab === s.key ? C.primary : C.sub }}>{s.label}</span>
+                        background: tab === s.key ? ACCENT.soft : "none", cursor: "pointer", textAlign: "left" }}>
+                        <span style={{ flex: 1, fontFamily: F, fontWeight: tab === s.key ? 650 : 500, fontSize: 13, color: tab === s.key ? ACCENT.onSoft : C.sub }}>{s.label}</span>
                       </button>
                     ))}
                   </div>
@@ -1278,6 +1278,6 @@ export default function CEOApp() {
         <div className="rg-toast" style={{ position: "absolute", bottom: "calc(22px + env(safe-area-inset-bottom, 0px))", left: 14, right: 14, color: "#fff", borderRadius: 16, padding: "12px 14px",
           fontFamily: F, fontSize: 13, fontWeight: 500, textAlign: "center", zIndex: 300 }}>{toast}</div>
       )}
-    </div>
+    </ThemeRoot>
   );
 }
