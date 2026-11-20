@@ -4501,7 +4501,7 @@ function LeadsScreen({ currentId, leads, onOpenLead, onCall, onWhatsApp, onCount
 
       {/* ---- Single-line monthly target (same compact pattern as the telecaller) ---- */}
       <MetricGrid testid="se-target" style={{ marginBottom: 8 }}>
-        <MetricBox span label="Scooters retailed · this month" value={achieved} after={`/${target}`}
+        <MetricBox span hero label="Scooters retailed · this month" value={achieved} after={`/${target}`}
           sub={achieved >= target ? "Target hit 🎯" : `${target - achieved} more to go`}
           bar={{ value: target ? achieved / target : 0 }} />
       </MetricGrid>

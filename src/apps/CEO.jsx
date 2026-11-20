@@ -756,7 +756,7 @@ function BoardScreen({ open }) {
     <div style={{ padding: "14px 14px 90px" }}>
       <PeriodLine />
       <MetricGrid testid="board-metrics" style={{ marginBottom: 12 }}>
-        <MetricBox span label="Retail" value={nIN(g.retail)} after={`/ ${nIN(g.target)}`}
+        <MetricBox span hero label="Retail" value={nIN(g.retail)} after={`/ ${nIN(g.target)}`}
           sub={`${pctS(g.ach)} achieved`} sub2={`proj ${nIN(g.proj)}`}
           bar={{ value: g.ach, tick: div(g.proj, g.target) }} />
         <MetricBox label="Sales value" value={inr(g.value)} />
