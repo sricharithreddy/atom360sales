@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { stockFor, unitsOf, PUNE_STORES, INVENTORY_AS_OF } from "../data/epicRiverInventory.js";
+import { C as RG, FONT_DISPLAY, RIVER, TINTS, TONE, BOX_SUB, RiverGlassStyles, TintedBox, Metric, MetricGrid } from "../theme/riverGlass.jsx";
 import {
   AlertTriangle, PlayCircle, Headphones, MessageSquare, Flame, TrendingDown, TrendingUp, Settings, Wind, Eye, User, Calendar, MessageCircle, IndianRupee, Heart, RefreshCw,
   Phone, Bike as ScooterIcon, FileText, ChevronLeft, ChevronRight,
@@ -14,33 +15,34 @@ import {
 
 /* ============================== DESIGN TOKENS ============================== */
 const C = {
-  // Surfaces
-  bg: "#F3F4F9",          // warm parchment — not clinical white
-  card: "#FFFFFF",
-  cardHover: "#F8F9FD",
-  border: "#E7EAF3",
-  borderStrong: "#D5DAE8",
+  // Surfaces — River Glass: the page is the River mesh (rg-mesh on the root); cards are
+  // rg-glass, and anything still painted with these tokens is see-through so the mesh shows.
+  bg: "rgba(15,23,42,0.045)",      // inset fill (inner panels, tracks) — a faint navy wash on glass
+  card: "rgba(255,255,255,0.62)",  // un-classed small surfaces (chips, toggles, rows)
+  cardHover: "rgba(255,255,255,0.75)",
+  border: "rgba(15,23,42,0.08)",
+  borderStrong: RG.borderStrong,
 
-  // Typography — four levels, genuinely distinct
-  ink: "#0B1946",         // near-black, warmth from the tiny yellow
-  sub: "#4F5A7D",         // warm mid-grey
-  faint: "#6B7596",       // placeholder / tertiary — 5.0:1 on card, passes AA
-  ghost: "#AEB4CB",       // disabled / decorative
+  // Typography — the shared River Glass neutrals (≥ 4.5:1 on glass)
+  ink: RG.ink,
+  sub: RG.sub,
+  faint: RG.faint,
+  ghost: RG.ghost,        // disabled / decorative
 
   // Action — orange, one colour for everything interactive
   primary: "#3B4BE8",
   primaryDark: "#2F3CC4",
-  primarySoft: "rgba(59,75,232,0.09)",
+  primarySoft: "rgba(234,236,253,0.82)",   // pale indigo, mostly opaque so indigo text keeps 4.5:1 on glass
 
   // Urgency ring colours — used only on the propensity arc
-  urgent: "#E53935",      // overdue / cold
-  hot: "#E53935",
+  urgent: "#A82020",      // overdue / cold — one step deeper than RG.hot so it keeps 4.5:1 on its own soft tint over glass
+  hot: "#A82020",
   hotSoft: "rgba(229,57,53,0.08)",
-  warm: "#F59E0B",
+  warm: "#9C4A08",        // RG.warm, deepened for small text on glass
   warmSoft: "rgba(245,158,11,0.08)",
-  cold: "#1E88E5",
+  cold: "#0D58AE",
   coldSoft: "rgba(30,136,229,0.08)",
-  green: "#2E7D32",
+  green: "#24672A",       // RG.green, deepened for small text on glass
   greenSoft: "rgba(46,125,50,0.08)",
   darkGreen: "#1B5E20",
   darkGreenSoft: "rgba(27,94,32,0.10)",
@@ -1094,7 +1096,7 @@ function chipStyle(active, small) {
     fontWeight: 700, fontSize: small ? 10.5 : 11,
     padding: small ? "5px 10px" : "6px 12px", borderRadius: 8,
     border: `1.5px solid ${active ? C.primary : C.borderStrong}`,
-    background: active ? C.primarySoft : "#FAFAF8",
+    background: active ? C.primarySoft : "rgba(255,255,255,0.58)",
     color: active ? C.primary : C.sub, cursor: "pointer",
     letterSpacing: 0.1,
   };
@@ -1103,11 +1105,11 @@ const formInputStyle = {
   border: `1.5px solid ${C.borderStrong}`, borderRadius: 10, padding: "10px 12px",
   fontFamily: F,
   fontSize: 13, fontWeight: 500, color: C.ink, outline: "none",
-  background: C.bg, boxSizing: "border-box",
+  background: "rgba(255,255,255,0.72)", boxSizing: "border-box",
 };
 const cancelBtnStyle = {
   padding: "11px 0", borderRadius: 12, border: `1.5px solid ${C.borderStrong}`,
-  background: C.bg,
+  background: "rgba(255,255,255,0.58)",
   color: C.sub, fontFamily: F,
   fontWeight: 700, fontSize: 13, cursor: "pointer",
 };
@@ -1256,16 +1258,12 @@ function IconBtn({ icon: Icon, label, onClick, tone = "default", iconOnly = fals
 function Toast({ text }) {
   if (!text) return null;
   return (
-    <div style={{
-      position: "absolute", bottom: 80, left: "50%", transform: "translateX(-50%)",
-      background: "rgba(255,255,255,0.95)",
-      backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-      border: `1px solid ${C.border}`,
-      borderLeft: `3px solid ${C.primary}`,
-      color: C.ink, padding: "10px 16px", borderRadius: 11,
+    <div className="rg-toast" style={{
+      position: "absolute", bottom: "calc(80px + env(safe-area-inset-bottom, 0px))", left: "50%", transform: "translateX(-50%)",
+      color: "#fff", padding: "11px 16px", borderRadius: 16,
       fontSize: 12.5, fontWeight: 600,
       fontFamily: F,
-      zIndex: 70, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", whiteSpace: "nowrap",
+      zIndex: 300, whiteSpace: "nowrap", maxWidth: "calc(100% - 28px)", overflow: "hidden", textOverflow: "ellipsis",
     }}>{text}</div>
   );
 }
@@ -1273,11 +1271,10 @@ function Toast({ text }) {
 /* ============================== HEADER ============================== */
 function Header({ screenName, user, onAvatar, onBack, attentionCount, onBellTap, onMenuTap }) {
   return (
-    <div style={{
+    <div className="rg-bar" style={{
       display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "0 16px", height: 52, background: C.card,
-      borderBottom: `1px solid ${C.border}`,
-      position: "sticky", top: 0, zIndex: 30,
+      padding: "0 16px", height: 52, boxSizing: "border-box",
+      position: "absolute", top: 0, left: 0, right: 0, zIndex: 30,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
         {onBack ? (
@@ -1305,9 +1302,9 @@ function Header({ screenName, user, onAvatar, onBack, attentionCount, onBellTap,
             }}>{attentionCount > 9 ? "9+" : attentionCount}</span>
           )}
         </button>
-        <button onClick={onAvatar} style={{
-          width: 28, height: 28, borderRadius: "50%", background: C.ink, color: "#fff",
-          border: "none", cursor: "pointer", fontFamily: F, fontWeight: 700, fontSize: 11,
+        <button onClick={onAvatar} className="rg-btn rg-press" style={{
+          width: 32, height: 32, borderRadius: "50%", color: C.ink, boxSizing: "border-box", padding: 0,
+          cursor: "pointer", fontFamily: F, fontWeight: 700, fontSize: 11.5,
           display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
         }}>{initials(user.name)}</button>
       </div>
@@ -1348,8 +1345,8 @@ function MenuDrawer({ active, onChange, onClose, onLogout, onQuickQuote, onOpenM
   ];
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 100, display: "flex" }}>
-      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(14,14,12,0.4)" }} />
-      <div style={{ position: "relative", width: "78%", maxWidth: 280, height: "100%", background: C.card, boxShadow: "8px 0 32px rgba(0,0,0,0.18)", display: "flex", flexDirection: "column" }}>
+      <div onClick={onClose} className="rg-dim" style={{ position: "absolute", inset: 0 }} />
+      <div className="rg-drawer" style={{ position: "relative", width: "78%", maxWidth: 280, height: "100%", borderRadius: "0 24px 24px 0", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 18px 14px" }}>
           <span style={{ fontFamily: F, fontWeight: 900, fontSize: 15, color: C.ink, letterSpacing: -0.8, textTransform: "uppercase" }}>
             AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: C.primary, marginLeft: 1, marginBottom: 8 }} />
@@ -1368,16 +1365,16 @@ function MenuDrawer({ active, onChange, onClose, onLogout, onQuickQuote, onOpenM
                   if (!t.subs.length) { onChange(t.key); onClose(); return; }
                   setOpenGroup(expanded ? null : t.key);
                 }} style={{
-                  display: "flex", alignItems: "center", gap: 11, width: "100%", padding: "10px 12px",
-                  borderRadius: 9, border: "none", background: groupActive ? C.primarySoft : "none",
+                  display: "flex", alignItems: "center", gap: 11, width: "100%", padding: "11px 12px",
+                  borderRadius: 12, border: "none", background: groupActive ? C.primarySoft : "none",
                   cursor: "pointer", textAlign: "left",
                 }}>
                   <t.Icon size={17} color={groupActive ? C.primary : C.faint} strokeWidth={groupActive ? 2.4 : 1.8} />
                   <span style={{ flex: 1, fontFamily: F, fontWeight: groupActive ? 700 : 500, fontSize: 13.5,
                     color: groupActive ? C.primary : C.ink }}>{t.label}</span>
                   {t.subs.length > 0 && (
-                    <ChevronDown size={14} color={C.ghost} style={{
-                      transform: expanded ? "rotate(180deg)" : "none", transition: "transform .18s" }} />
+                    <ChevronDown size={14} color={C.faint} className="rg-chev" style={{
+                      transform: expanded ? "rotate(180deg)" : "none" }} />
                   )}
                 </button>
                 {expanded && t.subs.map(sub => {
@@ -1385,7 +1382,7 @@ function MenuDrawer({ active, onChange, onClose, onLogout, onQuickQuote, onOpenM
                   return (
                     <button key={sub.key} onClick={() => { onChange(sub.key); onClose(); }} style={{
                       display: "flex", alignItems: "center", width: "100%", padding: "8px 12px 8px 40px",
-                      borderRadius: 8, border: "none", background: on ? C.primarySoft : "none",
+                      borderRadius: 10, border: "none", background: on ? C.primarySoft : "none",
                       cursor: "pointer", textAlign: "left",
                     }}>
                       <span style={{ fontFamily: F, fontWeight: on ? 700 : 500, fontSize: 12.5,
@@ -1416,7 +1413,7 @@ function MenuDrawer({ active, onChange, onClose, onLogout, onQuickQuote, onOpenM
             </button>
           </div>
         </div>
-        <div style={{ padding: 12, borderTop: `1px solid ${C.border}` }}>
+        <div style={{ padding: "12px 12px calc(12px + env(safe-area-inset-bottom, 0px))", borderTop: `1px solid ${C.borderStrong}` }}>
           <button onClick={onLogout} style={{ display: "flex", alignItems: "center", gap: 11, width: "100%", padding: "9px 12px", borderRadius: 9, border: "none", background: "none", cursor: "pointer", textAlign: "left" }}>
             <LogOut size={16} color={C.hot} />
             <span style={{ fontFamily: F, fontWeight: 600, fontSize: 13.5, color: C.hot }}>Sign out</span>
@@ -1974,8 +1971,8 @@ function FilterSheet({ open, onClose, groups, draft, setDraft, onApply, onClearA
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} onClick={onClose} />
-      <div style={{ position: "relative", background: C.card, borderRadius: "18px 18px 0 0", display: "flex", flexDirection: "column" }}>
+      <div className="rg-dim" style={{ position: "absolute", inset: 0 }} onClick={onClose} />
+      <div className="rg-sheet" style={{ position: "relative", display: "flex", flexDirection: "column", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <div style={{ padding: "16px 16px 10px" }}>
           <div style={{ fontFamily: F, fontSize: 17, fontWeight: 800, color: C.ink, marginBottom: 12 }}>Filters</div>
           <div style={{ display: "flex", alignItems: "center", gap: 9, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 999, padding: "10px 14px" }}>
@@ -2487,8 +2484,8 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 220, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} onClick={onClose} />
-      <div style={{ position: "relative", background: C.card, borderRadius: "18px 18px 0 0", maxHeight: "88vh", overflowY: "auto", padding: 16 }}>
+      <div className="rg-dim" style={{ position: "absolute", inset: 0 }} onClick={onClose} />
+      <div className="rg-sheet" style={{ position: "relative", maxHeight: "88%", overflowY: "auto", padding: "16px 16px calc(16px + env(safe-area-inset-bottom, 0px))" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
           <span style={{ fontFamily: F, fontSize: 16, fontWeight: 800, color: C.ink }}>{waitlistMode ? "Add to waitlist" : "Block this scooter"}</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><X size={18} color={C.sub} /></button>
@@ -3022,8 +3019,8 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
   ).slice(0, 4);
 
   return (
-    <div style={{ background: C.card, border: `1px solid ${open ? C.primary + "55" : C.border}`,
-      borderRadius: 14, marginBottom: 10, overflow: "hidden" }}>
+    <div className="rg-glass" style={{ border: `1px solid ${open ? C.primary + "55" : C.border}`,
+      borderRadius: 20, marginBottom: 10, overflow: "hidden" }}>
 
       {/* ---- Collapsed card ---- */}
       <button onClick={() => setOpen(o => !o)} style={{
@@ -3466,8 +3463,8 @@ function DeclineAllotmentSheet({ allotment, onClose, onConfirm }) {
   const picked = DECLINE_REASONS.find(r => r.key === reason);
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 230, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} onClick={onClose} />
-      <div style={{ position: "relative", background: C.card, borderRadius: "18px 18px 0 0", padding: 16, maxHeight: "85vh", overflowY: "auto" }}>
+      <div className="rg-dim" style={{ position: "absolute", inset: 0 }} onClick={onClose} />
+      <div className="rg-sheet" style={{ position: "relative", padding: "16px 16px calc(16px + env(safe-area-inset-bottom, 0px))", maxHeight: "85%", overflowY: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
           <span style={{ fontFamily: F, fontSize: 16, fontWeight: 800, color: C.ink }}>Why is it being declined?</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
@@ -3524,8 +3521,8 @@ function AddPhotosSheet({ unit, onClose, onAdd }) {
   const toggle = (c) => setPicked(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c]);
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 230, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} onClick={onClose} />
-      <div style={{ position: "relative", background: C.card, borderRadius: "18px 18px 0 0", padding: 16 }}>
+      <div className="rg-dim" style={{ position: "absolute", inset: 0 }} onClick={onClose} />
+      <div className="rg-sheet" style={{ position: "relative", padding: "16px 16px calc(16px + env(safe-area-inset-bottom, 0px))" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
           <span style={{ fontFamily: F, fontSize: 16, fontWeight: 800, color: C.ink }}>Add photos</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
@@ -3804,17 +3801,17 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
         const free = onHand.filter(u => !u.blockedFor).length;
         const transit = units.filter(u => u.category === "new" && u.status === "in_transit").length;
         return (
-          <div data-testid="inv-branch-split" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "3px 10px", background: C.card,
-            border: `1px solid ${C.border}`, borderRadius: 10, padding: "8px 11px", marginBottom: 10 }}>
+          <TintedBox tint="yellow" data-testid="inv-branch-split" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "3px 10px",
+            borderRadius: 16, padding: "9px 12px", marginBottom: 10 }}>
             {Object.keys(PUNE_STORES).map(b => (
-              <span key={b} data-branch={b} style={{ fontFamily: F, fontSize: 11, color: C.sub }}>
-                {b} <strong data-count style={{ color: C.ink }}>{onHand.filter(u => u.branch === b).length}</strong>
+              <span key={b} data-branch={b} style={{ fontFamily: F, fontSize: 11, color: TINTS.yellow.label }}>
+                {b} <strong data-count style={{ color: RIVER.ink, fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 650, fontVariantNumeric: "tabular-nums" }}>{onHand.filter(u => u.branch === b).length}</strong>
               </span>
             ))}
-            <span style={{ fontFamily: F, fontSize: 10.5, color: C.faint }}>
+            <span style={{ fontFamily: F, fontSize: 10.5, color: BOX_SUB }}>
               {free} free · {onHand.length - free} held{transit ? ` · ${transit} in transit` : ""}
             </span>
-          </div>
+          </TintedBox>
         );
       })()}
 
@@ -3908,7 +3905,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
           )}
 
           {shown.length === 0 && (
-            <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12,
+            <div className="rg-glass" style={{ borderRadius: 16,
               padding: 22, textAlign: "center", fontFamily: F, fontSize: 12.5, color: C.sub }}>
               No pre-owned scooters match these filters.
             </div>
@@ -3923,7 +3920,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
       })()}
 
       {category !== "used" && models.length === 0 && (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 24, textAlign: "center", fontFamily: F, fontSize: 13, color: C.sub }}>
+        <div className="rg-glass" style={{ borderRadius: 16, padding: 24, textAlign: "center", fontFamily: F, fontSize: 13, color: C.sub }}>
           Nothing in {CATEGORIES.find(c => c.key === category).label.toLowerCase()} matching this.
         </div>
       )}
@@ -3934,7 +3931,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
         const roll = rollupStatus(mUnits, model);
         const variants = [...new Set(mUnits.map(u => u.variant))];
         return (
-          <div key={model} style={{ background: C.card, border: `1px solid ${mOpen ? C.primary + "55" : C.border}`, borderRadius: 12, marginBottom: 8, overflow: "hidden" }}>
+          <div key={model} className="rg-glass" style={{ border: `1px solid ${mOpen ? C.primary + "55" : C.border}`, borderRadius: 18, marginBottom: 8, overflow: "hidden" }}>
             <button onClick={() => { setOpenModel(mOpen ? null : model); setOpenVariant(null); setOpenColor(null); }} style={{
               display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px",
               background: "none", border: "none", cursor: "pointer", textAlign: "left",
@@ -4062,11 +4059,9 @@ function LeadCard({ lead, onOpen, onCall, onWhatsApp, onLogCall, onLogWhatsApp }
   const urgencyColor = bucket?.color || C.faint;
 
   return (
-    <div onClick={() => onOpen(lead.id)} style={{
-      background: C.card, borderRadius: 16, overflow: "hidden",
-      marginBottom: 8, cursor: "pointer",
-      boxShadow: "0 1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.06)",
-      transition: "box-shadow 0.15s ease",
+    <div onClick={() => onOpen(lead.id)} className="rg-glass rg-press" style={{
+      borderRadius: 20, overflow: "hidden",
+      marginBottom: 10, cursor: "pointer",
     }}>
       <div style={{ display: "flex" }}>
         {/* Left urgency bar — the pre-attentive scan signal */}
@@ -4145,9 +4140,9 @@ function CallQueueRow({ lead, rank, onOpen, onCall, onWhatsApp, onLogCall }) {
   const [expanded, setExpanded] = useState(false);
   const chTones = callWaTones(lead);
   return (
-    <div onClick={() => onOpen(lead.id)} style={{
-      display: "flex", gap: 10, background: C.card, borderRadius: 14,
-      border: `1px solid ${C.border}`, padding: 12, marginBottom: 9, cursor: "pointer"
+    <div onClick={() => onOpen(lead.id)} className="rg-glass rg-press" style={{
+      display: "flex", gap: 10, borderRadius: 20,
+      padding: 12, marginBottom: 10, cursor: "pointer"
     }}>
       <div style={{
         width: 22, height: 22, borderRadius: "50%", background: C.primaryDark, color: "#fff",
@@ -4205,8 +4200,8 @@ function TestDriveQueueRow({ lead, onOpen, onCall, onWhatsApp }) {
   const dirUrl = directionsUrl(td.location);
   const chTones = callWaTones(lead);
   return (
-    <div onClick={() => onOpen(lead.id)} style={{
-      background: C.card, borderRadius: 16, padding: 13, marginBottom: 10, cursor: "pointer", boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05)"
+    <div onClick={() => onOpen(lead.id)} className="rg-glass rg-press" style={{
+      borderRadius: 20, padding: 13, marginBottom: 10, cursor: "pointer"
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <span style={{ fontFamily: F, fontWeight: 700, fontSize: 13.5, color: C.ink }}>{lead.name}</span>
@@ -4236,8 +4231,8 @@ function DeliveryQueueRow({ lead, onOpen, onCall, onWhatsApp }) {
   const du = daysUntil(lead.expectedDeliveryDate);
   const chTones = callWaTones(lead);
   return (
-    <div onClick={() => onOpen(lead.id)} style={{
-      background: C.card, borderRadius: 16, padding: 13, marginBottom: 10, cursor: "pointer", boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05)"
+    <div onClick={() => onOpen(lead.id)} className="rg-glass rg-press" style={{
+      borderRadius: 20, padding: 13, marginBottom: 10, cursor: "pointer"
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <span style={{ fontFamily: F, fontWeight: 700, fontSize: 13.5, color: C.ink }}>{lead.name}</span>
@@ -4294,29 +4289,32 @@ function MISReport({ leads, user }) {
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 6, marginBottom: 14, background: C.border, borderRadius: 12, padding: 3 }}>
+      <div className="rg-seg" style={{ display: "flex", gap: 6, marginBottom: 14, borderRadius: 12, padding: 3 }}>
         {["day", "week", "month"].map(p => (
-          <button key={p} onClick={() => setPeriod(p)} style={{
+          <button key={p} onClick={() => setPeriod(p)} className={period === p ? "rg-thumb" : undefined} style={{
             flex: 1, padding: "7px 4px", borderRadius: 9, border: "none", cursor: "pointer",
-            background: period === p ? C.card : "none",
+            background: period === p ? undefined : "none",
             fontFamily: F, fontSize: 11.5, fontWeight: 700,
             color: period === p ? C.primary : C.sub,
-            boxShadow: period === p ? "0 1px 3px rgba(0,0,0,.08)" : "none"
           }}>{p[0].toUpperCase() + p.slice(1)}</button>
         ))}
       </div>
 
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 12 }}>
+      <div className="rg-glass" style={{ borderRadius: 20, padding: 14, marginBottom: 12 }}>
         <div style={{ fontFamily: F, fontWeight: 700, fontSize: 14, color: C.ink }}>{user.name}'s Activity</div>
         <div style={{ fontFamily: F, fontSize: 11.5, color: C.sub, marginBottom: 12 }}>{periodLabel} · {fmtFull(today)}</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          {stats.map(s => (
-            <div key={s.label} style={{ background: C.bg, borderRadius: 10, padding: 10 }}>
-              <s.icon size={14} color={C.primary} />
-              <div style={{ fontFamily: F, fontWeight: 800, fontSize: 17, color: C.ink, marginTop: 6 }}>{s.value}</div>
-              <div style={{ fontFamily: F, fontSize: 10.5, color: C.sub, marginTop: 1 }}>{s.label}</div>
-            </div>
-          ))}
+          {stats.map(s => {
+            // Same tint rule as everywhere: deliveries / conversion = achievement, the rest = pipeline.
+            const tint = s.label === "Deliveries" || s.label === "Conversion" ? "yellow" : "grey";
+            return (
+              <TintedBox key={s.label} tint={tint} inner style={{ padding: "10px 11px" }}>
+                <s.icon size={14} color={TINTS[tint].label} />
+                <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 650, fontSize: 19, color: RIVER.ink, marginTop: 6, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{s.value}</div>
+                <div style={{ fontFamily: F, fontSize: 10.5, fontWeight: 600, color: TINTS[tint].label, marginTop: 1 }}>{s.label}</div>
+              </TintedBox>
+            );
+          })}
         </div>
       </div>
 
@@ -4502,23 +4500,23 @@ function LeadsScreen({ currentId, leads, onOpenLead, onCall, onWhatsApp, onCount
       />
 
       {/* ---- Single-line monthly target (same compact pattern as the telecaller) ---- */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "9px 12px", marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}>
+      <TintedBox tint="yellow" style={{ borderRadius: 18, padding: "10px 13px", marginBottom: 10, display: "flex", alignItems: "center", gap: 11 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 3, flexShrink: 0 }}>
-          <span style={{ fontFamily: F, fontWeight: 900, fontSize: 18, color: achieved >= target ? C.darkGreen : C.ink, letterSpacing: -0.5, lineHeight: 1 }}>{achieved}</span>
-          <span style={{ fontFamily: F, fontWeight: 500, fontSize: 11, color: C.ghost }}>/{target}</span>
+          <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 650, fontSize: 22, color: achieved >= target ? TONE.up : RIVER.ink, letterSpacing: "-0.02em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{achieved}</span>
+          <span style={{ fontFamily: F, fontWeight: 500, fontSize: 12, color: BOX_SUB }}>/{target}</span>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
-            <span style={{ fontFamily: F, fontSize: 9, fontWeight: 700, color: C.sub, textTransform: "uppercase", letterSpacing: 0.6 }}>Scooters retailed · this month</span>
-            <span style={{ fontFamily: F, fontSize: 10, fontWeight: 700, color: achieved >= target ? C.darkGreen : C.primary }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, marginBottom: 5 }}>
+            <span style={{ fontFamily: F, fontSize: 9.5, fontWeight: 700, color: TINTS.yellow.label, textTransform: "uppercase", letterSpacing: 0.5, minWidth: 0 }}>Scooters retailed · this month</span>
+            <span style={{ fontFamily: F, fontSize: 10.5, fontWeight: 650, color: achieved >= target ? TONE.up : BOX_SUB, whiteSpace: "nowrap" }}>
               {achieved >= target ? "Target hit 🎯" : `${target - achieved} more to go`}
             </span>
           </div>
-          <div style={{ height: 4, background: C.bg, borderRadius: 999, overflow: "hidden" }}>
-            <div style={{ width: `${Math.min(100, (achieved / target) * 100)}%`, height: "100%", background: achieved >= target ? C.darkGreen : C.primary, borderRadius: 999, transition: "width .5s" }} />
+          <div style={{ height: 4, background: "rgba(55,52,9,0.10)", borderRadius: 999, overflow: "hidden" }}>
+            <div style={{ width: `${Math.min(100, (achieved / target) * 100)}%`, height: "100%", background: achieved >= target ? TONE.up : RIVER.ink, opacity: 0.85, borderRadius: 999, transition: "width .5s" }} />
           </div>
         </div>
-      </div>
+      </TintedBox>
 
       {subView === "all" ? (
         /* All Leads is a browse view, not a work queue — a flat list of everyone, with the
@@ -4701,7 +4699,7 @@ function ExchangeCard({ lead, onUpdateField, onAddPhoto, onAppraise }) {
   const labelStyle = { fontFamily: F, fontSize: 10.5, color: C.sub, fontWeight: 600, marginBottom: 4, display: "block" };
 
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.teal}55`, borderRadius: 14, padding: 13, marginBottom: 10 }}>
+    <div className="rg-glass" style={{ border: `1px solid ${C.teal}55`, borderRadius: 20, padding: 13, marginBottom: 10 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
         <TradeInIcon size={14} color={C.teal} />
         <span style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink }}>Exchange Vehicle</span>
@@ -4842,7 +4840,7 @@ function ContactCard({ lead, onUpdateAltPhone, onUpdateCommPref }) {
   const valueStyle = { fontFamily: F, fontSize: 12.5, color: C.ink, fontWeight: 600 };
 
   return (
-    <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
+    <div className="rg-glass" style={{ borderRadius: 20, padding: 12, marginBottom: 8 }}>
       <div style={rowStyle}>
         <span style={labelStyle}>Phone</span>
         <span style={valueStyle}>{lead.phone}</span>
@@ -5216,7 +5214,7 @@ function PaymentBreakdownFields({ value, onChange }) {
   const labelStyle = { fontFamily: F, fontSize: 10, color: C.faint, fontWeight: 600, marginBottom: 4, display: "block" };
 
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 12, width: "100%", boxSizing: "border-box" }}>
+    <div className="rg-glass" style={{ borderRadius: 16, padding: 12, width: "100%", boxSizing: "border-box" }}>
       <div style={{ fontFamily: F, fontSize: 10, fontWeight: 800, color: C.faint, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 9 }}>Payment Breakdown</div>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 9 }}>
@@ -5630,7 +5628,7 @@ function FinanceCard({ lead, onUpdateField }) {
   const fin = lead.finance || { loanAmount: "", bank: "", status: "" };
   const labelStyle = { fontFamily: F, fontSize: 10.5, color: C.sub, fontWeight: 600, marginBottom: 4, display: "block" };
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.teal}55`, borderRadius: 14, padding: 13, marginBottom: 10 }}>
+    <div className="rg-glass" style={{ border: `1px solid ${C.teal}55`, borderRadius: 20, padding: 13, marginBottom: 10 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
         <Landmark size={14} color={C.teal} />
         <span style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink }}>Finance</span>
@@ -5994,7 +5992,7 @@ function DeliveryPhotosCard({ lead, onAddPhoto, onShare }) {
   };
 
   return (
-    <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
+    <div className="rg-glass" style={{ borderRadius: 20, padding: 12, marginBottom: 8 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 11 }}>
         <Camera size={14} color={C.primary} />
         <span style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink }}>Delivery Photos</span>
@@ -6091,7 +6089,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
   return (
     <div style={{ padding: 12 }}>
       {/* Header card */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
+      <div className="rg-glass" style={{ borderRadius: 20, padding: 14, marginBottom: 10 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           {nameEditing ? (
             <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0 }}>
@@ -6158,7 +6156,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
 
       {/* Status — kept visually more prominent (accent border, larger heading) since it's the
           single most important thing about a lead's position in the pipeline. */}
-      <div style={{ background: C.card, border: `1.5px solid ${C.primary}40`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
+      <div className="rg-glass" style={{ border: `1.5px solid ${C.primary}40`, borderRadius: 20, padding: 14, marginBottom: 10 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: stagePickerOpen ? 12 : 0 }}>
           <span style={{ fontFamily: F, fontWeight: 700, fontSize: 13.5, color: C.ink, display: "flex", alignItems: "center", gap: 6 }}>
             <ClipboardList size={14} color={C.primary} />Status
@@ -6304,7 +6302,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
       )}
 
       {callLogExpanded && (
-        <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
+        <div className="rg-glass" style={{ borderRadius: 20, padding: 12, marginBottom: 8 }}>
           <CallLogForm
             lead={lead}
             voiceFirst={voiceFirst}
@@ -6314,7 +6312,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
         </div>
       )}
       {waLogExpanded && (
-        <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
+        <div className="rg-glass" style={{ borderRadius: 20, padding: 12, marginBottom: 8 }}>
           <WhatsAppLogForm
             onCancel={() => setWaLogExpanded(false)}
             onSubmit={payload => { onLogWhatsApp(lead.id, payload); setWaLogExpanded(false); setTimeout(onDone, 500); }}
@@ -6322,7 +6320,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
         </div>
       )}
       {quoteFormOpen && (
-        <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
+        <div className="rg-glass" style={{ borderRadius: 20, padding: 12, marginBottom: 8 }}>
           <QuoteForm
             lead={lead}
             onCancel={() => setQuoteFormOpen(false)}
@@ -6333,7 +6331,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
       )}
 
       {lead.testDrive && !testDriveExpanded && (
-        <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
+        <div className="rg-glass" style={{ borderRadius: 20, padding: 12, marginBottom: 8 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <div style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink }}>Test Ride Scheduled</div>
@@ -6379,7 +6377,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
       )}
 
       {testDriveExpanded && (
-        <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
+        <div className="rg-glass" style={{ borderRadius: 20, padding: 12, marginBottom: 8 }}>
           <div style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink }}>
             {lead.testDrive ? "Reschedule Test Ride" : "Schedule Test Ride"}
           </div>
@@ -6397,7 +6395,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
 
       {/* Signals — always expanded so the SE can mark them in one tap mid-call. AI-detected
           suggestions from call analysis surface here as an accept/dismiss banner. */}
-      <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
+      <div className="rg-glass" style={{ borderRadius: 20, padding: 12, marginBottom: 8 }}>
         <span style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink }}>Signals</span>
         {(lead.suggestedSignals || []).map(sug => (
           <div key={sug.signal} style={{
@@ -6453,7 +6451,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
               <button onClick={() => setDocumentsOpen(v => !v)} style={{
                 fontFamily: F, fontSize: 11.5, fontWeight: 600, padding: "6px 11px", borderRadius: 999,
                 border: `1px solid ${started ? (complete ? C.darkGreen : C.primaryDark) : C.border}`,
-                background: started ? (complete ? C.darkGreenSoft : C.primarySoft) : "#fff",
+                background: started ? (complete ? C.darkGreenSoft : C.primarySoft) : "rgba(255,255,255,0.72)",
                 color: started ? (complete ? C.darkGreen : C.primaryDark) : C.sub, cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
               }}>
                 {started && (complete ? <CheckCircle2 size={12} /> : <Check size={11} />)}Documents
@@ -6504,7 +6502,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
       </div>
 
       {/* Vehicle / budget details — one-line summary by default, expands to fully editable fields */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, marginBottom: 10, padding: "13px 13px 0" }}>
+      <div className="rg-glass" style={{ borderRadius: 20, marginBottom: 10, padding: "13px 13px 0" }}>
             <button onClick={() => setDetailsOpen(v => !v)} style={{
               display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%",
               background: "none", border: "none", cursor: "pointer", padding: "0 0 13px", textAlign: "left",
@@ -6551,7 +6549,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
           return matchQ && matchF;
         });
         return (
-      <div style={{ background: C.card, borderRadius: 14, padding: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
+      <div className="rg-glass" style={{ borderRadius: 20, padding: 12 }}>
         <div style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink, marginBottom: 10 }}>Timeline</div>
         <div style={{ display: "flex", alignItems: "center", gap: 7, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, padding: "7px 10px", marginBottom: 8 }}>
           <Search size={12} color={C.faint} />
@@ -6765,7 +6763,7 @@ function DonutChart({ data, size = 108 }) {
 // one-line "what this tells you", then the chart.
 function ChartCard({ title, hint, children, action }) {
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
+    <div className="rg-glass" style={{ borderRadius: 20, padding: 14, marginBottom: 10 }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: hint ? 2 : 10 }}>
         <span style={{ fontFamily: F, fontSize: 12.5, fontWeight: 800, color: C.ink }}>{title}</span>
         {action}
@@ -6840,7 +6838,7 @@ function BreakdownTable({ rows, columns, onRowTap }) {
                   <span key={c.key} style={{
                     width: 34, flexShrink: 0, textAlign: "center",
                     fontFamily: F, fontSize: 11, fontWeight: v ? 800 : 500,
-                    color: v ? (c.color || C.ink) : C.ghost,
+                    color: v ? (c.color || C.ink) : C.faint,
                   }}>{v}</span>
                 );
               })}
@@ -7173,27 +7171,27 @@ function InsightCard({ insight }) {
 }
 
 // KPI tile with a like-for-like comparison against the equivalent prior period.
-function KpiTile({ label, value, prev, accent }) {
+// A headline KPI in a tinted River Glass box (tint = what kind of number it is; the number is River Ink).
+function KpiTile({ label, value, prev, tint = "grey" }) {
   const d = delta(value, prev);
   const up = d != null && d > 0;
   return (
-    <div style={{ flex: "1 1 45%", background: C.card, border: `1px solid ${C.border}`,
-      borderRadius: 12, padding: "11px 12px" }}>
-      <div style={{ fontFamily: F, fontSize: 9, fontWeight: 800, color: C.faint,
+    <TintedBox tint={tint} style={{ flex: "1 1 45%", padding: "12px 13px 11px" }}>
+      <div style={{ fontFamily: F, fontSize: 9.5, fontWeight: 700, color: (TINTS[tint] || TINTS.grey).label,
         textTransform: "uppercase", letterSpacing: 0.4 }}>{label}</div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 5 }}>
-        <span style={{ fontFamily: F, fontSize: 22, fontWeight: 900, color: accent || C.ink,
-          letterSpacing: -0.5, lineHeight: 1 }}>{value}</span>
+        <span style={{ fontFamily: FONT_DISPLAY, fontSize: 23, fontWeight: 650, color: RIVER.ink,
+          letterSpacing: "-0.02em", lineHeight: 1.05, fontVariantNumeric: "tabular-nums" }}>{value}</span>
         {d != null && (
-          <span style={{ fontFamily: F, fontSize: 10, fontWeight: 800, color: up ? C.green : C.hot }}>
+          <span style={{ fontFamily: F, fontSize: 10.5, fontWeight: 700, color: up ? TONE.up : TONE.down }}>
             {up ? "▲" : "▼"}{Math.abs(d)}%
           </span>
         )}
       </div>
-      <div style={{ fontFamily: F, fontSize: 9.5, color: C.faint, marginTop: 3 }}>
+      <div style={{ fontFamily: F, fontSize: 10.5, color: BOX_SUB, marginTop: 4 }}>
         {prev != null ? `${prev} previous period` : "no prior data"}
       </div>
-    </div>
+    </TintedBox>
   );
 }
 
@@ -7467,15 +7465,17 @@ function EarningsPanel({ history }) {
       )}
 
       {/* Headline */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 15, marginBottom: 10 }}>
-        <div style={{ fontFamily: F, fontSize: 9.5, fontWeight: 800, color: C.faint,
-          textTransform: "uppercase", letterSpacing: 0.6 }}>Earned · {rangeLabel}</div>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 5 }}>
-          <span style={{ fontFamily: F, fontSize: 34, fontWeight: 900, color: C.ink, letterSpacing: -1.4, lineHeight: 1 }}>
-            {inrShort(total)}
-          </span>
-          <span style={{ fontFamily: F, fontSize: 11.5, color: C.sub }}>on {units} deliveries</span>
-        </div>
+      <div className="rg-glass" style={{ borderRadius: 20, padding: 15, marginBottom: 10 }}>
+        <TintedBox tint="mint" inner style={{ padding: "12px 13px 12px" }}>
+          <div style={{ fontFamily: F, fontSize: 9.5, fontWeight: 700, color: TINTS.mint.label,
+            textTransform: "uppercase", letterSpacing: 0.6 }}>Earned · {rangeLabel}</div>
+          <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "2px 8px", marginTop: 5 }}>
+            <span style={{ fontFamily: FONT_DISPLAY, fontSize: 32, fontWeight: 650, color: RIVER.ink, letterSpacing: "-0.02em", lineHeight: 1.05, fontVariantNumeric: "tabular-nums" }}>
+              {inrShort(total)}
+            </span>
+            <span style={{ fontFamily: F, fontSize: 11.5, color: BOX_SUB }}>on {units} deliveries</span>
+          </div>
+        </TintedBox>
 
         {/* Where it came from — three lines, each traceable below. */}
         <div style={{ marginTop: 13, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
@@ -7484,7 +7484,7 @@ function EarningsPanel({ history }) {
             { l: `Add-ons · ${attachCount} attached`, v: attachTotal, c: C.green },
             { l: singleMonth ? (tier ? `Volume bonus · ${tier.at}+ tier` : "Volume bonus · not reached")
                              : `Volume bonus · ${monthsInRange.length} months`,
-              v: bonus, c: bonus ? C.primary : C.ghost },
+              v: bonus, c: bonus ? C.primary : C.faint },
           ].map(r => (
             <div key={r.l} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
               <span style={{ fontFamily: F, fontSize: 11.5, color: C.sub }}>{r.l}</span>
@@ -7507,7 +7507,7 @@ function EarningsPanel({ history }) {
       </div>
 
       {/* Volume bonus, explained rather than asserted. */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
+      <div className="rg-glass" style={{ borderRadius: 20, padding: 14, marginBottom: 10 }}>
         <div style={{ fontFamily: F, fontSize: 12.5, fontWeight: 800, color: C.ink, marginBottom: 3 }}>
           How the volume bonus works
         </div>
@@ -7526,7 +7526,7 @@ function EarningsPanel({ history }) {
             }}>
               <span style={{
                 width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
-                background: reached ? C.green : C.borderStrong,
+                background: reached ? C.green : C.faint,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
                 {reached ? <Check size={12} color="#fff" strokeWidth={3} />
@@ -7542,7 +7542,7 @@ function EarningsPanel({ history }) {
                 )}
               </span>
               <span style={{ fontFamily: F, fontSize: 12.5, fontWeight: 800,
-                color: reached ? C.green : C.ghost }}>{inrShort(t.bonus)}</span>
+                color: reached ? C.green : C.faint }}>{inrShort(t.bonus)}</span>
             </div>
           );
         })}
@@ -7559,14 +7559,14 @@ function EarningsPanel({ history }) {
       </div>
 
       {deals.length === 0 && (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12,
+        <div className="rg-glass" style={{ borderRadius: 16,
           padding: 22, textAlign: "center", fontFamily: F, fontSize: 12.5, color: C.sub, marginBottom: 10 }}>
           No retails in this range.
         </div>
       )}
 
       {/* The ledger. Every rupee traceable to a scooter. */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
+      <div className="rg-glass" style={{ borderRadius: 20, padding: 14, marginBottom: 10 }}>
         <div style={{ fontFamily: F, fontSize: 12.5, fontWeight: 800, color: C.ink, marginBottom: 3 }}>
           What each scooter paid
         </div>
@@ -7722,11 +7722,11 @@ function SEDashboardScreen({ leads, user }) {
       {tab === "funnel" && (<>
 
       {/* ---- KPI strip: always this month vs last ---- */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-        <KpiTile label="Contacted · this month" value={thisM.contacted} prev={lastM.contacted} />
-        <KpiTile label="Test rides · this month" value={thisM.visit} prev={lastM.visit} accent={C.primary} />
-        <KpiTile label="Bookings · this month" value={thisM.booking} prev={lastM.booking} accent={C.warm} />
-        <KpiTile label="Retailed · this month" value={thisM.retailed} prev={lastM.retailed} accent={C.darkGreen} />
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
+        <KpiTile label="Contacted · this month" value={thisM.contacted} prev={lastM.contacted} tint="grey" />
+        <KpiTile label="Test rides · this month" value={thisM.visit} prev={lastM.visit} tint="grey" />
+        <KpiTile label="Bookings · this month" value={thisM.booking} prev={lastM.booking} tint="grey" />
+        <KpiTile label="Retailed · this month" value={thisM.retailed} prev={lastM.retailed} tint="yellow" />
       </div>
 
       {/* ---- Period ---- */}
@@ -7745,7 +7745,7 @@ function SEDashboardScreen({ leads, user }) {
       </div>
 
       {/* ---- The main table ---- */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 13, marginBottom: 10 }}>
+      <div className="rg-glass" style={{ borderRadius: 20, padding: 13, marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
           <span style={{ flex: 1, fontFamily: F, fontSize: 12.5, fontWeight: 800, color: C.ink }}>Lead funnel</span>
           <span style={{ fontFamily: F, fontSize: 10, color: C.faint }}>
@@ -7869,14 +7869,13 @@ function ActivityScreen({ leads, onOpenLead }) {
           }}>Clear</button>
         )}
       </div>
-      <div style={{ display: "flex", gap: 6, marginBottom: 14, background: C.border, borderRadius: 12, padding: 3 }}>
+      <div className="rg-seg" style={{ display: "flex", gap: 6, marginBottom: 14, borderRadius: 12, padding: 3 }}>
         {tabs.map(t => (
-          <button key={t.key} onClick={() => setSub(t.key)} style={{
+          <button key={t.key} onClick={() => setSub(t.key)} className={sub === t.key ? "rg-thumb" : undefined} style={{
             flex: 1, padding: "7px 4px", borderRadius: 9, border: "none", cursor: "pointer",
-            background: sub === t.key ? C.card : "none",
+            background: sub === t.key ? undefined : "none",
             fontFamily: F, fontSize: 11.5, fontWeight: 700,
             color: sub === t.key ? C.primary : C.sub,
-            boxShadow: sub === t.key ? "0 1px 3px rgba(0,0,0,.08)" : "none"
           }}>{t.label}</button>
         ))}
       </div>
@@ -7887,10 +7886,10 @@ function ActivityScreen({ leads, onOpenLead }) {
         </div>
       )}
 
+      {activeTab.data.length > 0 && <div className="rg-glass" style={{ padding: 6, borderRadius: 20, marginBottom: 12 }}>
       {activeTab.data.map((row, i) => (
-        <div key={i} onClick={() => onOpenLead(row.lead.id)} style={{
-          display: "flex", alignItems: "center", gap: 11, background: C.card, border: `1px solid ${C.border}`,
-          borderRadius: 12, padding: "10px 12px", marginBottom: 8, cursor: "pointer"
+        <div key={i} onClick={() => onOpenLead(row.lead.id)} className="rg-list-row" style={{
+          gap: 11, borderRadius: 14, padding: "10px 10px", cursor: "pointer"
         }}>
           <span style={{
             width: 34, height: 34, borderRadius: "50%", background: C.primarySoft, display: "flex",
@@ -7908,6 +7907,7 @@ function ActivityScreen({ leads, onOpenLead }) {
           </div>
         </div>
       ))}
+      </div>}
     </div>
   );
 }
@@ -8112,8 +8112,8 @@ function ProductReference() {
       {shown.map(m => {
         const open = openModel === m.model;
         return (
-          <div key={m.model} style={{ background: C.card, border: `1px solid ${open ? C.primary + "55" : C.border}`,
-            borderRadius: 12, marginBottom: 9, overflow: "hidden" }}>
+          <div key={m.model} className="rg-glass" style={{ border: `1px solid ${open ? C.primary + "55" : C.border}`,
+            borderRadius: 18, marginBottom: 9, overflow: "hidden" }}>
             <button onClick={() => { setOpenModel(open ? null : m.model); setOpenRival(null); }} style={{
               display: "flex", alignItems: "center", gap: 10, width: "100%", padding: 14,
               background: "none", border: "none", cursor: "pointer", textAlign: "left",
@@ -8214,7 +8214,7 @@ function ProductReference() {
       })}
 
       {shown.length === 0 && (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12,
+        <div className="rg-glass" style={{ borderRadius: 16,
           padding: 22, textAlign: "center", fontFamily: F, fontSize: 12.5, color: C.sub }}>
           Nothing matches "{q}".
         </div>
@@ -8261,24 +8261,23 @@ function LearningScreen({ assigned = [] }) {
 
       {view === "skills" && (<>
       {/* ---- Hours. One number, one bar, two comparisons. ---- */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16,
-        padding: 15, marginBottom: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
+      <TintedBox tint="yellow" style={{ padding: 15, marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
           <div>
-            <div style={{ fontFamily: F, fontSize: 10, fontWeight: 800, color: C.faint,
+            <div style={{ fontFamily: F, fontSize: 10, fontWeight: 700, color: TINTS.yellow.label,
               textTransform: "uppercase", letterSpacing: 0.6 }}>Learning time · this month</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 7, marginTop: 5 }}>
-              <span style={{ fontFamily: F, fontSize: 30, fontWeight: 900, color: C.ink,
-                letterSpacing: -1.2, lineHeight: 1 }}>{fmtH(totalMins)}</span>
-              <span style={{ fontFamily: F, fontSize: 12, fontWeight: 800,
-                color: deltaM >= 0 ? C.green : C.hot }}>
+              <span style={{ fontFamily: FONT_DISPLAY, fontSize: 30, fontWeight: 650, color: RIVER.ink,
+                letterSpacing: "-0.02em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{fmtH(totalMins)}</span>
+              <span style={{ fontFamily: F, fontSize: 12, fontWeight: 700,
+                color: deltaM >= 0 ? TONE.up : TONE.down }}>
                 {deltaM >= 0 ? "▲" : "▼"}{fmtH(Math.abs(deltaM))}
               </span>
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontFamily: F, fontSize: 11, color: C.sub }}>{done.length} completed</div>
-            <div style={{ fontFamily: F, fontSize: 11, color: C.faint, marginTop: 2 }}>
+            <div style={{ fontFamily: F, fontSize: 11, color: BOX_SUB }}>{done.length} completed</div>
+            <div style={{ fontFamily: F, fontSize: 11, color: BOX_SUB, marginTop: 2 }}>
               team {fmtH(teamAvg)}
             </div>
           </div>
@@ -8295,23 +8294,23 @@ function LearningScreen({ assigned = [] }) {
           {LEARN_CATS.map(c => (
             <span key={c.key} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
               <span style={{ width: 7, height: 7, borderRadius: 2, background: c.color }} />
-              <span style={{ fontFamily: F, fontSize: 10.5, color: C.sub }}>
-                {c.label} <strong style={{ color: C.ink }}>{fmtH(LEARN_LOG[c.key])}</strong>
+              <span style={{ fontFamily: F, fontSize: 10.5, color: BOX_SUB }}>
+                {c.label} <strong style={{ color: RIVER.ink }}>{fmtH(LEARN_LOG[c.key])}</strong>
               </span>
             </span>
           ))}
         </div>
 
-        <div style={{ height: 5, background: C.bg, borderRadius: 999, overflow: "hidden" }}>
+        <div style={{ height: 5, background: "rgba(55,52,9,0.10)", borderRadius: 999, overflow: "hidden" }}>
           <div style={{ width: `${Math.min(100, (totalMins / goalMins) * 100)}%`, height: "100%",
-            background: totalMins >= goalMins ? C.green : C.primary, borderRadius: 999 }} />
+            background: totalMins >= goalMins ? TONE.up : RIVER.ink, opacity: 0.85, borderRadius: 999 }} />
         </div>
-        <div style={{ fontFamily: F, fontSize: 10.5, color: C.sub, marginTop: 6 }}>
+        <div style={{ fontFamily: F, fontSize: 10.5, color: BOX_SUB, marginTop: 6 }}>
           {totalMins >= goalMins
             ? `Past the ${fmtH(goalMins)} monthly goal.`
             : `${fmtH(goalMins - totalMins)} short of the ${fmtH(goalMins)} monthly goal.`}
         </div>
-      </div>
+      </TintedBox>
 
       {assignedItems.length > 0 && (
         <div style={{ background: C.primarySoft, border: `1px solid ${C.primary}33`, borderRadius: 12,
@@ -8343,7 +8342,7 @@ function LearningScreen({ assigned = [] }) {
               <span style={{ fontFamily: F, fontSize: 10.5, fontWeight: 700, color: on ? c.color : C.sub }}>
                 {c.label}
               </span>
-              <span style={{ fontFamily: F, fontSize: 9.5, color: on ? c.color : C.faint, opacity: .8 }}>{n}</span>
+              <span style={{ fontFamily: F, fontSize: 9.5, color: on ? c.color : C.faint }}>{n}</span>
             </button>
           );
         })}
@@ -8506,31 +8505,30 @@ function LeaderboardScreen({ currentId }) {
   return (
     <div style={{ padding: "12px 12px 90px", position: "relative" }}>
       {/* North star */}
-      <div style={{ background: `linear-gradient(135deg, ${C.primary} 0%, ${C.primaryDark} 100%)`,
-        borderRadius: 16, padding: 17, marginBottom: 12, color: "#fff" }}>
+      <TintedBox tint="yellow" style={{ padding: "14px 16px 14px", marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
           <div>
-            <div style={{ fontFamily: F, fontSize: 11, fontWeight: 700, opacity: 0.9,
-              textTransform: "uppercase", letterSpacing: 0.7 }}>Retails · this month</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginTop: 6 }}>
-              <span style={{ fontFamily: F, fontSize: 40, fontWeight: 900, letterSpacing: -1.8, lineHeight: 1 }}>
+            <div style={{ fontFamily: F, fontSize: 11, fontWeight: 700, color: TINTS.yellow.label,
+              textTransform: "uppercase", letterSpacing: 0.6 }}>Retails · this month</div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginTop: 6 }}>
+              <span style={{ fontFamily: FONT_DISPLAY, fontSize: 38, fontWeight: 650, color: RIVER.ink, letterSpacing: "-0.02em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
                 {me.achieved}
               </span>
-              <span style={{ fontFamily: F, fontSize: 17, fontWeight: 500, opacity: 0.75 }}>/{me.target}</span>
+              <span style={{ fontFamily: F, fontSize: 16, fontWeight: 500, color: BOX_SUB }}>/{me.target}</span>
             </div>
-            <div style={{ fontFamily: F, fontSize: 13, fontWeight: 700, marginTop: 8 }}>
+            <div style={{ fontFamily: F, fontSize: 13, fontWeight: 650, color: RIVER.ink, marginTop: 8 }}>
               #{myRank} of {ranked.length} on the floor
             </div>
-            <div style={{ fontFamily: F, fontSize: 12, opacity: 0.92, marginTop: 3 }}>
+            <div style={{ fontFamily: F, fontSize: 12, color: BOX_SUB, marginTop: 3 }}>
               {above ? `${gap} more ${gap === 1 ? "scooter" : "scooters"} to pass ${above.name.split(" ")[0]}.` : "Top of the floor."}
             </div>
           </div>
-          <Trophy size={30} color="#fff" style={{ opacity: 0.9, flexShrink: 0 }} />
+          <Trophy size={28} color={RIVER.ink} style={{ opacity: 0.75, flexShrink: 0 }} />
         </div>
-      </div>
+      </TintedBox>
 
       {/* The table */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14,
+      <div className="rg-glass" style={{ borderRadius: 20,
         padding: "12px 10px", marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8,
           borderBottom: `1.5px solid ${C.borderStrong}`, marginBottom: 2 }}>
@@ -8539,7 +8537,7 @@ function LeaderboardScreen({ currentId }) {
           {COLS.map(c => (
             <span key={c.key} style={{
               width: c.hero ? 58 : 50, textAlign: "center", fontFamily: F, fontSize: 10,
-              fontWeight: c.hero ? 800 : 700, color: c.hero ? C.primary : C.sub,
+              fontWeight: c.hero ? 800 : 700, color: c.hero ? C.ink : C.sub,
               textTransform: "uppercase", letterSpacing: 0.3,
             }}>{c.label}</span>
           ))}
@@ -8570,12 +8568,12 @@ function LeaderboardScreen({ currentId }) {
                 return (
                   <span key={c.key} style={{ width: c.hero ? 58 : 50, textAlign: "center" }}>
                     <span style={{ display: "block", fontFamily: F, fontSize: c.hero ? 19 : 14,
-                      fontWeight: c.hero ? 900 : 500, color: c.hero ? C.primary : C.ink, lineHeight: 1.1 }}>
+                      fontWeight: c.hero ? 800 : 500, color: C.ink, lineHeight: 1.1 }}>
                       {v}
                     </span>
                     {share != null && (
                       <span style={{ display: "block", fontFamily: F, fontSize: 10,
-                        color: c.hero ? C.primary : C.sub, opacity: c.hero ? 0.85 : 1, marginTop: 2 }}>
+                        color: C.sub, marginTop: 2 }}>
                         {share}%
                       </span>
                     )}
@@ -8599,8 +8597,8 @@ function LeaderboardScreen({ currentId }) {
           {advice.map(a => {
             const done = added.includes(a.module);
             return (
-              <div key={a.title} style={{ background: C.card, border: `1px solid ${C.border}`,
-                borderRadius: 12, padding: 14, marginBottom: 9 }}>
+              <div key={a.title} className="rg-glass" style={{
+                borderRadius: 18, padding: 14, marginBottom: 9 }}>
                 <div style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink, lineHeight: 1.35 }}>
                   {a.title}
                 </div>
@@ -8632,8 +8630,8 @@ function LeaderboardScreen({ currentId }) {
       )}
 
       {toast && (
-        <div style={{ position: "fixed", bottom: 90, left: 20, right: 20, background: C.ink, color: "#fff",
-          borderRadius: 11, padding: "12px 14px", fontFamily: F, fontSize: 12.5, fontWeight: 600,
+        <div className="rg-toast" style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom, 0px))", left: 20, right: 20, color: "#fff",
+          borderRadius: 16, padding: "12px 14px", fontFamily: F, fontSize: 12.5, fontWeight: 600,
           textAlign: "center", zIndex: 300 }}>{toast}</div>
       )}
     </div>
@@ -8650,7 +8648,7 @@ function ProfileScreen({ user, onLogout, voiceFirst, onToggleVoiceFirst, lang, o
   ];
   return (
     <div style={{ padding: 12 }}>
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, textAlign: "center", marginBottom: 12 }}>
+      <div className="rg-glass" style={{ borderRadius: 20, padding: 20, textAlign: "center", marginBottom: 12 }}>
         <span style={{
           width: 64, height: 64, borderRadius: "50%", background: C.primary, color: "#fff",
           fontFamily: F, fontWeight: 800, fontSize: 22, display: "inline-flex",
@@ -8661,7 +8659,7 @@ function ProfileScreen({ user, onLogout, voiceFirst, onToggleVoiceFirst, lang, o
       </div>
 
       {/* Language Switcher */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 12 }}>
+      <div className="rg-glass" style={{ borderRadius: 20, padding: 14, marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
           <span style={{ width: 34, height: 34, borderRadius: 9, background: C.bg, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <Globe size={16} color={C.faint} />
@@ -8679,7 +8677,7 @@ function ProfileScreen({ user, onLogout, voiceFirst, onToggleVoiceFirst, lang, o
         </div>
       </div>
 
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 12 }}>
+      <div className="rg-glass" style={{ borderRadius: 20, padding: 14, marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
             <span style={{ width: 34, height: 34, borderRadius: 9, background: voiceFirst ? C.primarySoft : C.bg, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -8704,7 +8702,7 @@ function ProfileScreen({ user, onLogout, voiceFirst, onToggleVoiceFirst, lang, o
         </div>
       </div>
 
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 4, marginBottom: 12 }}>
+      <div className="rg-glass" style={{ borderRadius: 20, padding: 4, marginBottom: 12 }}>
         {[
           { icon: Mail, label: "Email", value: user.email },
           { icon: Phone, label: "Phone", value: user.phone },
@@ -8719,7 +8717,7 @@ function ProfileScreen({ user, onLogout, voiceFirst, onToggleVoiceFirst, lang, o
         ))}
       </div>
 
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 4, marginBottom: 12 }}>
+      <div className="rg-glass" style={{ borderRadius: 20, padding: 4, marginBottom: 12 }}>
         {rows.map((r, i) => (
           <button key={i} style={{
             display: "flex", alignItems: "center", gap: 10, padding: "12px 10px", width: "100%",
@@ -8746,21 +8744,18 @@ function ProfileScreen({ user, onLogout, voiceFirst, onToggleVoiceFirst, lang, o
 /* ============================== BOTTOM SHEET (shared wrapper) ============================== */
 function BottomSheet({ title, subtitle, onClose, children }) {
   return (
-    <div onClick={onClose} style={{
-      position: "absolute", inset: 0, background: "rgba(14,14,12,0.28)", zIndex: 80,
+    <div onClick={onClose} className="rg-dim" style={{
+      position: "absolute", inset: 0, zIndex: 80,
       display: "flex", alignItems: "flex-end",
     }}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background: "#FFFFFF",
-        border: `1px solid ${C.borderStrong}`,
-        boxShadow: "0 -4px 32px rgba(0,0,0,0.10)",
-        width: "100%", borderRadius: "20px 20px 0 0", padding: 18,
+      <div onClick={e => e.stopPropagation()} className="rg-sheet" style={{
+        width: "100%", padding: "4px 18px calc(18px + env(safe-area-inset-bottom, 0px))",
         maxHeight: "85%", overflowY: "auto", boxSizing: "border-box",
       }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: C.borderStrong, margin: "0 auto 16px", opacity: 0.6 }} />
+        <div className="rg-grabber" style={{ marginBottom: 14 }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: subtitle ? 4 : 14 }}>
           <span style={{ fontFamily: F, fontWeight: 800, fontSize: 15.5, color: C.ink }}>{title}</span>
-          <button onClick={onClose} style={{ background: C.bg, border: `1.5px solid ${C.borderStrong}`, cursor: "pointer", padding: 6, borderRadius: 8, display: "flex" }}>
+          <button onClick={onClose} className="rg-btn rg-press" style={{ cursor: "pointer", padding: 6, borderRadius: 10, display: "flex" }}>
             <X size={15} color={C.faint} />
           </button>
         </div>
@@ -9012,8 +9007,8 @@ function BookingCelebration({ data, repName, onClose }) {
   };
 
   return (
-    <div style={{ position: "absolute", inset: 0, background: "rgba(14,14,12,0.28)", zIndex: 80, display: "flex", alignItems: "flex-end" }}>
-      <div style={{ width: "100%", background: C.card, borderRadius: "20px 20px 0 0", padding: 20, boxSizing: "border-box", boxShadow: "0 -4px 32px rgba(0,0,0,0.10)" }}>
+    <div className="rg-dim" style={{ position: "absolute", inset: 0, zIndex: 80, display: "flex", alignItems: "flex-end" }}>
+      <div className="rg-sheet" style={{ width: "100%", padding: "20px 20px calc(20px + env(safe-area-inset-bottom, 0px))", boxSizing: "border-box" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
           <div style={{ width: 44, height: 44, borderRadius: 12, background: C.greenSoft, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <CheckCircle2 size={22} color={C.green} />
@@ -9578,15 +9573,15 @@ export default function SalesExecutiveApp() {
 
   return (
     <LangCtx.Provider value={lang}>
-    <div style={{
+    <div className="rg-root rg-mesh" style={{
       width: "100%", maxWidth: 420, margin: "0 auto", height: "100vh", maxHeight: 860,
-      background: C.bg,
       display: "flex", flexDirection: "column", position: "relative",
       fontFamily: F,
       overflow: "hidden",
-      boxShadow: `0 0 0 1px ${C.borderStrong}, 0 24px 64px rgba(14,14,12,0.16)`,
-      borderRadius: 20,
+      boxShadow: "0 10px 40px rgba(0,0,0,.12)",
+      borderRadius: 22,
     }}>
+      <RiverGlassStyles />
       <style>{FONTS}{`
         * { box-sizing: border-box; }
         ::-webkit-scrollbar { width: 0; height: 0; }
@@ -9596,7 +9591,7 @@ export default function SalesExecutiveApp() {
         @keyframes celebrationPop { 0% { transform: scale(.7); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         @keyframes carBounce { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.05); } }
         @keyframes shimmer { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
-        input::placeholder, textarea::placeholder { color: #A8A69F; }
+        input::placeholder, textarea::placeholder { color: #6B7286; }
         input[type="search"]::-webkit-search-cancel-button,
         input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
         input:focus, textarea:focus, select:focus { outline: none; border-color: rgba(59,75,232,0.45) !important; box-shadow: 0 0 0 3px rgba(59,75,232,0.07); }
@@ -9614,7 +9609,9 @@ export default function SalesExecutiveApp() {
         onMenuTap={() => setMenuOpen(true)}
       />
 
-      <div style={{ flex: 1, overflowY: "auto" }}>
+      <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
+      <div style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden" }}>
+      <div style={{ paddingTop: 52 }}>
         {showProfile ? (
           <ProfileScreen user={user} onLogout={() => showToast("Logged out (mock) — restarting demo")}
             voiceFirst={voiceFirst}
@@ -9702,10 +9699,10 @@ export default function SalesExecutiveApp() {
               { key: "language", label: "Language", value: "English" },
               { key: "email",    label: "Email ID", value: (userById(currentUserId)?.name || "user").toLowerCase().replace(/\s+/g, ".") + "@autoprism.in" },
             ].map(row => (
-              <div key={row.key} style={{
+              <div key={row.key} className="rg-glass" style={{
                 display: "flex", alignItems: "center", gap: 10, padding: "13px 14px", marginBottom: 8,
-                background: C.card, border: `1.5px solid ${subView === row.key ? C.primary : C.border}`,
-                borderRadius: 12,
+                border: `1.5px solid ${subView === row.key ? C.primary : C.border}`,
+                borderRadius: 16,
               }}>
                 <span style={{ flex: 1, fontFamily: F, fontSize: 13, fontWeight: 700, color: C.ink }}>{row.label}</span>
                 <span style={{ fontFamily: F, fontSize: 12, color: C.sub }}>{row.value}</span>
@@ -9719,6 +9716,8 @@ export default function SalesExecutiveApp() {
         ) : (
           <LeaderboardScreen currentId={currentUserId} />
         )}
+      </div>
+      </div>
       </div>
 
       {menuOpen && (
