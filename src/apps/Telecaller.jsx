@@ -3,16 +3,22 @@ import { stockFor, unitsOf, PUNE_STORES, INVENTORY_AS_OF } from "../data/epicRiv
 import {
   AlertTriangle, BarChart3, Calendar, Camera, Bike as Car, Check, CheckCircle2, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, Clock, Copy, Download, Eye, FileText, Filter, GraduationCap, Headphones, Image, Link2, Lock, LogOut, Mail, MapPin, Menu, MessageSquare, Mic, MoreHorizontal, Navigation, Package, Pause, Pencil, Phone, Play, PlayCircle, Plus, Search, Settings, Sparkles, Square, Star, Store, Tag, TrendingUp, User, UserPlus, Users, Wind, X, Zap,
 } from "lucide-react";
+import { C as RG, FONT, FONT_DISPLAY, RIVER, TINTS, TONE, BOX_SUB, RiverGlassStyles, TintedBox, Metric, MetricGrid } from "../theme/riverGlass.jsx";
 
-/* ============================== TOKENS ============================== */
+/* ============================== TOKENS ==============================
+   River Glass: neutral surfaces are translucent so the River mesh shows through; neutral
+   text colours come from the shared theme (src/theme/riverGlass.jsx). Indigo stays the
+   Telecaller's interactive colour. */
 const C = {
-  bg: "#F3F4F9", card: "#FFFFFF", border: "#E7EAF3", borderStrong: "#D5DAE8",
-  ink: "#0B1946", sub: "#4F5A7D", faint: "#6B7596", ghost: "#AEB4CB",
-  primary: "#3B4BE8", primaryDark: "#2F3CC4", primarySoft: "rgba(59,75,232,0.09)",
-  hot: "#E53935", hotSoft: "rgba(229,57,53,0.08)",
-  warm: "#F59E0B", warmSoft: "rgba(245,158,11,0.08)",
+  bg: "rgba(241,243,249,0.66)", card: "rgba(255,255,255,0.62)", border: "rgba(15,23,42,0.08)", borderStrong: "rgba(15,23,42,0.15)",
+  // faint / hot / warm sit one step darker than the shared theme: this app puts a lot of small
+  // text on soft-tinted pills over the glass, and they need the extra margin to keep 4.5:1.
+  ink: RG.ink, sub: RG.sub, faint: "#535B6E", ghost: "#AEB4CB",
+  primary: RG.primary, primaryDark: "#2F3CC4", primarySoft: "rgba(59,75,232,0.10)",
+  hot: "#B71C1C", hotSoft: "rgba(198,40,40,0.08)",
+  warm: "#9A4A0A", warmSoft: "rgba(245,158,11,0.10)",
   cold: "#1565C0", coldSoft: "rgba(21,101,192,0.08)",
-  green: "#2E7D32", greenSoft: "rgba(46,125,50,0.08)",
+  green: RG.green, greenSoft: "rgba(46,125,50,0.09)",
   yellow: "#EAB308", yellowSoft: "rgba(234,179,8,0.10)",
   darkGreen: "#1B5E20", darkGreenSoft: "rgba(27,94,32,0.10)",
   purple: "#6D28D9", purpleSoft: "rgba(109,40,217,0.08)",
@@ -20,9 +26,9 @@ const C = {
   gold: "#92400E",
 };
 const FONTS = `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');`;
-const F = `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+const F = FONT;
 const ini = n => n.split(" ").map(p => p[0]).join("").slice(0, 2).toUpperCase();
-const shadow = "0 1px 2px rgba(0,0,0,0.05), 0 6px 18px rgba(0,0,0,0.08)";
+const shadow = "0 1px 2px rgba(15,23,42,0.05), 0 14px 38px -8px rgba(31,38,135,0.16)";
 const ME = { name: "Priya Nambiar" };
 const today = new Date();
 const genActivityId = () => `act_${Date.now().toString(36)}${Math.random().toString(36).slice(2,7)}`;
@@ -785,8 +791,8 @@ function FilterSheet({ open, onClose, groups, draft, setDraft, onApply, onClearA
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} onClick={onClose} />
-      <div style={{ position: "relative", background: C.card, borderRadius: "18px 18px 0 0", display: "flex", flexDirection: "column" }}>
+      <div className="rg-dim" style={{ position: "absolute", inset: 0 }} onClick={onClose} />
+      <div className="rg-sheet" style={{ position: "relative", borderRadius: "28px 28px 0 0", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "16px 16px 10px" }}>
           <div style={{ fontFamily: F, fontSize: 17, fontWeight: 800, color: C.ink, marginBottom: 12 }}>Filters</div>
           <div style={{ display: "flex", alignItems: "center", gap: 9, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 999, padding: "10px 14px" }}>
@@ -1142,20 +1148,17 @@ function Pill({ label, color, soft }) {
 
 function Toast({ text }) {
     if (!text) return null;
-    return <div style={{
+    return <div className="rg-toast" style={{
   position: "absolute",
   bottom: 80,
   left: "50%",
   transform: "translateX(-50%)",
-  background: C.ink,
-  color: "#fff",
   padding: "10px 16px",
-  borderRadius: 11,
+  borderRadius: 14,
   fontSize: 12.5,
   fontWeight: 600,
   fontFamily: F,
   zIndex: 90,
-  boxShadow: "0 8px 24px rgba(0,0,0,.18)",
   whiteSpace: "nowrap",
   borderLeft: `3px solid ${C.primary}`
 }}>
@@ -1164,14 +1167,13 @@ function Toast({ text }) {
   }
 
 function Header({ screenName, onBack, onMenuClick }) {
-    return <div style={{
+    return <div className="rg-bar" style={{
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
   padding: "0 16px",
   height: 52,
-  background: C.card,
-  borderBottom: `1px solid ${C.border}`,
+  flexShrink: 0,
   position: "sticky",
   top: 0,
   zIndex: 30
@@ -1220,15 +1222,14 @@ function Header({ screenName, onBack, onMenuClick }) {
     </span>
     {screenName && <span style={{ fontFamily: F, fontWeight: 500, fontSize: 13, color: C.faint }}>/ {screenName}</span>}
   </div>
-  <div style={{
-  width: 28,
-  height: 28,
+  <div className="rg-btn" style={{
+  width: 32,
+  height: 32,
   borderRadius: "50%",
-  background: C.ink,
-  color: "#fff",
+  color: C.ink,
   fontFamily: F,
   fontWeight: 700,
-  fontSize: 11,
+  fontSize: 11.5,
   display: "flex",
   alignItems: "center",
   justifyContent: "center"
@@ -1246,18 +1247,16 @@ function MenuDrawer({ active, onChange, onClose }) {
   zIndex: 100,
   display: "flex"
 }}>
-  <div onClick={onClose} style={{
+  <div className="rg-dim" onClick={onClose} style={{
   position: "absolute",
-  inset: 0,
-  background: "rgba(14,14,12,0.4)"
+  inset: 0
 }} />
-  <div style={{
+  <div className="rg-drawer" style={{
   position: "relative",
   width: "78%",
   maxWidth: 280,
   height: "100%",
-  background: C.card,
-  boxShadow: "8px 0 32px rgba(0,0,0,0.18)",
+  borderRadius: "0 24px 24px 0",
   display: "flex",
   flexDirection: "column"
 }}>
@@ -1342,12 +1341,11 @@ function MenuDrawer({ active, onChange, onClose }) {
   padding: "10px 12px",
   marginBottom: 6
 }}>
-        <div style={{
+        <div className="rg-btn" style={{
   width: 30,
   height: 30,
   borderRadius: "50%",
-  background: C.ink,
-  color: "#fff",
+  color: C.ink,
   fontFamily: F,
   fontWeight: 700,
   fontSize: 12,
@@ -1705,7 +1703,7 @@ function SourcePicker({ value, onChange, customSources, onAddCustomSource }) {
   padding: "6px 0",
   borderRadius: 7,
   border: "none",
-  background: otherText.trim() ? C.primary : C.ghost,
+  background: otherText.trim() ? C.primary : "rgba(15,23,42,0.10)",
   color: otherText.trim() ? "#fff" : C.sub,
   fontFamily: F,
   fontWeight: 700,
@@ -2674,19 +2672,17 @@ function DrivingLicenseRow({ done, via, onCollect, onUndo, showToast, customerNa
 
 function DocPreviewModal({ label, via, onClose }) {
     const viaText = via === "camera" ? "Captured via camera" : via === "upload" ? "Uploaded photo" : "Received from customer via link";
-    return <div onClick={onClose} style={{
+    return <div className="rg-dim" onClick={onClose} style={{
   position: "fixed",
   inset: 0,
-  background: "rgba(14,14,12,0.55)",
   zIndex: 300,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   padding: 24
 }}>
-  <div onClick={e => e.stopPropagation()} style={{
-  background: C.card,
-  borderRadius: 16,
+  <div className="rg-sheet rg-center" onClick={e => e.stopPropagation()} style={{
+  borderRadius: 24,
   padding: 16,
   width: "100%",
   maxWidth: 300
@@ -4329,7 +4325,7 @@ function QualificationCallForm({ lead, onSave, onCancel, channel, allLeads, show
   padding: "10px 0",
   borderRadius: 10,
   border: "none",
-  background: canSubmit ? C.primary : C.ghost,
+  background: canSubmit ? C.primary : "rgba(15,23,42,0.10)",
   color: canSubmit ? "#fff" : C.sub,
   fontFamily: F,
   fontWeight: 700,
@@ -5722,7 +5718,7 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
   padding: "10px 0",
   borderRadius: 10,
   border: "none",
-  background: canSubmit ? C.primary : C.ghost,
+  background: canSubmit ? C.primary : "rgba(15,23,42,0.10)",
   color: canSubmit ? "#fff" : C.sub,
   fontFamily: F,
   fontWeight: 700,
@@ -5898,7 +5894,7 @@ function TestDriveForm({ onSave, onCancel, allLeads, excludeLeadId, showToast, c
   padding: "10px 0",
   borderRadius: 10,
   border: "none",
-  background: canSubmit ? C.primary : C.ghost,
+  background: canSubmit ? C.primary : "rgba(15,23,42,0.10)",
   color: canSubmit ? "#fff" : C.sub,
   fontFamily: F,
   fontWeight: 700,
@@ -6095,7 +6091,7 @@ function QuoteForm({ model, onSave, onCancel }) {
   <span style={{
   fontFamily: F,
   fontSize: 11,
-  color: item.checked ? C.ink : C.ghost,
+  color: item.checked ? C.ink : C.faint,
   fontWeight: 600,
   textDecoration: item.checked ? "none" : "line-through"
 }}>
@@ -6265,7 +6261,7 @@ function QuoteForm({ model, onSave, onCancel }) {
   padding: "10px 0",
   borderRadius: 10,
   border: "none",
-  background: canSubmit ? C.primary : C.ghost,
+  background: canSubmit ? C.primary : "rgba(15,23,42,0.10)",
   color: canSubmit ? "#fff" : C.sub,
   fontFamily: F,
   fontWeight: 700,
@@ -6377,7 +6373,7 @@ function RetailForm({ onSave, onCancel }) {
   padding: "10px 0",
   borderRadius: 10,
   border: "none",
-  background: canSubmit ? C.primary : C.ghost,
+  background: canSubmit ? C.primary : "rgba(15,23,42,0.10)",
   color: canSubmit ? "#fff" : C.sub,
   fontFamily: F,
   fontWeight: 700,
@@ -6464,7 +6460,7 @@ function DeliveryForm({ onSave, onCancel }) {
   padding: "10px 0",
   borderRadius: 10,
   border: "none",
-  background: deliveryDate ? C.primary : C.ghost,
+  background: deliveryDate ? C.primary : "rgba(15,23,42,0.10)",
   color: deliveryDate ? "#fff" : C.sub,
   fontFamily: F,
   fontWeight: 700,
@@ -6962,7 +6958,7 @@ function AddLeadForm({ onSave, onCancel, customSources, onAddCustomSource }) {
   padding: "12px 0",
   borderRadius: 10,
   border: "none",
-  background: canSubmit ? C.primary : C.ghost,
+  background: canSubmit ? C.primary : "rgba(15,23,42,0.10)",
   color: canSubmit ? "#fff" : C.sub,
   fontFamily: F,
   fontWeight: 700,
@@ -7271,12 +7267,10 @@ function LeadRow({ lead, onUpdateLead, showToast, focusMode, allLeads }) {
       onUpdateLead({ ...lead, callHistory: [...lead.callHistory, { id: genActivityId(), date: new Date(), disposition: "quote_sent", note: `Quote sent via ${medium} for ${entry.variant} \u2014 ${formatINR(entry.total)} on-road${accessoryNote}${discountNote}. ${entry.note}`.trim() }] });
       showToast(`\u2705 Quote sent via ${medium} \u2014 ${lead.assignedSE.name} notified`);
     };
-    return <div style={{
-  background: C.card,
-  borderRadius: 16,
+    return <div className="rg-glass" style={{
+  borderRadius: 20,
   padding: 16,
   marginBottom: 12,
-  boxShadow: shadow,
   borderLeft: `3px solid ${priorityColorOf(lead)}`
 }}>
   {(() => {
@@ -8405,7 +8399,7 @@ function QuoteShareScreen({ lead, quote, onMediumUsed, onDone }) {
   padding: "0 16px",
   borderRadius: 9,
   border: "none",
-  background: otherText.trim() ? C.primary : C.ghost,
+  background: otherText.trim() ? C.primary : "rgba(15,23,42,0.10)",
   color: otherText.trim() ? "#fff" : C.sub,
   fontFamily: F,
   fontWeight: 700,
@@ -8576,7 +8570,7 @@ function CallQueueScreen({ leads, subView, onUpdateLead, showToast, onEnterFocus
   return (
     <div style={{ padding: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.card, border: `1.5px solid ${C.border}`, borderRadius: 11, padding: "9px 12px", flex: 1, minWidth: 0 }}>
+        <div className="rg-input" style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 12, padding: "9px 12px", flex: 1, minWidth: 0 }}>
           <Search size={14} color={C.faint} />
           <input value={queryDraft} onChange={e => setQueryDraft(e.target.value)} placeholder="Search by name, phone, or model…"
             type="search" inputMode="search" enterKeyHint="search"
@@ -8584,20 +8578,20 @@ function CallQueueScreen({ leads, subView, onUpdateLead, showToast, onEnterFocus
             style={{ border: "none", outline: "none", flex: 1, minWidth: 0, fontFamily: F, fontSize: 12.5, color: C.ink, background: "none", WebkitAppearance: "none" }} />
           {(queryDraft || query) && <button onClick={clearSearch} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}><X size={13} color={C.faint} /></button>}
         </div>
-        <button onClick={openFilterSheet} style={{
-          position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: 11, flexShrink: 0,
-          border: `1.5px solid ${filtersActive ? C.primary : C.border}`, background: filtersActive ? C.primarySoft : C.card, cursor: "pointer",
+        <button onClick={openFilterSheet} className="rg-btn rg-press" style={{
+          position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: 12, flexShrink: 0,
+          cursor: "pointer", ...(filtersActive ? { background: C.primarySoft, borderColor: "rgba(59,75,232,0.35)" } : {}),
         }}>
           <Filter size={15} color={filtersActive ? C.primary : C.sub} />
           {filtersActive && <span style={{ position: "absolute", top: 6, right: 6, width: 6, height: 6, borderRadius: "50%", background: C.hot }} />}
         </button>
-        <button onClick={onEnterFocusMode} title="Focus / auto-dial mode" style={{
-          display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: 11, flexShrink: 0,
-          border: `1.5px solid ${C.primary}`, background: C.primary, cursor: "pointer",
+        <button onClick={onEnterFocusMode} title="Focus / auto-dial mode" className="rg-btn-primary rg-press" style={{
+          display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: 12, flexShrink: 0,
+          cursor: "pointer",
         }}><Zap size={16} color="#fff" /></button>
-        <button onClick={() => setShowAddLead(true)} title="Add lead" style={{
-          display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: 11, flexShrink: 0,
-          border: `1.5px solid #0B1946`, background: "#0B1946", cursor: "pointer",
+        <button onClick={() => setShowAddLead(true)} title="Add lead" className="rg-press" style={{
+          display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: 12, flexShrink: 0,
+          border: "none", background: "linear-gradient(180deg,#1C2A5C 0%,#0B1946 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18),0 6px 16px rgba(11,25,70,0.22)", cursor: "pointer",
         }}><UserPlus size={16} color="#fff" /></button>
       </div>
 
@@ -8623,23 +8617,12 @@ function CallQueueScreen({ leads, subView, onUpdateLead, showToast, onEnterFocus
         </div>
       )}
 
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "9px 12px", marginBottom: 12, boxShadow: shadow, display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 3, flexShrink: 0 }}>
-          <span style={{ fontFamily: F, fontWeight: 900, fontSize: 18, color: qualifiedToday >= dailyTarget ? C.green : C.ink, letterSpacing: -0.5, lineHeight: 1 }}>{qualifiedToday}</span>
-          <span style={{ fontFamily: F, fontWeight: 500, fontSize: 11, color: C.ghost }}>/{dailyTarget}</span>
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
-            <span style={{ fontFamily: F, fontSize: 9, fontWeight: 700, color: C.sub, textTransform: "uppercase", letterSpacing: 0.6 }}>Leads qualified · today</span>
-            <span style={{ fontFamily: F, fontSize: 10, fontWeight: 700, color: qualifiedToday >= dailyTarget ? C.green : C.primary }}>
-              {qualifiedToday >= dailyTarget ? "Target hit 🎯" : `${dailyTarget - qualifiedToday} more`}
-            </span>
-          </div>
-          <div style={{ height: 4, background: C.border, borderRadius: 999, overflow: "hidden" }}>
-            <div style={{ width: `${pct}%`, height: "100%", background: qualifiedToday >= dailyTarget ? C.green : C.primary, borderRadius: 999, transition: "width .5s" }} />
-          </div>
-        </div>
-      </div>
+      <MetricGrid cols={1} style={{ marginBottom: 12 }}>
+        <Metric label="Leads qualified · today" tint="yellow" value={qualifiedToday} after={`/${dailyTarget}`}
+          tone={qualifiedToday >= dailyTarget ? C.green : undefined}
+          bar={{ v: pct / 100 }}
+          sub={qualifiedToday >= dailyTarget ? "Target hit 🎯" : `${dailyTarget - qualifiedToday} more`} />
+      </MetricGrid>
 
       {filtersActive && (
         <div style={{ fontFamily: F, fontSize: 10, color: C.sub, marginBottom: 8 }}>{active.length} of {allActive.length} match filters</div>
@@ -8650,7 +8633,7 @@ function CallQueueScreen({ leads, subView, onUpdateLead, showToast, onEnterFocus
       </div>
 
       {active.length === 0 && (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 24, textAlign: "center", fontFamily: F, fontSize: 13, color: C.sub }}>
+        <div className="rg-glass" style={{ padding: 24, textAlign: "center", fontFamily: F, fontSize: 13, color: C.sub }}>
           {filtersActive ? "No leads match your filters." : "Queue is clear. 🎉"}
         </div>
       )}
@@ -8690,7 +8673,7 @@ function RecentActivityScreen({ leads, onUpdateLead, showToast }) {
 
   return (
     <div style={{ padding: 14 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.card, border: `1.5px solid ${C.border}`, borderRadius: 11, padding: "9px 12px", marginBottom: 10 }}>
+      <div className="rg-input" style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 12, padding: "9px 12px", marginBottom: 10 }}>
         <Search size={14} color={C.faint} />
         <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search activity…"
           type="search" enterKeyHint="search" onKeyDown={e => { if (e.key === "Enter") e.currentTarget.blur(); }}
@@ -8714,13 +8697,13 @@ function RecentActivityScreen({ leads, onUpdateLead, showToast }) {
       </div>
 
       {shown.length === 0 && (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 24, textAlign: "center", fontFamily: F, fontSize: 13, color: C.sub }}>
+        <div className="rg-glass" style={{ padding: 24, textAlign: "center", fontFamily: F, fontSize: 13, color: C.sub }}>
           Nothing logged yet.
         </div>
       )}
 
       {shown.map((e, i) => (
-        <div key={e.id || i} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 12, marginBottom: 8, boxShadow: shadow }}>
+        <div key={e.id || i} className="rg-glass" style={{ borderRadius: 18, padding: 12, marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
             <span style={{ fontFamily: F, fontWeight: 700, fontSize: 13, color: C.ink }}>{e.lead.name}</span>
             <span style={{ fontFamily: F, fontSize: 10.5, color: C.faint }}>{relativeTime(new Date(e.date))}</span>
@@ -8749,7 +8732,7 @@ function PostDeliveryScreen({ leads, onUpdateLead, showToast }) {
         Feedback calls for customers who've taken delivery.
       </div>
       {delivered.length === 0 && (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 24, textAlign: "center", fontFamily: F, fontSize: 13, color: C.sub }}>
+        <div className="rg-glass" style={{ padding: 24, textAlign: "center", fontFamily: F, fontSize: 13, color: C.sub }}>
           No deliveries pending feedback.
         </div>
       )}
@@ -8962,8 +8945,8 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 220, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} onClick={onClose} />
-      <div style={{ position: "relative", background: C.card, borderRadius: "18px 18px 0 0", maxHeight: "88vh", overflowY: "auto", padding: 16 }}>
+      <div className="rg-dim" style={{ position: "absolute", inset: 0 }} onClick={onClose} />
+      <div className="rg-sheet" style={{ position: "relative", borderRadius: "28px 28px 0 0", maxHeight: "88vh", overflowY: "auto", padding: 16 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
           <span style={{ fontFamily: F, fontSize: 16, fontWeight: 800, color: C.ink }}>{waitlistMode ? "Add to waitlist" : "Block this scooter"}</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><X size={18} color={C.sub} /></button>
@@ -9080,7 +9063,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
           onClick={() => canConfirm && onConfirm(unit, picked, mismatches, resolution)}
           style={{
             width: "100%", marginTop: 4, padding: "13px 0", borderRadius: 11, border: "none",
-            background: canConfirm ? C.primary : C.ghost, color: "#fff",
+            background: canConfirm ? C.primary : "rgba(15,23,42,0.10)", color: canConfirm ? "#fff" : C.faint,
             fontFamily: F, fontWeight: 800, fontSize: 13.5, cursor: canConfirm ? "pointer" : "default",
           }}>
           {!picked ? "Select a customer"
@@ -9498,8 +9481,8 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
   ).slice(0, 4);
 
   return (
-    <div style={{ background: C.card, border: `1px solid ${open ? C.primary + "55" : C.border}`,
-      borderRadius: 14, marginBottom: 10, overflow: "hidden" }}>
+    <div className="rg-glass" style={{ ...(open ? { borderColor: C.primary + "55" } : {}),
+      borderRadius: 20, marginBottom: 10, overflow: "hidden" }}>
 
       {/* ---- Collapsed card ---- */}
       <button onClick={() => setOpen(o => !o)} style={{
@@ -9942,8 +9925,8 @@ function DeclineAllotmentSheet({ allotment, onClose, onConfirm }) {
   const picked = DECLINE_REASONS.find(r => r.key === reason);
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 230, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} onClick={onClose} />
-      <div style={{ position: "relative", background: C.card, borderRadius: "18px 18px 0 0", padding: 16, maxHeight: "85vh", overflowY: "auto" }}>
+      <div className="rg-dim" style={{ position: "absolute", inset: 0 }} onClick={onClose} />
+      <div className="rg-sheet" style={{ position: "relative", borderRadius: "28px 28px 0 0", padding: 16, maxHeight: "85vh", overflowY: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
           <span style={{ fontFamily: F, fontSize: 16, fontWeight: 800, color: C.ink }}>Why is it being declined?</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
@@ -10000,8 +9983,8 @@ function AddPhotosSheet({ unit, onClose, onAdd }) {
   const toggle = (c) => setPicked(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c]);
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 230, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} onClick={onClose} />
-      <div style={{ position: "relative", background: C.card, borderRadius: "18px 18px 0 0", padding: 16 }}>
+      <div className="rg-dim" style={{ position: "absolute", inset: 0 }} onClick={onClose} />
+      <div className="rg-sheet" style={{ position: "relative", borderRadius: "28px 28px 0 0", padding: 16 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
           <span style={{ fontFamily: F, fontSize: 16, fontWeight: 800, color: C.ink }}>Add photos</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
@@ -10250,13 +10233,12 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
             ? usedStock.filter(u => !u.blockedFor).length
             : units.filter(u => u.category === c.key && u.status === "in_stock").length;
           return (
-            <button key={c.key} onClick={() => { setCategory(c.key); setOpenModel(null); setOpenVariant(null); setOpenColor(null); }} style={{
-              flex: 1, padding: "8px 4px", borderRadius: 10, cursor: "pointer",
-              border: `1.5px solid ${on ? C.primary : C.border}`,
-              background: on ? C.primarySoft : C.card,
+            <button key={c.key} aria-pressed={on} className="rg-btn rg-press" onClick={() => { setCategory(c.key); setOpenModel(null); setOpenVariant(null); setOpenColor(null); }} style={{
+              flex: 1, padding: "8px 4px", borderRadius: 14, cursor: "pointer",
+              ...(on ? { background: C.primarySoft, borderColor: "rgba(59,75,232,0.35)" } : {}),
               display: "flex", flexDirection: "column", alignItems: "center", gap: 1,
             }}>
-              <span style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: on ? C.primary : C.ink, lineHeight: 1 }}>{n}</span>
+              <span style={{ fontFamily: FONT_DISPLAY, fontSize: 14, fontWeight: 700, color: on ? C.primary : C.ink, lineHeight: 1 }}>{n}</span>
               <span style={{ fontFamily: F, fontSize: 8.5, fontWeight: 700, color: on ? C.primary : C.faint, textTransform: "uppercase", letterSpacing: 0.3 }}>{c.label}</span>
             </button>
           );
@@ -10269,21 +10251,21 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
         const free = onHand.filter(u => !u.blockedFor).length;
         const transit = units.filter(u => u.category === "new" && u.status === "in_transit").length;
         return (
-          <div data-testid="inv-branch-split" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "3px 10px", background: C.card,
-            border: `1px solid ${C.border}`, borderRadius: 10, padding: "8px 11px", marginBottom: 10 }}>
+          <TintedBox tint="yellow" data-testid="inv-branch-split" style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "3px 12px",
+            padding: "10px 14px", marginBottom: 10 }}>
             {Object.keys(PUNE_STORES).map(b => (
-              <span key={b} data-branch={b} style={{ fontFamily: F, fontSize: 11, color: C.sub }}>
-                {b} <strong data-count style={{ color: C.ink }}>{onHand.filter(u => u.branch === b).length}</strong>
+              <span key={b} data-branch={b} style={{ fontFamily: F, fontSize: 11.5, fontWeight: 600, color: TINTS.yellow.label }}>
+                {b} <strong data-count style={{ fontFamily: FONT_DISPLAY, fontSize: 19, fontWeight: 650, letterSpacing: "-0.02em", color: RIVER.ink, fontVariantNumeric: "tabular-nums" }}>{onHand.filter(u => u.branch === b).length}</strong>
               </span>
             ))}
-            <span style={{ fontFamily: F, fontSize: 10.5, color: C.faint }}>
+            <span style={{ fontFamily: F, fontSize: 11, color: BOX_SUB }}>
               {free} free · {onHand.length - free} held{transit ? ` · ${transit} in transit` : ""}
             </span>
-          </div>
+          </TintedBox>
         );
       })()}
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.card, border: `1.5px solid ${C.border}`, borderRadius: 11, padding: "9px 12px", marginBottom: 12 }}>
+      <div className="rg-input" style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 12, padding: "9px 12px", marginBottom: 12 }}>
         <Search size={14} color={C.faint} />
         <input value={q} onChange={e => setQ(e.target.value)} placeholder={canAllocate ? "Model, variant, colour or VIN…" : "Model, variant or colour…"}
           style={{ border: "none", outline: "none", flex: 1, fontFamily: F, fontSize: 12.5, color: C.ink, background: "none" }} />
@@ -10375,7 +10357,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
           )}
 
           {shown.length === 0 && (
-            <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12,
+            <div className="rg-glass" style={{
               padding: 22, textAlign: "center", fontFamily: F, fontSize: 12.5, color: C.sub }}>
               No pre-owned two-wheelers match these filters.
             </div>
@@ -10392,7 +10374,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
       })()}
 
       {category !== "used" && models.length === 0 && (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 24, textAlign: "center", fontFamily: F, fontSize: 13, color: C.sub }}>
+        <div className="rg-glass" style={{ padding: 24, textAlign: "center", fontFamily: F, fontSize: 13, color: C.sub }}>
           Nothing in {CATEGORIES.find(c => c.key === category).label.toLowerCase()} matching this.
         </div>
       )}
@@ -10403,7 +10385,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
         const roll = rollupStatus(mUnits, model);
         const variants = [...new Set(mUnits.map(u => u.variant))];
         return (
-          <div key={model} style={{ background: C.card, border: `1px solid ${mOpen ? C.primary + "55" : C.border}`, borderRadius: 12, marginBottom: 8, overflow: "hidden" }}>
+          <div key={model} className="rg-glass" style={{ borderRadius: 20, marginBottom: 8, overflow: "hidden", ...(mOpen ? { borderColor: C.primary + "55" } : {}) }}>
             <button onClick={() => { setOpenModel(mOpen ? null : model); setOpenVariant(null); setOpenColor(null); }} style={{
               display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px",
               background: "none", border: "none", cursor: "pointer", textAlign: "left",
@@ -10582,7 +10564,7 @@ function BreakdownTable({ rows, columns, onRowTap }) {
                   <span key={c.key} style={{
                     width: 34, flexShrink: 0, textAlign: "center",
                     fontFamily: F, fontSize: 11, fontWeight: v ? 800 : 500,
-                    color: v ? (c.color || C.ink) : C.ghost,
+                    color: v ? (c.color || C.ink) : C.faint,
                   }}>{v}</span>
                 );
               })}
@@ -10751,7 +10733,7 @@ function DonutChart({ data, size = 108 }) {
 // one-line "what this tells you", then the chart.
 function ChartCard({ title, hint, children, action }) {
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
+    <div className="rg-glass" style={{ padding: 14, marginBottom: 10 }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: hint ? 2 : 10 }}>
         <span style={{ fontFamily: F, fontSize: 12.5, fontWeight: 800, color: C.ink }}>{title}</span>
         {action}
@@ -10766,7 +10748,7 @@ function ChartCard({ title, hint, children, action }) {
 function StatTile({ label, value, sub, delta, accent }) {
   const up = delta != null && delta > 0;
   return (
-    <div style={{ flex: "1 1 45%", background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 12 }}>
+    <div className="rg-glass" style={{ flex: "1 1 45%", borderRadius: 18, padding: 12 }}>
       <div style={{ fontFamily: F, fontSize: 9.5, fontWeight: 700, color: C.faint, textTransform: "uppercase", letterSpacing: 0.4 }}>{label}</div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginTop: 5 }}>
         <span style={{ fontFamily: F, fontSize: 21, fontWeight: 900, color: accent || C.ink, letterSpacing: -0.5, lineHeight: 1 }}>{value}</span>
@@ -10987,8 +10969,8 @@ function LearningScreen() {
             const id = c.ours + c.theirs;
             const open = openModel === id;
             return (
-              <div key={id} style={{ background: C.card, border: `1px solid ${open ? C.primary + "55" : C.border}`,
-                borderRadius: 12, marginBottom: 9, overflow: "hidden" }}>
+              <div key={id} className="rg-glass" style={{ ...(open ? { borderColor: C.primary + "55" } : {}),
+                borderRadius: 18, marginBottom: 9, overflow: "hidden" }}>
                 <button onClick={() => setOpenModel(open ? null : id)} style={{
                   display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "13px 14px",
                   background: "none", border: "none", cursor: "pointer", textAlign: "left",
@@ -11037,8 +11019,8 @@ function LearningScreen() {
 
       {/* ---- Skills ---- */}
       {view === "skills" && (<>
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16,
-          padding: 15, marginBottom: 12, boxShadow: shadow }}>
+        <div className="rg-glass" style={{
+          padding: 15, marginBottom: 12 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
             <div>
               <div style={{ fontFamily: F, fontSize: 10, fontWeight: 800, color: C.faint,
@@ -11108,8 +11090,8 @@ function LearningScreen() {
           const isDone = done.includes(m.id);
           const open = openId === m.id;
           return (
-            <div key={m.id} style={{ background: C.card, border: `1px solid ${open ? meta.color + "66" : C.border}`,
-              borderRadius: 12, marginBottom: 8, overflow: "hidden" }}>
+            <div key={m.id} className="rg-glass" style={{ ...(open ? { borderColor: meta.color + "66" } : {}),
+              borderRadius: 18, marginBottom: 8, overflow: "hidden" }}>
               <button onClick={() => setOpenId(open ? null : m.id)} style={{
                 display: "flex", alignItems: "center", gap: 11, width: "100%", padding: 13,
                 background: "none", border: "none", cursor: "pointer", textAlign: "left",
@@ -11297,7 +11279,7 @@ function FunnelTable({ rows, dimension, onPickRow, activeRow, totals }) {
                   return (
                     <span key={s.key} style={{ flex: 1, textAlign: "center" }}>
                       <span style={{ display: "block", fontFamily: F, fontSize: 12.5, fontWeight: 800,
-                        color: v === 0 ? C.ghost : worst ? C.hot : C.ink, lineHeight: 1.15 }}>{v}</span>
+                        color: v === 0 ? C.faint : worst ? C.hot : C.ink, lineHeight: 1.15 }}>{v}</span>
                       {share != null && (
                         <span style={{ display: "block", fontFamily: F, fontSize: 9,
                           color: worst ? C.hot : C.faint, marginTop: 1 }}>{share}%</span>
@@ -11452,7 +11434,7 @@ function InsightCard({ insight }) {
              : insight.tone === "good" ? { c: C.green, s: C.greenSoft, Icon: TrendingUp }
              : { c: C.cold, s: C.coldSoft, Icon: Sparkles };
   return (
-    <div style={{ display: "flex", gap: 9, background: tone.s, borderRadius: 11, padding: "11px 12px", marginBottom: 8 }}>
+    <div className="rg-glass" style={{ display: "flex", gap: 9, background: `linear-gradient(${tone.s}, ${tone.s}), ${C.card}`, borderRadius: 16, padding: "11px 12px", marginBottom: 8 }}>
       <tone.Icon size={15} color={tone.c} style={{ flexShrink: 0, marginTop: 1 }} />
       <div style={{ minWidth: 0 }}>
         <div style={{ fontFamily: F, fontSize: 12, fontWeight: 800, color: tone.c, lineHeight: 1.35 }}>{insight.title}</div>
@@ -11463,27 +11445,18 @@ function InsightCard({ insight }) {
 }
 
 // KPI tile with a like-for-like comparison against the equivalent prior period.
-function KpiTile({ label, value, prev, accent }) {
+// River Glass: a tinted Metric box (tint = what kind of number it is).
+function KpiTile({ label, value, prev, tint }) {
   const d = delta(value, prev);
   const up = d != null && d > 0;
   return (
-    <div style={{ flex: "1 1 45%", background: C.card, border: `1px solid ${C.border}`,
-      borderRadius: 12, padding: "11px 12px" }}>
-      <div style={{ fontFamily: F, fontSize: 9, fontWeight: 800, color: C.faint,
-        textTransform: "uppercase", letterSpacing: 0.4 }}>{label}</div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 5 }}>
-        <span style={{ fontFamily: F, fontSize: 22, fontWeight: 900, color: accent || C.ink,
-          letterSpacing: -0.5, lineHeight: 1 }}>{value}</span>
-        {d != null && (
-          <span style={{ fontFamily: F, fontSize: 10, fontWeight: 800, color: up ? C.green : C.hot }}>
-            {up ? "▲" : "▼"}{Math.abs(d)}%
-          </span>
-        )}
-      </div>
-      <div style={{ fontFamily: F, fontSize: 9.5, color: C.faint, marginTop: 3 }}>
-        {prev != null ? `${prev} previous period` : "no prior data"}
-      </div>
-    </div>
+    <Metric label={label} tint={tint || "grey"}
+      value={<>{value}{d != null && (
+        <span style={{ fontFamily: F, fontSize: 11, fontWeight: 700, letterSpacing: 0, marginLeft: 6, color: up ? TONE.up : TONE.down }}>
+          {up ? "▲" : "▼"}{Math.abs(d)}%
+        </span>
+      )}</>}
+      sub={prev != null ? `${prev} previous period` : "no prior data"} />
   );
 }
 
@@ -11555,21 +11528,19 @@ function DashboardScreen({ leads }) {
         What you qualified, and what became of it
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-        <KpiTile label="Contacted · this month" value={thisM.contacted} prev={lastM.contacted} />
-        <KpiTile label="Qualified · this month" value={thisM.opportunity} prev={lastM.opportunity} accent={C.primary} />
-        <KpiTile label="Test rides · this month" value={thisM.visit} prev={lastM.visit} accent={C.warm} />
-        <KpiTile label="Retailed · this month" value={thisM.retailed} prev={lastM.retailed} accent={C.green} />
-      </div>
+      <MetricGrid>
+        <KpiTile label="Contacted · this month" value={thisM.contacted} prev={lastM.contacted} tint="grey" />
+        <KpiTile label="Qualified · this month" value={thisM.opportunity} prev={lastM.opportunity} tint="grey" />
+        <KpiTile label="Test rides · this month" value={thisM.visit} prev={lastM.visit} tint="grey" />
+        <KpiTile label="Retailed · this month" value={thisM.retailed} prev={lastM.retailed} tint="yellow" />
+      </MetricGrid>
 
       <div style={{ display: "flex", gap: 5, marginBottom: 8 }}>
         {RANGES.map(r => {
           const on = months === r.k;
           return (
-            <button key={r.k} onClick={() => { setMonths(r.k); setDrill(null); }} style={{
-              flex: 1, padding: "8px 0", borderRadius: 9, cursor: "pointer",
-              border: `1.5px solid ${on ? C.primary : C.border}`,
-              background: on ? C.primarySoft : C.card, color: on ? C.primary : C.sub,
+            <button key={r.k} aria-pressed={on} className={`rg-chip rg-press${on ? " on" : ""}`} onClick={() => { setMonths(r.k); setDrill(null); }} style={{
+              flex: 1, justifyContent: "center", padding: "8px 0", cursor: "pointer",
               fontFamily: F, fontWeight: 700, fontSize: 11.5,
             }}>{r.l}</button>
           );
@@ -11577,7 +11548,7 @@ function DashboardScreen({ leads }) {
       </div>
 
       {/* ---- Qualification quality: the metric that is actually hers ---- */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 13, marginBottom: 10 }}>
+      <div className="rg-glass" style={{ padding: 13, marginBottom: 10 }}>
         <div style={{ fontFamily: F, fontSize: 12.5, fontWeight: 800, color: C.ink, marginBottom: 3 }}>
           Quality of your handoffs
         </div>
@@ -11605,7 +11576,7 @@ function DashboardScreen({ leads }) {
       </div>
 
       {/* ---- Main funnel table ---- */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 13, marginBottom: 10 }}>
+      <div className="rg-glass" style={{ padding: 13, marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
           <span style={{ flex: 1, fontFamily: F, fontSize: 12.5, fontWeight: 800, color: C.ink }}>Lead funnel</span>
           <span style={{ fontFamily: F, fontSize: 10, color: C.faint }}>
@@ -11616,10 +11587,8 @@ function DashboardScreen({ leads }) {
           {DIMS.map(d => {
             const on = dim === d.k;
             return (
-              <button key={d.k} onClick={() => { setDim(d.k); setDrill(null); }} style={{
-                flex: 1, padding: "6px 0", borderRadius: 8, cursor: "pointer",
-                border: `1.5px solid ${on ? C.primary : C.border}`,
-                background: on ? C.primarySoft : C.card, color: on ? C.primary : C.sub,
+              <button key={d.k} aria-pressed={on} className={`rg-chip rg-press${on ? " on" : ""}`} onClick={() => { setDim(d.k); setDrill(null); }} style={{
+                flex: 1, justifyContent: "center", padding: "6px 0", cursor: "pointer",
                 fontFamily: F, fontWeight: 700, fontSize: 10.5,
               }}>{d.l}</button>
             );
@@ -11640,7 +11609,7 @@ function DashboardScreen({ leads }) {
       )}
 
       {/* ---- Downstream outcome by source: what happened after she handed over ---- */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 13, marginBottom: 10 }}>
+      <div className="rg-glass" style={{ padding: 13, marginBottom: 10 }}>
         <div style={{ fontFamily: F, fontSize: 12.5, fontWeight: 800, color: C.ink, marginBottom: 3 }}>
           Where your qualified leads ended up
         </div>
@@ -11660,7 +11629,7 @@ function DashboardScreen({ leads }) {
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
             {[r.q, r.visit, r.booked, r.retail].map((v, i) => (
               <span key={i} style={{ width: 42, textAlign: "center", fontFamily: F, fontSize: 11.5,
-                fontWeight: 700, color: v ? C.ink : C.ghost }}>{v}</span>
+                fontWeight: 700, color: v ? C.ink : C.faint }}>{v}</span>
             ))}
             <span style={{ width: 42, textAlign: "center", fontFamily: F, fontSize: 11.5, fontWeight: 800,
               color: r.rate >= teamBar ? C.green : r.rate > 0 ? C.warm : C.hot }}>{r.rate}%</span>
@@ -11746,20 +11715,26 @@ export default function RelationshipManagerApp() {
       setLeads((ls) => [...ls, newLead]);
       showToast(`\u2705 Lead added \u2014 ${data.name}`);
     };
-    return <div className="rm-shell">
+    return <div className="rm-shell rg-root rg-mesh">
+  <RiverGlassStyles />
   <style>
     {FONTS}
     {`
         * { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; }
         ::-webkit-scrollbar { width: 0; }
-        input::placeholder, textarea::placeholder { color: #A8A69F; }
+        input::placeholder, textarea::placeholder { color: #6B7286; }
 
-        .rm-shell { width: 100%; height: 100vh; display: flex; background: ${C.bg}; font-family: ${F}; overflow: hidden; }
+        .rm-shell { width: 100%; height: 100vh; display: flex; font-family: ${F}; overflow: hidden; }
         .rm-sidebar { display: none; }
         .rm-menu-btn { display: flex; }
         .rm-outer { flex: 1; min-width: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .rm-card { width: 100%; min-width: 0; max-width: 420px; height: 100vh; max-height: 860px; background: ${C.bg}; display: flex; flex-direction: column; position: relative; overflow: hidden; box-shadow: 0 0 0 1px #D5DAE8, 0 24px 64px rgba(14,14,12,0.16); border-radius: 20px; }
+        .rm-card { width: 100%; min-width: 0; max-width: 420px; height: 100vh; max-height: 860px; display: flex; flex-direction: column; position: relative; overflow: hidden; box-shadow: 0 0 0 1px rgba(15,23,42,0.08), 0 24px 64px rgba(31,38,135,0.16); border-radius: 22px; }
+        /* River Glass: inputs keep their inline look and get the indigo focus ring. */
+        .rm-card input:not([type=checkbox]):not([type=radio]):not([type=range]):focus, .rm-card textarea:focus, .rm-card select:focus { border-color: rgba(59,75,232,0.55) !important; box-shadow: 0 0 0 3px rgba(59,75,232,0.14) !important; outline: none; }
+        .rm-card .rg-input input:focus { box-shadow: none !important; }
+        .rm-card .rg-chip.on { color: ${C.primaryDark}; }
+        .rm-card .rg-input:focus-within { border-color: rgba(59,75,232,0.55); box-shadow: 0 0 0 3px rgba(59,75,232,0.14); }
         .rm-content { flex: 1; min-height: 0; min-width: 0; overflow-y: auto; }
         input[type="search"]::-webkit-search-cancel-button,
         input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
@@ -11768,8 +11743,8 @@ export default function RelationshipManagerApp() {
           .rm-outer { padding: 0; align-items: stretch; justify-content: flex-start; }
           .rm-card { max-width: none; flex: 1; min-height: 0; height: auto; max-height: none; border-radius: 0; box-shadow: none; }
           .rm-sidebar {
-            display: flex; flex-direction: column; width: 232px; flex-shrink: 0; background: ${C.card};
-            border-right: 1px solid ${C.border}; padding: 20px 14px; height: 100vh; box-sizing: border-box;
+            display: flex; flex-direction: column; width: 232px; flex-shrink: 0; position: relative; z-index: 1;
+            padding: 20px 14px; height: 100vh; box-sizing: border-box; border-radius: 0;
           }
           .rm-menu-btn { display: none; }
           .rm-content > div { max-width: 720px; margin: 0 auto; width: 100%; box-sizing: border-box; padding-left: 28px !important; padding-right: 28px !important; padding-top: 24px !important; }
@@ -11782,7 +11757,7 @@ export default function RelationshipManagerApp() {
         }
       `}
   </style>
-  <div className="rm-sidebar">
+  <div className="rm-sidebar rg-drawer">
     <div style={{
   display: "flex",
   alignItems: "center",
@@ -11900,7 +11875,7 @@ export default function RelationshipManagerApp() {
     </div>
   </div>
   <div className="rm-outer">
-    <div className="rm-card">
+    <div className="rm-card rg-mesh">
       {focusMode ? <FocusModeScreen leads={leads} onUpdateLead={handleUpdateLead} showToast={showToast} onExit={() => setFocusMode(false)} /> : <>
   <Header screenName={screenName} onMenuClick={() => setDrawerOpen(true)} />
   <div className="rm-content">
@@ -11919,10 +11894,10 @@ export default function RelationshipManagerApp() {
         { key: "language", label: "Language", value: "English" },
         { key: "email",    label: "Email ID", value: "priya.nair@autoprism.in" },
       ].map(row => (
-        <div key={row.key} style={{
+        <div key={row.key} className="rg-glass" style={{
           display: "flex", alignItems: "center", gap: 10, padding: "13px 14px", marginBottom: 8,
-          background: C.card, border: `1.5px solid ${navSub === row.key ? C.primary : C.border}`,
-          borderRadius: 12,
+          ...(navSub === row.key ? { border: `1.5px solid ${C.primary}` } : {}),
+          borderRadius: 16,
         }}>
           <span style={{ flex: 1, fontFamily: F, fontSize: 13, fontWeight: 700, color: C.ink }}>{row.label}</span>
           <span style={{ fontFamily: F, fontSize: 12, color: C.sub }}>{row.value}</span>
