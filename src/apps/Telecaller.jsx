@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
 import { stockFor, unitsOf, PUNE_STORES, INVENTORY_AS_OF } from "../data/epicRiverInventory.js";
+import { MetricBox, MetricGrid } from "../ui/MetricGlass.jsx";
 import {
   AlertTriangle, BarChart3, Calendar, Camera, Bike as Car, Check, CheckCircle2, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, Clock, Copy, Download, Eye, FileText, Filter, GraduationCap, Headphones, Image, Link2, Lock, LogOut, Mail, MapPin, Menu, MessageSquare, Mic, MoreHorizontal, Navigation, Package, Pause, Pencil, Phone, Play, PlayCircle, Plus, Search, Settings, Sparkles, Square, Star, Store, Tag, TrendingUp, User, UserPlus, Users, Wind, X, Zap,
 } from "lucide-react";
@@ -8623,23 +8624,11 @@ function CallQueueScreen({ leads, subView, onUpdateLead, showToast, onEnterFocus
         </div>
       )}
 
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "9px 12px", marginBottom: 12, boxShadow: shadow, display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 3, flexShrink: 0 }}>
-          <span style={{ fontFamily: F, fontWeight: 900, fontSize: 18, color: qualifiedToday >= dailyTarget ? C.green : C.ink, letterSpacing: -0.5, lineHeight: 1 }}>{qualifiedToday}</span>
-          <span style={{ fontFamily: F, fontWeight: 500, fontSize: 11, color: C.ghost }}>/{dailyTarget}</span>
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
-            <span style={{ fontFamily: F, fontSize: 9, fontWeight: 700, color: C.sub, textTransform: "uppercase", letterSpacing: 0.6 }}>Leads qualified · today</span>
-            <span style={{ fontFamily: F, fontSize: 10, fontWeight: 700, color: qualifiedToday >= dailyTarget ? C.green : C.primary }}>
-              {qualifiedToday >= dailyTarget ? "Target hit 🎯" : `${dailyTarget - qualifiedToday} more`}
-            </span>
-          </div>
-          <div style={{ height: 4, background: C.border, borderRadius: 999, overflow: "hidden" }}>
-            <div style={{ width: `${pct}%`, height: "100%", background: qualifiedToday >= dailyTarget ? C.green : C.primary, borderRadius: 999, transition: "width .5s" }} />
-          </div>
-        </div>
-      </div>
+      <MetricGrid testid="tc-target" style={{ marginBottom: 12 }}>
+        <MetricBox span label="Leads qualified · today" value={qualifiedToday} after={`/${dailyTarget}`}
+          sub={qualifiedToday >= dailyTarget ? "Target hit 🎯" : `${dailyTarget - qualifiedToday} more`}
+          bar={{ value: pct / 100 }} />
+      </MetricGrid>
 
       {filtersActive && (
         <div style={{ fontFamily: F, fontSize: 10, color: C.sub, marginBottom: 8 }}>{active.length} of {allActive.length} match filters</div>
@@ -11466,24 +11455,11 @@ function InsightCard({ insight }) {
 function KpiTile({ label, value, prev, accent }) {
   const d = delta(value, prev);
   const up = d != null && d > 0;
+  // Indigo glass box — one colour only, so the change vs last period is carried by ▲ / ▼.
   return (
-    <div style={{ flex: "1 1 45%", background: C.card, border: `1px solid ${C.border}`,
-      borderRadius: 12, padding: "11px 12px" }}>
-      <div style={{ fontFamily: F, fontSize: 9, fontWeight: 800, color: C.faint,
-        textTransform: "uppercase", letterSpacing: 0.4 }}>{label}</div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 5 }}>
-        <span style={{ fontFamily: F, fontSize: 22, fontWeight: 900, color: accent || C.ink,
-          letterSpacing: -0.5, lineHeight: 1 }}>{value}</span>
-        {d != null && (
-          <span style={{ fontFamily: F, fontSize: 10, fontWeight: 800, color: up ? C.green : C.hot }}>
-            {up ? "▲" : "▼"}{Math.abs(d)}%
-          </span>
-        )}
-      </div>
-      <div style={{ fontFamily: F, fontSize: 9.5, color: C.faint, marginTop: 3 }}>
-        {prev != null ? `${prev} previous period` : "no prior data"}
-      </div>
-    </div>
+    <MetricBox label={label} value={value}
+      after={d != null ? ` ${up ? "▲" : "▼"}${Math.abs(d)}%` : null}
+      sub={prev != null ? `${prev} previous period` : "no prior data"} />
   );
 }
 
@@ -11555,12 +11531,12 @@ function DashboardScreen({ leads }) {
         What you qualified, and what became of it
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+      <MetricGrid style={{ marginBottom: 12 }}>
         <KpiTile label="Contacted · this month" value={thisM.contacted} prev={lastM.contacted} />
         <KpiTile label="Qualified · this month" value={thisM.opportunity} prev={lastM.opportunity} accent={C.primary} />
         <KpiTile label="Test rides · this month" value={thisM.visit} prev={lastM.visit} accent={C.warm} />
         <KpiTile label="Retailed · this month" value={thisM.retailed} prev={lastM.retailed} accent={C.green} />
-      </div>
+      </MetricGrid>
 
       <div style={{ display: "flex", gap: 5, marginBottom: 8 }}>
         {RANGES.map(r => {

@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { GROUP, ZONES, LOCATIONS, monthsOpen } from "../data/epicRiverLocations.js";
 import { stockFor, VARIANTS, COLOURS } from "../data/epicRiverInventory.js";
+import { MetricBox, MetricGrid } from "../ui/MetricGlass.jsx";
 
 /* ==================================================================================
    AUTOPRISM — CEO (Epic River, Raam Group)
@@ -750,9 +751,17 @@ function TreeCard({ title, Icon, testid, hintPeople, hintLoc, cols, open, top, m
 }
 function BoardScreen({ open }) {
   const [mode, setMode] = useState("people");
+  const g = aggOf(PEOPLE_ROOT);
   return (
     <div style={{ padding: "14px 14px 90px" }}>
       <PeriodLine />
+      <MetricGrid testid="board-metrics" style={{ marginBottom: 12 }}>
+        <MetricBox span label="Retail" value={nIN(g.retail)} after={`/ ${nIN(g.target)}`}
+          sub={`${pctS(g.ach)} achieved`} sub2={`proj ${nIN(g.proj)}`}
+          bar={{ value: g.ach, tick: div(g.proj, g.target) }} />
+        <MetricBox label="Sales value" value={inr(g.value)} />
+        <MetricBox label="Bookings" value={nIN(g.book)} />
+      </MetricGrid>
       <TreeCard title="Target achievement" Icon={Target} testid="board-title" cols={BOARD_COLS} open={open} mode={mode} setMode={setMode}
         defSort={{ key: "r", dir: "desc" }}
         hintPeople="Tap a name to expand, a header to sort. Proj = month at today's pace."
@@ -762,15 +771,6 @@ function BoardScreen({ open }) {
 }
 
 /* ============================ FINANCE ============================ */
-function Quiet({ k, v, sub }) {
-  return (
-    <div style={{ minWidth: 0 }}>
-      <div style={{ fontFamily: F, fontSize: 9, fontWeight: 800, color: C.faint, textTransform: "uppercase", letterSpacing: 0.4 }}>{k}</div>
-      <div style={{ fontFamily: F, fontSize: 14, fontWeight: 800, color: C.ink, marginTop: 2, whiteSpace: "nowrap" }}>{v}</div>
-      {sub && <div style={{ fontFamily: F, fontSize: 9.5, color: C.faint, marginTop: 1, whiteSpace: "nowrap" }}>{sub}</div>}
-    </div>
-  );
-}
 const FI_HINT = "Month to date · green/red = 5 pts (rates) or 5% (₹) better/worse than group";
 const FIN = {
   insfin: {
@@ -808,9 +808,9 @@ function FinanceScreen({ which, open, rates }) {
   const summary = d.summary(gi);
   const n = summary.length;
   const top = (
-    <div data-testid="fin-summary" style={{ display: "grid", gridTemplateColumns: `repeat(${n === 3 ? 3 : 2}, minmax(0,1fr))`, gap: "10px 12px", padding: "6px 4px 12px" }}>
-      {summary.map(([k, v, sub]) => <Quiet key={k} k={k} v={v} sub={sub} />)}
-    </div>
+    <MetricGrid testid="fin-summary" style={{ padding: "6px 0 12px" }}>
+      {summary.map(([k, v, sub], i) => <MetricBox key={k} label={k} value={v} sub={sub} span={n % 2 === 1 && i === 0} />)}
+    </MetricGrid>
   );
   return (
     <div style={{ padding: "14px 14px 90px" }}>
@@ -893,13 +893,10 @@ function OutletScreen({ id, onBack, rates }) {
   const [sort, onSort, cmp] = useSort(BOARD_COLS, aggOf, { key: "r", dir: "desc" });
   const a = withIncome(derive(sumIdx(l.ses)), rates);
   const gi = aggWith(rates)(LOC_ROOT);
+  // One colour on the glass: the green / red verdict is spelled out in the grey group line.
+  const verdict = (tone) => (tone === C.green ? " · better" : tone === C.hot ? " · worse" : "");
   const line = (k, v, tone, gv, sub) => (
-    <div key={k} data-testid="outlet-fin-row" style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "9px 4px", borderTop: `1px solid ${C.border}` }}>
-      <span style={{ flex: 1, minWidth: 0, fontFamily: F, fontSize: 12.5, fontWeight: 600, color: C.ink }}>{k}
-        {sub && <span style={{ display: "block", fontSize: 10, color: C.faint, fontWeight: 500 }}>{sub}</span>}</span>
-      <span style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: tone }}>{v}</span>
-      <span style={{ width: 92, textAlign: "right", fontFamily: F, fontSize: 10, color: C.faint, whiteSpace: "nowrap" }}>group {gv}</span>
-    </div>
+    <MetricBox key={k} testid="outlet-fin-row" label={k} value={v} sub={sub} sub2={`group ${gv}${verdict(tone)}`} />
   );
   return (
     <div data-testid="outlet-page" style={{ padding: "14px 14px 90px" }}>
@@ -918,13 +915,15 @@ function OutletScreen({ id, onBack, rates }) {
       </Card>
       <Card>
         <CardHead Icon={IndianRupee} title="Finance" testid="outlet-fin"
-          hint={`This outlet, ${nIN(a.retail)} units, with the group in grey. Green / red = 5 pts or 5% better / worse.`} />
+          hint={`This outlet, ${nIN(a.retail)} units, with the group in grey. Better / worse = 5 pts or 5% vs group.`} />
+        <MetricGrid style={{ marginTop: 4 }}>
         {line("In-house insurance", pctS(a.insPct), rateTone(a.insPct, G.insPct, a.retail), pctS(G.insPct), `${nIN(a.ins)} policies`)}
         {line("Avg premium", rs(a.premAvg), rsTone(a.premAvg, G.premAvg, a.retail, a.ins), rs(G.premAvg), "per in-house policy")}
         {line("In-house finance", pctS(a.finPct), rateTone(a.finPct, G.finPct, a.retail), pctS(G.finPct), `${pctS(a.finShare)} of loans · group ${pctS(G.finShare)}`)}
         {line("Avg loan", lakh(a.loanAvg), rsTone(a.loanAvg, G.loanAvg, a.retail, a.fin), lakh(G.loanAvg), `${pctS(a.ltv)} LTV · group ${pctS(G.ltv)}`)}
         {line("Add-ons ₹/scooter", rs(a.addPU), rsTone(a.addPU, G.addPU, a.retail), rs(G.addPU), "accessories + River Care")}
         {line("Income per scooter", rs(a.totPV), rsTone(a.totPV, gi.totPV, a.retail), rs(gi.totPV), "at Admin → Payout & margin rates")}
+        </MetricGrid>
       </Card>
       <StockCard id={l.id} />
     </div>

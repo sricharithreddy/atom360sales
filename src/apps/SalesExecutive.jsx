@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { stockFor, unitsOf, PUNE_STORES, INVENTORY_AS_OF } from "../data/epicRiverInventory.js";
+import { MetricBox, MetricGrid } from "../ui/MetricGlass.jsx";
 import {
   AlertTriangle, PlayCircle, Headphones, MessageSquare, Flame, TrendingDown, TrendingUp, Settings, Wind, Eye, User, Calendar, MessageCircle, IndianRupee, Heart, RefreshCw,
   Phone, Bike as ScooterIcon, FileText, ChevronLeft, ChevronRight,
@@ -4309,15 +4310,12 @@ function MISReport({ leads, user }) {
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 12 }}>
         <div style={{ fontFamily: F, fontWeight: 700, fontSize: 14, color: C.ink }}>{user.name}'s Activity</div>
         <div style={{ fontFamily: F, fontSize: 11.5, color: C.sub, marginBottom: 12 }}>{periodLabel} · {fmtFull(today)}</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <MetricGrid>
           {stats.map(s => (
-            <div key={s.label} style={{ background: C.bg, borderRadius: 10, padding: 10 }}>
-              <s.icon size={14} color={C.primary} />
-              <div style={{ fontFamily: F, fontWeight: 800, fontSize: 17, color: C.ink, marginTop: 6 }}>{s.value}</div>
-              <div style={{ fontFamily: F, fontSize: 10.5, color: C.sub, marginTop: 1 }}>{s.label}</div>
-            </div>
+            <MetricBox key={s.label} value={s.value} label={
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><s.icon size={12} />{s.label}</span>} />
           ))}
-        </div>
+        </MetricGrid>
       </div>
 
       <button onClick={handleShare} style={{
@@ -4502,23 +4500,11 @@ function LeadsScreen({ currentId, leads, onOpenLead, onCall, onWhatsApp, onCount
       />
 
       {/* ---- Single-line monthly target (same compact pattern as the telecaller) ---- */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "9px 12px", marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 3, flexShrink: 0 }}>
-          <span style={{ fontFamily: F, fontWeight: 900, fontSize: 18, color: achieved >= target ? C.darkGreen : C.ink, letterSpacing: -0.5, lineHeight: 1 }}>{achieved}</span>
-          <span style={{ fontFamily: F, fontWeight: 500, fontSize: 11, color: C.ghost }}>/{target}</span>
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
-            <span style={{ fontFamily: F, fontSize: 9, fontWeight: 700, color: C.sub, textTransform: "uppercase", letterSpacing: 0.6 }}>Scooters retailed · this month</span>
-            <span style={{ fontFamily: F, fontSize: 10, fontWeight: 700, color: achieved >= target ? C.darkGreen : C.primary }}>
-              {achieved >= target ? "Target hit 🎯" : `${target - achieved} more to go`}
-            </span>
-          </div>
-          <div style={{ height: 4, background: C.bg, borderRadius: 999, overflow: "hidden" }}>
-            <div style={{ width: `${Math.min(100, (achieved / target) * 100)}%`, height: "100%", background: achieved >= target ? C.darkGreen : C.primary, borderRadius: 999, transition: "width .5s" }} />
-          </div>
-        </div>
-      </div>
+      <MetricGrid testid="se-target" style={{ marginBottom: 8 }}>
+        <MetricBox span label="Scooters retailed · this month" value={achieved} after={`/${target}`}
+          sub={achieved >= target ? "Target hit 🎯" : `${target - achieved} more to go`}
+          bar={{ value: target ? achieved / target : 0 }} />
+      </MetricGrid>
 
       {subView === "all" ? (
         /* All Leads is a browse view, not a work queue — a flat list of everyone, with the
@@ -7176,24 +7162,11 @@ function InsightCard({ insight }) {
 function KpiTile({ label, value, prev, accent }) {
   const d = delta(value, prev);
   const up = d != null && d > 0;
+  // Indigo glass box — one colour only, so the change vs last period is carried by ▲ / ▼.
   return (
-    <div style={{ flex: "1 1 45%", background: C.card, border: `1px solid ${C.border}`,
-      borderRadius: 12, padding: "11px 12px" }}>
-      <div style={{ fontFamily: F, fontSize: 9, fontWeight: 800, color: C.faint,
-        textTransform: "uppercase", letterSpacing: 0.4 }}>{label}</div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 5 }}>
-        <span style={{ fontFamily: F, fontSize: 22, fontWeight: 900, color: accent || C.ink,
-          letterSpacing: -0.5, lineHeight: 1 }}>{value}</span>
-        {d != null && (
-          <span style={{ fontFamily: F, fontSize: 10, fontWeight: 800, color: up ? C.green : C.hot }}>
-            {up ? "▲" : "▼"}{Math.abs(d)}%
-          </span>
-        )}
-      </div>
-      <div style={{ fontFamily: F, fontSize: 9.5, color: C.faint, marginTop: 3 }}>
-        {prev != null ? `${prev} previous period` : "no prior data"}
-      </div>
-    </div>
+    <MetricBox label={label} value={value}
+      after={d != null ? ` ${up ? "▲" : "▼"}${Math.abs(d)}%` : null}
+      sub={prev != null ? `${prev} previous period` : "no prior data"} />
   );
 }
 
@@ -7468,14 +7441,7 @@ function EarningsPanel({ history }) {
 
       {/* Headline */}
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 15, marginBottom: 10 }}>
-        <div style={{ fontFamily: F, fontSize: 9.5, fontWeight: 800, color: C.faint,
-          textTransform: "uppercase", letterSpacing: 0.6 }}>Earned · {rangeLabel}</div>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 5 }}>
-          <span style={{ fontFamily: F, fontSize: 34, fontWeight: 900, color: C.ink, letterSpacing: -1.4, lineHeight: 1 }}>
-            {inrShort(total)}
-          </span>
-          <span style={{ fontFamily: F, fontSize: 11.5, color: C.sub }}>on {units} deliveries</span>
-        </div>
+        <MetricBox testid="earned" label={`Earned · ${rangeLabel}`} value={inrShort(total)} sub={`on ${units} deliveries`} />
 
         {/* Where it came from — three lines, each traceable below. */}
         <div style={{ marginTop: 13, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
@@ -7722,12 +7688,12 @@ function SEDashboardScreen({ leads, user }) {
       {tab === "funnel" && (<>
 
       {/* ---- KPI strip: always this month vs last ---- */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+      <MetricGrid style={{ marginBottom: 12 }}>
         <KpiTile label="Contacted · this month" value={thisM.contacted} prev={lastM.contacted} />
         <KpiTile label="Test rides · this month" value={thisM.visit} prev={lastM.visit} accent={C.primary} />
         <KpiTile label="Bookings · this month" value={thisM.booking} prev={lastM.booking} accent={C.warm} />
         <KpiTile label="Retailed · this month" value={thisM.retailed} prev={lastM.retailed} accent={C.darkGreen} />
-      </div>
+      </MetricGrid>
 
       {/* ---- Period ---- */}
       <div style={{ display: "flex", gap: 5, marginBottom: 8 }}>
@@ -8506,28 +8472,13 @@ function LeaderboardScreen({ currentId }) {
   return (
     <div style={{ padding: "12px 12px 90px", position: "relative" }}>
       {/* North star */}
-      <div style={{ background: `linear-gradient(135deg, ${C.primary} 0%, ${C.primaryDark} 100%)`,
-        borderRadius: 16, padding: 17, marginBottom: 12, color: "#fff" }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-          <div>
-            <div style={{ fontFamily: F, fontSize: 11, fontWeight: 700, opacity: 0.9,
-              textTransform: "uppercase", letterSpacing: 0.7 }}>Retails · this month</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginTop: 6 }}>
-              <span style={{ fontFamily: F, fontSize: 40, fontWeight: 900, letterSpacing: -1.8, lineHeight: 1 }}>
-                {me.achieved}
-              </span>
-              <span style={{ fontFamily: F, fontSize: 17, fontWeight: 500, opacity: 0.75 }}>/{me.target}</span>
-            </div>
-            <div style={{ fontFamily: F, fontSize: 13, fontWeight: 700, marginTop: 8 }}>
-              #{myRank} of {ranked.length} on the floor
-            </div>
-            <div style={{ fontFamily: F, fontSize: 12, opacity: 0.92, marginTop: 3 }}>
-              {above ? `${gap} more ${gap === 1 ? "scooter" : "scooters"} to pass ${above.name.split(" ")[0]}.` : "Top of the floor."}
-            </div>
-          </div>
-          <Trophy size={30} color="#fff" style={{ opacity: 0.9, flexShrink: 0 }} />
-        </div>
-      </div>
+      <MetricGrid testid="lb-headline" style={{ marginBottom: 12 }}>
+        <MetricBox span value={me.achieved} after={`/${me.target}`}
+          label={<span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Trophy size={12} />Retails · this month</span>}
+          sub={`#${myRank} of ${ranked.length} on the floor`}
+          sub2={above ? `${gap} more ${gap === 1 ? "scooter" : "scooters"} to pass ${above.name.split(" ")[0]}.` : "Top of the floor."}
+          bar={{ value: me.target ? me.achieved / me.target : 0 }} />
+      </MetricGrid>
 
       {/* The table */}
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14,

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { unitsOf, PUNE_STORES, VARIANTS as INV_VARIANTS, COLOURS as INV_COLOURS } from "../data/epicRiverInventory.js";
+import { MetricBox, MetricGrid } from "../ui/MetricGlass.jsx";
 import {
   AlertTriangle, ArrowRight, BarChart3, Bell, Bike as Car, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, Clock, FileText, GraduationCap, Headphones, History, IndianRupee, Lock, Mail, MapPin, Menu, MessageSquare, Pause, Pencil, Phone, PlayCircle, Plus, Search, Send, Settings, ShieldAlert, ShieldCheck, Sparkles, Target, Trash2, Upload, User, UserPlus, Users, X,
 } from "lucide-react";
@@ -711,6 +712,12 @@ function ModelDashboard() {
       <div style={{ fontFamily: F, fontSize: 11.5, color: C.sub, marginTop: 1, marginBottom: 13 }}>
         Tap a charger variant to see its River Care split.
       </div>
+      <MetricGrid testid="model-metrics" style={{ marginBottom: 12 }}>
+        <MetricBox span label="Retail" value={tot.retailed} after={`/ ${tot.target}`}
+          sub={`${pct(tot.retailed, tot.target)}% achieved`} bar={{ value: tot.target ? tot.retailed / tot.target : 0 }} />
+        <MetricBox label="Bookings" value={tot.booking} />
+        <MetricBox label="Sales value" value={inr(tot.value)} />
+      </MetricGrid>
       <div style={{ background: C.card, borderRadius: 16, padding: "14px 10px", boxShadow: shadow }}>
         <ModelHead />
         {MODEL_PERF.map(m => {
@@ -4060,6 +4067,11 @@ function BoardScreen({ actions, onResolve, onPick, org, onDrill, onOpenLead, han
 
   return (
     <div style={{ padding: "14px 14px 90px" }}>
+      <MetricGrid testid="board-metrics" style={{ marginBottom: 12 }}>
+        <MetricBox label="Retail" value={r.retailed} after={`/ ${r.target}`}
+          sub={`${pct(r.retailed, r.target)}% achieved`} bar={{ value: r.target ? r.retailed / r.target : 0 }} />
+        <MetricBox label="Bookings" value={r.booking} />
+      </MetricGrid>
       <div style={{ background: C.card, borderRadius: 16, padding: "14px 10px", marginBottom: 10, boxShadow: shadow }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3, paddingLeft: 4 }}>
           <Target size={14} color={C.primary} />
@@ -5467,16 +5479,11 @@ function AdminAgentsScreen({ showToast }) {
           background: C.primary, color: "#fff", fontFamily: F, fontWeight: 800, fontSize: 12, cursor: "pointer",
           whiteSpace: "nowrap" }}>+ Add</button>} />
 
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 12 }}>
-        <div style={{ display: "flex", gap: 10 }}>
-          {[["Running", `${running}/${agents.length}`], ["Cost this month", inr(totalCost)], ["Value captured", inr(totalValue)]].map(([l, v]) => (
-            <span key={l} style={{ flex: 1 }}>
-              <span style={{ display: "block", fontFamily: F, fontSize: 10.5, fontWeight: 800, color: C.faint, textTransform: "uppercase" }}>{l}</span>
-              <span style={{ display: "block", fontFamily: F, fontSize: 15.5, fontWeight: 900, color: C.ink, marginTop: 2 }}>{v}</span>
-            </span>
-          ))}
-        </div>
-      </div>
+      <MetricGrid testid="agents-metrics" style={{ marginBottom: 12 }}>
+        <MetricBox label="Running" value={`${running}/${agents.length}`} />
+        <MetricBox label="Cost this month" value={inr(totalCost)} />
+        <MetricBox span label="Value captured" value={inr(totalValue)} />
+      </MetricGrid>
 
       {agents.length === 0 && (
         <div style={{ padding: 24, textAlign: "center", fontFamily: F, fontSize: 12.5, color: C.faint,
@@ -5522,20 +5529,17 @@ function AdminWalletScreen({ showToast }) {
     <div style={{ padding: "14px 14px 90px" }}>
       <AdminScreenHeader title="Wallet" blurb="Prepaid balance for SMS and WhatsApp sends." />
 
+      <MetricGrid testid="wallet-metrics" style={{ marginBottom: 10 }}>
+        <MetricBox span label="Wallet balance" value={`₹${balance.toLocaleString("en-IN")}`} />
+      </MetricGrid>
       <div style={{ background: C.ink, borderRadius: 16, padding: 16, marginBottom: 12 }}>
-        <div style={{ fontFamily: F, fontSize: 11, color: "rgba(255,255,255,0.6)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>
-          Wallet balance
-        </div>
-        <div style={{ fontFamily: F, fontSize: 30.5, fontWeight: 900, color: "#fff", marginTop: 4 }}>
-          ₹{balance.toLocaleString("en-IN")}
-        </div>
         {low && (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
             <AlertTriangle size={12} color={C.warm} />
             <span style={{ fontFamily: F, fontSize: 11, color: C.warm }}>Below your ₹{alertThreshold.toLocaleString("en-IN")} alert threshold</span>
           </div>
         )}
-        <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
+        <div style={{ display: "flex", gap: 6 }}>
           <span style={{ fontFamily: F, fontSize: 12.5, color: "#fff", alignSelf: "center" }}>₹</span>
           <input inputMode="numeric" value={rechargeAmt} onChange={e => setRechargeAmt(num(e.target.value))} style={{
             flex: 1, boxSizing: "border-box", border: "none", borderRadius: 9, padding: "9px 11px",
