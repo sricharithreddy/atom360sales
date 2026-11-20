@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { GROUP, ZONES, LOCATIONS, monthsOpen } from "../data/epicRiverLocations.js";
 import { stockFor, VARIANTS, COLOURS } from "../data/epicRiverInventory.js";
+import { C, TINTS, FONT, FONT_DISPLAY, rgba, deepen, RiverGlassStyles, GlassCard, Metric, MetricGrid, Seg, RiverChip } from "../theme/riverGlass.jsx";
 
 /* ==================================================================================
    AUTOPRISM — CEO (Epic River, Raam Group)
@@ -18,92 +19,12 @@ import { stockFor, VARIANTS, COLOURS } from "../data/epicRiverInventory.js";
    numerators and denominators, never an average of averages.
    ================================================================================== */
 
-/* Round 5 look: iOS 18-style glass over a soft, fixed mesh backdrop. Colours are tuned so body
-   text keeps ≥ 4.5:1 on the glass over the darkest part of the backdrop. */
-const C = {
-  bg: "#F6F7FB", card: "rgba(255,255,255,0.72)", border: "rgba(15,23,42,0.06)", borderStrong: "rgba(15,23,42,0.12)",
-  ink: "#0B1946", sub: "#4A5578", faint: "#5D6577", ghost: "#AEB4CB",
-  primary: "#3B4BE8", primarySoft: "rgba(59,75,232,0.10)",
-  hot: "#C62828", hotSoft: "rgba(198,40,40,0.08)",
-  warm: "#B45309", warmSoft: "rgba(245,158,11,0.10)",
-  green: "#2A7330", greenSoft: "rgba(46,125,50,0.09)",
-  purple: "#6D28D9", teal: "#00695C",
-};
-const F = "-apple-system, 'SF Pro Text', 'SF Pro Display', Inter, system-ui, sans-serif";
-const FD = "-apple-system, 'SF Pro Display', 'SF Pro Text', Inter, system-ui, sans-serif";   // big numbers
-const tint = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
-const deepen = (hex) => { const n = parseInt(hex.slice(1), 16), k = 0.3, ink = [11, 25, 70];   // 70% tone + 30% ink, for small text on a tint
-  return `rgb(${[n >> 16, (n >> 8) & 255, n & 255].map((v, i) => Math.round(v * (1 - k) + ink[i] * k)).join(",")})`; };
-/* Round 6: River's palette (sampled from River's price sheet + the Indie's colour names). The key
-   metric boxes are tinted glass; the tint says what kind of number it is, the same on every screen.
-   `label` is a darkened shade of the tint for the small label; numbers use River Ink. */
-const RIVER = { yellow: "#F7EC2B", ink: "#373409" };
-const BOX_SUB = "#474C57";   // neutral dark grey for the sub-lines on every tint
-const TINTS = {
-  yellow: { c: "#F7EC2B", a: [0.44, 0.18], label: "#5A5100" },   // River Yellow — units, achievement
-  blue:   { c: "#3D6FB6", a: [0.30, 0.12], label: "#244A80" },   // Monsoon Blue — ₹ value, insurance
-  grey:   { c: "#5F6B7A", a: [0.22, 0.08], label: "#39424F" },   // Storm Grey — bookings / pipeline
-  mint:   { c: "#3BB08F", a: [0.26, 0.10], label: "#1A644F" },   // mint — finance, income
-  coral:  { c: "#E0533D", a: [0.24, 0.09], label: "#963020", deep: "#761A10" },   // Summer Red — add-ons, aged stock (deep = alarm number, ≥ 7:1)
-};
-const BOX_TINT = {
-  Retail: "yellow", "Sales value": "blue", Bookings: "grey",
-  "In-house insurance": "blue", "Avg premium": "blue", "In-house finance": "mint", "Avg loan": "mint",
-  "Add-ons / scooter": "coral", "Add-ons ₹/scooter": "coral", "Accessory attach": "coral", "River Care attach": "coral",
-  "F&I and add-on income": "mint", "Income per scooter": "mint",
-  Units: "yellow", Value: "blue", "90+ days": "coral",
-};
-const rgbOf = (hex) => { const n = parseInt(hex.slice(1), 16); return `${n >> 16},${(n >> 8) & 255},${n & 255}`; };
-const pale = (hex, k) => { const n = parseInt(hex.slice(1), 16);   // solid tint for browsers without backdrop-filter
-  return `rgb(${[n >> 16, (n >> 8) & 255, n & 255].map(v => Math.round(v * k + 255 * (1 - k))).join(",")})`; };
+/* The look (tokens, glass CSS, tinted metric boxes, segmented control) is the shared River Glass
+   theme in src/theme/riverGlass.jsx — every login uses the same module. */
+const F = FONT, FD = FONT_DISPLAY;
+const tint = rgba;
 const HEADER_H = 58;   // the glass header floats over the scrolling content
 const ROW_TINT = "rgba(99,102,241,0.06)";
-
-const BLUR = "-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);";
-const GLASS_CSS = `
-.ceo-root{-webkit-font-smoothing:antialiased;}
-.ceo-mesh{background:
-  radial-gradient(70% 32% at 12% 0%, #FBF6CF 0%, rgba(251,246,207,0) 100%),
-  radial-gradient(60% 42% at 100% 18%, #E0E9F7 0%, rgba(226,234,246,0) 100%),
-  radial-gradient(70% 40% at 0% 78%, #FBE6E1 0%, rgba(251,230,225,0) 100%),
-  radial-gradient(65% 40% at 100% 100%, #DFF3EB 0%, rgba(223,243,235,0) 100%),
-  #F8F8F5;}
-.g-glass{${BLUR}background:rgba(255,255,255,0.62);border:1px solid rgba(15,23,42,0.06);border-radius:24px;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,0.7),0 8px 32px rgba(31,38,135,0.08);}
-.g-box{${BLUR}background:rgba(255,255,255,0.66);border:1px solid rgba(15,23,42,0.06);border-radius:18px;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,0.7),0 8px 28px rgba(31,38,135,0.07);transition:transform .18s ease;}
-.g-box.in{background:rgba(255,255,255,0.58);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.75),0 2px 10px rgba(31,38,135,0.05);}
-.g-box:active{transform:scale(.98);}
-.g-box.tg{border:1px solid rgba(255,255,255,0.55);border-radius:20px;
-  background:radial-gradient(110% 80% at 0% 0%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 50%),
-    linear-gradient(135deg, rgba(var(--t),var(--a1)) 0%, rgba(var(--t),var(--a2)) 100%);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,0.6),0 10px 30px rgba(var(--t),0.18);}
-.g-box.tg.in{border-radius:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.6),0 4px 14px rgba(var(--t),0.12);}
-.g-bar{${BLUR}background:rgba(255,255,255,0.6);border-bottom:1px solid rgba(15,23,42,0.06);box-shadow:inset 0 -1px 0 rgba(255,255,255,0.7);}
-.g-pin{${BLUR}background:rgba(255,255,255,0.86);border-radius:14px;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.8),0 6px 18px rgba(31,38,135,0.07);}
-.g-drawer{-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);background:rgba(255,255,255,0.72);
-  border-right:1px solid rgba(255,255,255,0.7);box-shadow:inset -1px 0 0 rgba(15,23,42,0.06),0 8px 40px rgba(31,38,135,0.16);}
-.g-dim{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);background:rgba(15,23,42,0.22);}
-.g-btn{${BLUR}background:rgba(255,255,255,0.7);border:1px solid rgba(15,23,42,0.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.7),0 2px 8px rgba(31,38,135,0.06);}
-.g-seg{background:rgba(15,23,42,0.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.6);}
-.g-thumb{background:#FFFDEB;box-shadow:0 0 0 1px rgba(214,200,24,0.75),0 3px 8px rgba(15,23,42,0.12),0 1px 1px rgba(15,23,42,0.04);transition:transform .2s ease;}
-.g-toast{-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);background:rgba(11,25,70,0.86);
-  box-shadow:0 10px 30px rgba(11,25,70,0.25);}
-.g-press{transition:transform .18s ease;}
-.g-press:active{transform:scale(.98);}
-.g-chev{transition:transform .18s ease;}
-.g-field:focus{border-color:rgba(59,75,232,0.55)!important;box-shadow:0 0 0 3px rgba(59,75,232,0.12);}
-@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-  .g-glass,.g-box,.g-box.in,.g-bar,.g-pin,.g-drawer,.g-btn{background:rgba(255,255,255,0.92);}
-  .g-box.tg,.g-box.tg.in{background:var(--tp);}
-  .g-dim{background:rgba(15,23,42,0.4);}
-  .g-toast{background:rgba(11,25,70,0.96);}
-}
-@media (prefers-reduced-motion:reduce){
-  .ceo-root *{transition:none!important;}
-  .g-press:active,.g-box:active{transform:none;}
-}
-`;
 
 /* ---------------- Formatting (Indian units) ---------------- */
 const ok = (x) => x != null && Number.isFinite(x);
@@ -484,42 +405,7 @@ function labelOf(fk, key) {
 }
 
 /* ============================ SHARED UI ============================ */
-function Card({ children, style, className, ...rest }) {
-  return <div {...rest} className={`g-glass${className ? " " + className : ""}`} style={{ padding: 14, marginBottom: 12, ...style }}>{children}</div>;
-}
-/* A key number in a tinted glass box: small label (dark shade of the tint), big number in River
-   Ink, one neutral grey sub-line. `inner` = sits inside a card (lighter tint). `bar` = { v, mark }:
-   a slim progress bar (v = fill 0–1, mark = optional ghost tick, e.g. projection). */
-const BOX_TONE = { [C.ink]: RIVER.ink, [C.faint]: BOX_SUB };
-function Metric({ label, value, after, sub, sub2, tone, span, inner, testid, bar, ...rest }) {
-  const tk = TINTS[BOX_TINT[label]] || TINTS.grey;
-  const [a1, a2] = inner ? tk.a.map(x => +(x * 0.6).toFixed(3)) : tk.a;
-  const vars = { "--t": rgbOf(tk.c), "--a1": a1, "--a2": a2, "--tp": pale(tk.c, inner ? 0.12 : 0.2) };
-  const fill = BOX_TINT[label] === "yellow" ? RIVER.ink : tk.label;
-  return (
-    <div {...rest} data-testid={testid} data-tint={BOX_TINT[label] || "grey"} className={`g-box tg${inner ? " in" : ""}`}
-      style={{ ...vars, minWidth: 0, padding: inner ? "11px 12px 10px" : "12px 14px 11px", gridColumn: span ? "1 / -1" : undefined }}>
-      <div style={{ fontFamily: F, fontSize: 11, fontWeight: 600, color: tk.label, lineHeight: 1.25 }}>{label}</div>
-      <div style={{ fontFamily: FD, fontSize: inner ? 20 : 23, fontWeight: 650, letterSpacing: "-0.02em", color: BOX_TONE[tone] || tone || RIVER.ink, marginTop: 4, lineHeight: 1.1,
-        whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
-        {value}{after && <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: 0, color: BOX_SUB }}>{after}</span>}
-      </div>
-      {bar && ok(bar.v) && (
-        <div aria-hidden style={{ position: "relative", height: 4, borderRadius: 4, background: "rgba(55,52,9,0.10)", margin: "7px 0 1px",
-          boxShadow: "inset 0 0 0 0.5px rgba(55,52,9,0.06)" }}>
-          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${clamp(bar.v, 0, 1) * 100}%`, borderRadius: 4, background: fill, opacity: 0.85 }} />
-          {ok(bar.mark) && <div style={{ position: "absolute", top: -2, bottom: -2, width: 2, borderRadius: 1, left: `calc(${clamp(bar.mark, 0, 1) * 100}% - 1px)`,
-            background: fill, opacity: 0.35 }} />}
-        </div>
-      )}
-      {sub && <div style={{ fontFamily: F, fontSize: 11, color: BOX_SUB, marginTop: 4, lineHeight: 1.3 }}>{sub}</div>}
-      {sub2 && <div style={{ fontFamily: F, fontSize: 10.5, color: BOX_SUB, marginTop: 1, lineHeight: 1.3 }}>{sub2}</div>}
-    </div>
-  );
-}
-function MetricGrid({ children, testid, style }) {
-  return <div data-testid={testid} style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: 10, marginBottom: 12, ...style }}>{children}</div>;
-}
+const Card = GlassCard;
 function ScreenHead({ title, blurb, right }) {
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 10, margin: "2px 2px 14px" }}>
@@ -536,33 +422,8 @@ function PeriodLine({ text = PERIOD_LINE }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 10px 4px" }}>
       <span style={{ flex: 1, minWidth: 0, fontFamily: F, fontSize: 11.5, fontWeight: 500, color: C.faint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{text}</span>
-      <span data-testid="river-chip" style={{ display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0, padding: "3px 8px 3px 6px", borderRadius: 999,
-        background: "rgba(247,236,43,0.32)", boxShadow: "inset 0 0 0 1px rgba(55,52,9,0.10), inset 0 1px 0 rgba(255,255,255,0.6)",
-        fontFamily: F, fontSize: 10, fontWeight: 650, color: RIVER.ink, letterSpacing: 0.1 }}>
-        <span style={{ width: 7, height: 7, borderRadius: "50%", background: RIVER.yellow, boxShadow: "0 0 0 1px rgba(55,52,9,0.28)" }} />
-        Epic River
-      </span>
+      <RiverChip />
     </div>
-  );
-}
-/* iOS segmented control: a tinted track with a raised white thumb that slides to the chosen option. */
-function Seg({ value, onChange, opts, testid }) {
-  const i = Math.max(0, opts.findIndex(([v]) => v === value));
-  return (
-    <span data-testid={testid} className="g-seg" style={{ position: "relative", display: "inline-grid", gridTemplateColumns: `repeat(${opts.length}, 1fr)`,
-      flexShrink: 0, borderRadius: 10, padding: 2 }}>
-      <span aria-hidden className="g-thumb" style={{ position: "absolute", top: 2, bottom: 2, left: 2, borderRadius: 8,
-        width: `calc((100% - 4px) / ${opts.length})`, transform: `translateX(${i * 100}%)` }} />
-      {opts.map(([v, label]) => {
-        const on = value === v;
-        return (
-          <button key={v} type="button" aria-pressed={on} data-testid={`${testid}-${v}`} onClick={() => onChange(v)} style={{
-            position: "relative", padding: "5px 9px", borderRadius: 8, border: "none", cursor: "pointer", background: "none",
-            color: on ? C.primary : C.sub, fontFamily: F, fontWeight: on ? 600 : 500, fontSize: 11.5, transition: "color .2s ease",
-            WebkitTapHighlightColor: "transparent" }}><span>{label}</span></button>
-        );
-      })}
-    </span>
   );
 }
 function CardHead({ Icon, title, right, hint, testid }) {
@@ -582,7 +443,7 @@ function CardHead({ Icon, title, right, hint, testid }) {
 function BackBar({ title, sub, onBack }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-      <button type="button" aria-label="Back" data-testid="back" onClick={onBack} className="g-btn g-press" style={{ width: 34, height: 34, borderRadius: "50%",
+      <button type="button" aria-label="Back" data-testid="back" onClick={onBack} className="rg-btn rg-press" style={{ width: 34, height: 34, borderRadius: "50%",
         display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, padding: 0 }}>
         <ChevronLeft size={18} color={C.ink} />
       </button>
@@ -672,7 +533,7 @@ function TreeRow({ t, depth, expanded, onToggle, onOutlet, parent, cols, agg, cm
         style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 6, padding: "10px 4px 10px 6px",
           background: "none", border: "none", cursor: clickable ? "pointer" : "default", textAlign: "left", WebkitTapHighlightColor: "transparent" }}>
         {t.hasKids
-          ? <ChevronRight size={12} color={C.faint} className="g-chev" style={{ flexShrink: 0, transform: open ? "rotate(90deg)" : "none" }} />
+          ? <ChevronRight size={12} color={C.faint} className="rg-chev" style={{ flexShrink: 0, transform: open ? "rotate(90deg)" : "none" }} />
           : isOutlet ? <ChevronRight size={12} color={C.primary} style={{ flexShrink: 0 }} />
           : <span style={{ width: 12, flexShrink: 0 }} />}
         <Avatar t={t} size={depth === 0 ? 26 : 23} />
@@ -859,7 +720,7 @@ function TreeCard({ title, Icon, testid, hintPeople, hintLoc, cols, open, top, m
       {setMode && !fi && <Legend items={LEGEND[mode]} />}
       {fi ? (
         <>
-          <div data-testid="pinned" className="g-pin" style={{ position: "sticky", top: HEADER_H, zIndex: 3, overflow: "hidden" }}>
+          <div data-testid="pinned" className="rg-pin" style={{ position: "sticky", top: HEADER_H, zIndex: 3, overflow: "hidden" }}>
             <TreeHead cols={cols} sort={sort} onSort={onSort} />
             <TreeRow key={root.key} {...rp} part="line" />
           </div>
@@ -1079,7 +940,7 @@ function ReportsScreen({ showToast }) {
             <div style={{ fontFamily: F, fontSize: 13.5, fontWeight: 650, color: C.ink }}>{t}</div>
             <div style={{ fontFamily: F, fontSize: 11, color: C.faint, marginTop: 1 }}>{s}</div>
           </div>
-          <button type="button" className="g-btn g-press" onClick={() => showToast(`${t} — CSV sent to your email`)} style={{ borderRadius: 999, padding: "6px 12px", fontFamily: F, fontSize: 11.5, fontWeight: 600, color: C.primary, cursor: "pointer" }}>CSV</button>
+          <button type="button" className="rg-btn rg-press" onClick={() => showToast(`${t} — CSV sent to your email`)} style={{ borderRadius: 999, padding: "6px 12px", fontFamily: F, fontSize: 11.5, fontWeight: 600, color: C.primary, cursor: "pointer" }}>CSV</button>
         </Card>
       ))}
     </div>
@@ -1097,17 +958,17 @@ function Field({ label, children }) {
   );
 }
 function PrimaryBtn({ children, onClick, disabled, full }) {
-  return <button type="button" className="g-press" onClick={onClick} disabled={disabled} style={{ width: full ? "100%" : "auto", padding: "12px 18px", borderRadius: 14, border: "none",
+  return <button type="button" className="rg-press" onClick={onClick} disabled={disabled} style={{ width: full ? "100%" : "auto", padding: "12px 18px", borderRadius: 14, border: "none",
     background: disabled ? "rgba(15,23,42,0.10)" : C.primary, color: disabled ? C.faint : "#fff", fontFamily: F, fontWeight: 650, fontSize: 13.5,
     boxShadow: disabled ? "none" : "0 6px 18px rgba(59,75,232,0.28)", cursor: disabled ? "default" : "pointer" }}>{children}</button>;
 }
 function GhostBtn({ children, onClick, tone }) {
-  return <button type="button" className="g-btn g-press" onClick={onClick} style={{ padding: "10px 14px", borderRadius: 14, cursor: "pointer",
+  return <button type="button" className="rg-btn rg-press" onClick={onClick} style={{ padding: "10px 14px", borderRadius: 14, cursor: "pointer",
     color: tone || C.sub, fontFamily: F, fontWeight: 600, fontSize: 12.5 }}>{children}</button>;
 }
 function ChipBtn({ on, label, onClick }) {
   return (
-    <button type="button" className="g-press" onClick={onClick} style={{ padding: "7px 13px", borderRadius: 999, cursor: "pointer",
+    <button type="button" className="rg-press" onClick={onClick} style={{ padding: "7px 13px", borderRadius: 999, cursor: "pointer",
       border: `1px solid ${on ? "rgba(59,75,232,0.35)" : C.borderStrong}`, background: on ? C.primarySoft : "rgba(255,255,255,0.7)", color: on ? C.primary : C.sub,
       fontFamily: F, fontWeight: 600, fontSize: 11.5 }}>{label}</button>
   );
@@ -1123,8 +984,8 @@ function MyAccountScreen({ showToast }) {
           <span style={{ width: 46, height: 46, borderRadius: "50%", background: C.primarySoft, color: C.primary, boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.8)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: F, fontWeight: 700, fontSize: 15 }}>AK</span>
           <span style={{ fontFamily: F, fontSize: 12, color: C.sub }}>Group CEO · {GROUP.name} ({GROUP.parent})</span>
         </div>
-        <Field label="Profile name"><input className="g-field" style={inputStyle} value={name} onChange={e => setName(e.target.value)} /></Field>
-        <Field label="Email ID"><input className="g-field" style={inputStyle} value={email} onChange={e => setEmail(e.target.value)} /></Field>
+        <Field label="Profile name"><input className="rg-field" style={inputStyle} value={name} onChange={e => setName(e.target.value)} /></Field>
+        <Field label="Email ID"><input className="rg-field" style={inputStyle} value={email} onChange={e => setEmail(e.target.value)} /></Field>
         <Field label="Scope"><div style={{ fontFamily: F, fontSize: 12.5, color: C.ink }}>{LOCS.length} outlets · {PEOPLE_COUNT} people · {ZONES.length} zones</div></Field>
         <PrimaryBtn full onClick={() => showToast("Profile updated")}>Save changes</PrimaryBtn>
       </Card>
@@ -1166,14 +1027,14 @@ function AdminFieldsScreen({ cfs, setCfs, showToast }) {
   return (
     <div style={{ padding: "14px 14px 90px" }}>
       <ScreenHead title="Fields" blurb="Fields on locations and people. Values left blank show as Unassigned."
-        right={!creating && <button type="button" className="g-press" onClick={() => setCreating(true)} style={{ display: "inline-flex", alignItems: "center", gap: 4, border: "none", borderRadius: 999, background: C.primary, color: "#fff", fontFamily: F, fontWeight: 650, fontSize: 12, padding: "8px 13px", cursor: "pointer", boxShadow: "0 6px 16px rgba(59,75,232,0.25)" }}><Plus size={13} />Field</button>} />
+        right={!creating && <button type="button" className="rg-press" onClick={() => setCreating(true)} style={{ display: "inline-flex", alignItems: "center", gap: 4, border: "none", borderRadius: 999, background: C.primary, color: "#fff", fontFamily: F, fontWeight: 650, fontSize: 12, padding: "8px 13px", cursor: "pointer", boxShadow: "0 6px 16px rgba(59,75,232,0.25)" }}><Plus size={13} />Field</button>} />
       {creating && (
         <Card>
-          <Field label="Field name"><input className="g-field" style={inputStyle} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Mall outlet" /></Field>
+          <Field label="Field name"><input className="rg-field" style={inputStyle} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Mall outlet" /></Field>
           <Field label="Applies to">
             <div style={{ display: "flex", gap: 6 }}>{["Locations", "People"].map(a => <ChipBtn key={a} on={applies === a} label={a} onClick={() => setApplies(a)} />)}</div>
           </Field>
-          <Field label="Values (comma separated)"><input className="g-field" style={inputStyle} value={vals} onChange={e => setVals(e.target.value)} placeholder="e.g. Yes, No" /></Field>
+          <Field label="Values (comma separated)"><input className="rg-field" style={inputStyle} value={vals} onChange={e => setVals(e.target.value)} placeholder="e.g. Yes, No" /></Field>
           <div style={{ display: "flex", gap: 8 }}>
             <PrimaryBtn disabled={!name.trim()} onClick={() => {
               const key = "cf_" + name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_") + "_" + (cfs.length + 1);
@@ -1195,7 +1056,7 @@ function AdminFieldsScreen({ cfs, setCfs, showToast }) {
                 <span style={{ display: "block", fontFamily: F, fontSize: 13.5, fontWeight: 650, color: C.ink }}>{f.label}</span>
                 <span style={{ display: "block", fontFamily: F, fontSize: 10.5, color: C.faint }}>{f.kind} · {f.applies}{f.rule ? ` · ${f.rule}` : cf ? ` · ${cf.source}` : ""}</span>
               </span>
-              <ChevronDown size={14} color={C.faint} className="g-chev" style={{ transform: isOpen ? "rotate(180deg)" : "none" }} />
+              <ChevronDown size={14} color={C.faint} className="rg-chev" style={{ transform: isOpen ? "rotate(180deg)" : "none" }} />
             </button>
             {isOpen && (
               <div style={{ marginTop: 10 }}>
@@ -1212,7 +1073,7 @@ function AdminFieldsScreen({ cfs, setCfs, showToast }) {
                     {cf.applies === "Locations" && (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
                         <GhostBtn onClick={() => applyRule(cf)}>Rule: opened in last</GhostBtn>
-                        <input className="g-field" aria-label="Months" type="number" min={1} max={36} value={ruleMonths} onChange={e => setRuleMonths(Number(e.target.value) || 12)} style={{ ...inputStyle, width: 54, padding: "8px 6px" }} />
+                        <input className="rg-field" aria-label="Months" type="number" min={1} max={36} value={ruleMonths} onChange={e => setRuleMonths(Number(e.target.value) || 12)} style={{ ...inputStyle, width: 54, padding: "8px 6px" }} />
                         <span style={{ fontFamily: F, fontSize: 11.5, color: C.sub }}>months</span>
                       </span>
                     )}
@@ -1239,7 +1100,7 @@ function AdminRatesScreen({ rates, setRates, showToast }) {
   const gi = withIncome(G, valid ? parsed : rates);
   const unit = (t) => <span style={{ fontFamily: F, fontSize: 12, color: C.sub, whiteSpace: "nowrap" }}>{t}</span>;
   const box = (k, w = 76) => (
-    <input className="g-field" data-testid={`rate-${k}`} inputMode="decimal" value={d[k]} onChange={e => setD(x => ({ ...x, [k]: e.target.value.replace(/[^0-9.]/g, "") }))}
+    <input className="rg-field" data-testid={`rate-${k}`} inputMode="decimal" value={d[k]} onChange={e => setD(x => ({ ...x, [k]: e.target.value.replace(/[^0-9.]/g, "") }))}
       style={{ ...inputStyle, width: w, textAlign: "right", borderColor: Number.isFinite(parsed[k]) ? C.borderStrong : C.hot }} />
   );
   const row = (...xs) => <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>{xs.map((x, i) => <React.Fragment key={i}>{x}</React.Fragment>)}</div>;
@@ -1253,7 +1114,7 @@ function AdminRatesScreen({ rates, setRates, showToast }) {
           box("file"), unit("per file"))}</Field>
         <Field label="Accessory margin">{row(box("acc"), unit("% of accessory sales"))}</Field>
         <Field label="River Care margin">{row(box("rc"), unit("% of plan sales"))}</Field>
-        <div data-testid="rates-preview" data-value={gi.totPV} className="g-box in" style={{ padding: "12px 14px", margin: "4px 0 14px" }}>
+        <div data-testid="rates-preview" data-value={gi.totPV} className="rg-box rg-inner" style={{ padding: "12px 14px", margin: "4px 0 14px" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
             <span style={{ flex: 1, fontFamily: F, fontSize: 12, fontWeight: 500, color: C.faint }}>Group income per scooter</span>
             <span style={{ fontFamily: FD, fontSize: 20, fontWeight: 600, letterSpacing: "-0.02em", color: valid ? C.ink : C.faint }}>{rs(gi.totPV)}</span>
@@ -1329,14 +1190,14 @@ export default function CEOApp() {
   const top = stack[stack.length - 1];
 
   return (
-    <div className="ceo-root ceo-mesh" style={{ width: "100%", maxWidth: 420, margin: "0 auto", height: "100vh", maxHeight: 900,
+    <div className="rg-root rg-mesh" style={{ width: "100%", maxWidth: 420, margin: "0 auto", height: "100vh", maxHeight: 900,
       display: "flex", flexDirection: "column", position: "relative",
       borderRadius: 22, overflow: "hidden", boxShadow: "0 10px 40px rgba(0,0,0,.12)" }}>
-      <style>{GLASS_CSS}</style>
+      <RiverGlassStyles />
 
-      <div className="g-bar" style={{ position: "absolute", top: 0, left: 0, right: 0, height: HEADER_H, boxSizing: "border-box", zIndex: 20,
+      <div className="rg-bar" style={{ position: "absolute", top: 0, left: 0, right: 0, height: HEADER_H, boxSizing: "border-box", zIndex: 20,
         display: "flex", alignItems: "center", gap: 10, padding: "0 14px" }}>
-        <button aria-label="Menu" data-testid="menu-btn" onClick={() => setMenuOpen(true)} className="g-press"
+        <button aria-label="Menu" data-testid="menu-btn" onClick={() => setMenuOpen(true)} className="rg-press"
           style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
           <Menu size={20} color={C.ink} />
         </button>
@@ -1344,7 +1205,7 @@ export default function CEOApp() {
           AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: C.primary, marginLeft: 1, marginBottom: 8 }} />
         </span>
         <span style={{ flex: 1 }} />
-        <span className="g-btn" style={{ width: 32, height: 32, boxSizing: "border-box", borderRadius: "50%", color: C.ink, display: "flex", alignItems: "center", justifyContent: "center",
+        <span className="rg-btn" style={{ width: 32, height: 32, boxSizing: "border-box", borderRadius: "50%", color: C.ink, display: "flex", alignItems: "center", justifyContent: "center",
           fontFamily: F, fontWeight: 700, fontSize: 11.5 }}>AK</span>
       </div>
 
@@ -1363,7 +1224,7 @@ export default function CEOApp() {
           </div>
         </div>
         {top && (
-          <div key={stack.length} className="ceo-mesh" style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden", zIndex: 10 }}>
+          <div key={stack.length} className="rg-mesh" style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden", zIndex: 10 }}>
             <div style={{ paddingTop: HEADER_H }}>
               <OutletScreen id={top} onBack={back} rates={rates} />
             </div>
@@ -1373,8 +1234,8 @@ export default function CEOApp() {
 
       {menuOpen && (
         <div style={{ position: "absolute", inset: 0, zIndex: 150, display: "flex" }}>
-          <div onClick={() => setMenuOpen(false)} className="g-dim" style={{ position: "absolute", inset: 0 }} />
-          <div className="g-drawer" style={{ position: "relative", width: "78%", maxWidth: 280, height: "100%",
+          <div onClick={() => setMenuOpen(false)} className="rg-dim" style={{ position: "absolute", inset: 0 }} />
+          <div className="rg-drawer" style={{ position: "relative", width: "78%", maxWidth: 280, height: "100%",
             borderRadius: "0 24px 24px 0", display: "flex", flexDirection: "column" }}>
             <div style={{ padding: "20px 18px 14px" }}>
               <div style={{ fontFamily: F, fontWeight: 900, fontSize: 15.5, color: C.ink, letterSpacing: -0.5 }}>
@@ -1393,7 +1254,7 @@ export default function CEOApp() {
                       background: groupActive ? C.primarySoft : "none", cursor: "pointer", textAlign: "left" }}>
                       <t.Icon size={17} color={groupActive ? C.primary : C.faint} />
                       <span style={{ flex: 1, fontFamily: F, fontWeight: groupActive ? 650 : 500, fontSize: 14, color: groupActive ? C.primary : C.ink }}>{t.label}</span>
-                      {t.subs.length > 0 && <ChevronDown size={14} color={C.faint} className="g-chev" style={{ transform: expanded ? "rotate(180deg)" : "none" }} />}
+                      {t.subs.length > 0 && <ChevronDown size={14} color={C.faint} className="rg-chev" style={{ transform: expanded ? "rotate(180deg)" : "none" }} />}
                     </button>
                     {expanded && t.subs.map(s => (
                       <button key={s.key} data-testid={`nav-${s.key}`} onClick={() => go(s.key)} style={{
@@ -1414,7 +1275,7 @@ export default function CEOApp() {
       )}
 
       {toast && (
-        <div className="g-toast" style={{ position: "absolute", bottom: "calc(22px + env(safe-area-inset-bottom, 0px))", left: 14, right: 14, color: "#fff", borderRadius: 16, padding: "12px 14px",
+        <div className="rg-toast" style={{ position: "absolute", bottom: "calc(22px + env(safe-area-inset-bottom, 0px))", left: 14, right: 14, color: "#fff", borderRadius: 16, padding: "12px 14px",
           fontFamily: F, fontSize: 13, fontWeight: 500, textAlign: "center", zIndex: 300 }}>{toast}</div>
       )}
     </div>
