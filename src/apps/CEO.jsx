@@ -34,6 +34,28 @@ const FD = "-apple-system, 'SF Pro Display', 'SF Pro Text', Inter, system-ui, sa
 const tint = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
 const deepen = (hex) => { const n = parseInt(hex.slice(1), 16), k = 0.3, ink = [11, 25, 70];   // 70% tone + 30% ink, for small text on a tint
   return `rgb(${[n >> 16, (n >> 8) & 255, n & 255].map((v, i) => Math.round(v * (1 - k) + ink[i] * k)).join(",")})`; };
+/* Round 6: River's palette (sampled from River's price sheet + the Indie's colour names). The key
+   metric boxes are tinted glass; the tint says what kind of number it is, the same on every screen.
+   `label` is a darkened shade of the tint for the small label; numbers use River Ink. */
+const RIVER = { yellow: "#F7EC2B", ink: "#373409" };
+const BOX_SUB = "#474C57";   // neutral dark grey for the sub-lines on every tint
+const TINTS = {
+  yellow: { c: "#F7EC2B", a: [0.44, 0.18], label: "#5A5100" },   // River Yellow — units, achievement
+  blue:   { c: "#3D6FB6", a: [0.30, 0.12], label: "#244A80" },   // Monsoon Blue — ₹ value, insurance
+  grey:   { c: "#5F6B7A", a: [0.22, 0.08], label: "#39424F" },   // Storm Grey — bookings / pipeline
+  mint:   { c: "#3BB08F", a: [0.26, 0.10], label: "#1A644F" },   // mint — finance, income
+  coral:  { c: "#E0533D", a: [0.24, 0.09], label: "#963020", deep: "#761A10" },   // Summer Red — add-ons, aged stock (deep = alarm number, ≥ 7:1)
+};
+const BOX_TINT = {
+  Retail: "yellow", "Sales value": "blue", Bookings: "grey",
+  "In-house insurance": "blue", "Avg premium": "blue", "In-house finance": "mint", "Avg loan": "mint",
+  "Add-ons / scooter": "coral", "Add-ons ₹/scooter": "coral", "Accessory attach": "coral", "River Care attach": "coral",
+  "F&I and add-on income": "mint", "Income per scooter": "mint",
+  Units: "yellow", Value: "blue", "90+ days": "coral",
+};
+const rgbOf = (hex) => { const n = parseInt(hex.slice(1), 16); return `${n >> 16},${(n >> 8) & 255},${n & 255}`; };
+const pale = (hex, k) => { const n = parseInt(hex.slice(1), 16);   // solid tint for browsers without backdrop-filter
+  return `rgb(${[n >> 16, (n >> 8) & 255, n & 255].map(v => Math.round(v * k + 255 * (1 - k))).join(",")})`; };
 const HEADER_H = 58;   // the glass header floats over the scrolling content
 const ROW_TINT = "rgba(99,102,241,0.06)";
 
@@ -41,17 +63,22 @@ const BLUR = "-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:
 const GLASS_CSS = `
 .ceo-root{-webkit-font-smoothing:antialiased;}
 .ceo-mesh{background:
-  radial-gradient(70% 42% at 0% 0%, #E8EBFF 0%, rgba(232,235,255,0) 100%),
-  radial-gradient(60% 40% at 100% 28%, #F1E8FF 0%, rgba(241,232,255,0) 100%),
-  radial-gradient(70% 42% at 0% 72%, #E3F6F1 0%, rgba(227,246,241,0) 100%),
-  radial-gradient(65% 42% at 100% 100%, #FFF0E6 0%, rgba(255,240,230,0) 100%),
-  #F7F8FC;}
+  radial-gradient(70% 32% at 12% 0%, #FBF6CF 0%, rgba(251,246,207,0) 100%),
+  radial-gradient(60% 42% at 100% 18%, #E0E9F7 0%, rgba(226,234,246,0) 100%),
+  radial-gradient(70% 40% at 0% 78%, #FBE6E1 0%, rgba(251,230,225,0) 100%),
+  radial-gradient(65% 40% at 100% 100%, #DFF3EB 0%, rgba(223,243,235,0) 100%),
+  #F8F8F5;}
 .g-glass{${BLUR}background:rgba(255,255,255,0.62);border:1px solid rgba(15,23,42,0.06);border-radius:24px;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,0.7),0 8px 32px rgba(31,38,135,0.08);}
 .g-box{${BLUR}background:rgba(255,255,255,0.66);border:1px solid rgba(15,23,42,0.06);border-radius:18px;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,0.7),0 8px 28px rgba(31,38,135,0.07);transition:transform .18s ease;}
 .g-box.in{background:rgba(255,255,255,0.58);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.75),0 2px 10px rgba(31,38,135,0.05);}
 .g-box:active{transform:scale(.98);}
+.g-box.tg{border:1px solid rgba(255,255,255,0.55);border-radius:20px;
+  background:radial-gradient(110% 80% at 0% 0%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 50%),
+    linear-gradient(135deg, rgba(var(--t),var(--a1)) 0%, rgba(var(--t),var(--a2)) 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.6),0 10px 30px rgba(var(--t),0.18);}
+.g-box.tg.in{border-radius:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.6),0 4px 14px rgba(var(--t),0.12);}
 .g-bar{${BLUR}background:rgba(255,255,255,0.6);border-bottom:1px solid rgba(15,23,42,0.06);box-shadow:inset 0 -1px 0 rgba(255,255,255,0.7);}
 .g-pin{${BLUR}background:rgba(255,255,255,0.86);border-radius:14px;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.8),0 6px 18px rgba(31,38,135,0.07);}
 .g-drawer{-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);background:rgba(255,255,255,0.72);
@@ -59,7 +86,7 @@ const GLASS_CSS = `
 .g-dim{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);background:rgba(15,23,42,0.22);}
 .g-btn{${BLUR}background:rgba(255,255,255,0.7);border:1px solid rgba(15,23,42,0.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.7),0 2px 8px rgba(31,38,135,0.06);}
 .g-seg{background:rgba(15,23,42,0.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.6);}
-.g-thumb{background:#fff;box-shadow:0 3px 8px rgba(15,23,42,0.12),0 1px 1px rgba(15,23,42,0.04);transition:transform .2s ease;}
+.g-thumb{background:#FFFDEB;box-shadow:0 0 0 1px rgba(214,200,24,0.75),0 3px 8px rgba(15,23,42,0.12),0 1px 1px rgba(15,23,42,0.04);transition:transform .2s ease;}
 .g-toast{-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);background:rgba(11,25,70,0.86);
   box-shadow:0 10px 30px rgba(11,25,70,0.25);}
 .g-press{transition:transform .18s ease;}
@@ -68,6 +95,7 @@ const GLASS_CSS = `
 .g-field:focus{border-color:rgba(59,75,232,0.55)!important;box-shadow:0 0 0 3px rgba(59,75,232,0.12);}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
   .g-glass,.g-box,.g-box.in,.g-bar,.g-pin,.g-drawer,.g-btn{background:rgba(255,255,255,0.92);}
+  .g-box.tg,.g-box.tg.in{background:var(--tp);}
   .g-dim{background:rgba(15,23,42,0.4);}
   .g-toast{background:rgba(11,25,70,0.96);}
 }
@@ -459,18 +487,33 @@ function labelOf(fk, key) {
 function Card({ children, style, className, ...rest }) {
   return <div {...rest} className={`g-glass${className ? " " + className : ""}`} style={{ padding: 14, marginBottom: 12, ...style }}>{children}</div>;
 }
-/* A key number in a glass box: small label, big number, one grey sub-line. `inner` = sits inside a card. */
-function Metric({ label, value, after, sub, sub2, tone = C.ink, span, inner, testid, ...rest }) {
+/* A key number in a tinted glass box: small label (dark shade of the tint), big number in River
+   Ink, one neutral grey sub-line. `inner` = sits inside a card (lighter tint). `bar` = { v, mark }:
+   a slim progress bar (v = fill 0–1, mark = optional ghost tick, e.g. projection). */
+const BOX_TONE = { [C.ink]: RIVER.ink, [C.faint]: BOX_SUB };
+function Metric({ label, value, after, sub, sub2, tone, span, inner, testid, bar, ...rest }) {
+  const tk = TINTS[BOX_TINT[label]] || TINTS.grey;
+  const [a1, a2] = inner ? tk.a.map(x => +(x * 0.6).toFixed(3)) : tk.a;
+  const vars = { "--t": rgbOf(tk.c), "--a1": a1, "--a2": a2, "--tp": pale(tk.c, inner ? 0.12 : 0.2) };
+  const fill = BOX_TINT[label] === "yellow" ? RIVER.ink : tk.label;
   return (
-    <div {...rest} data-testid={testid} className={`g-box${inner ? " in" : ""}`}
-      style={{ minWidth: 0, padding: inner ? "11px 12px 10px" : "12px 14px 11px", gridColumn: span ? "1 / -1" : undefined }}>
-      <div style={{ fontFamily: F, fontSize: 11, fontWeight: 500, color: C.faint, lineHeight: 1.25 }}>{label}</div>
-      <div style={{ fontFamily: FD, fontSize: inner ? 20 : 23, fontWeight: 600, letterSpacing: "-0.02em", color: tone, marginTop: 4, lineHeight: 1.1,
+    <div {...rest} data-testid={testid} data-tint={BOX_TINT[label] || "grey"} className={`g-box tg${inner ? " in" : ""}`}
+      style={{ ...vars, minWidth: 0, padding: inner ? "11px 12px 10px" : "12px 14px 11px", gridColumn: span ? "1 / -1" : undefined }}>
+      <div style={{ fontFamily: F, fontSize: 11, fontWeight: 600, color: tk.label, lineHeight: 1.25 }}>{label}</div>
+      <div style={{ fontFamily: FD, fontSize: inner ? 20 : 23, fontWeight: 650, letterSpacing: "-0.02em", color: BOX_TONE[tone] || tone || RIVER.ink, marginTop: 4, lineHeight: 1.1,
         whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
-        {value}{after && <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: 0, color: C.faint }}>{after}</span>}
+        {value}{after && <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: 0, color: BOX_SUB }}>{after}</span>}
       </div>
-      {sub && <div style={{ fontFamily: F, fontSize: 11, color: C.faint, marginTop: 4, lineHeight: 1.3 }}>{sub}</div>}
-      {sub2 && <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, marginTop: 1, lineHeight: 1.3 }}>{sub2}</div>}
+      {bar && ok(bar.v) && (
+        <div aria-hidden style={{ position: "relative", height: 4, borderRadius: 4, background: "rgba(55,52,9,0.10)", margin: "7px 0 1px",
+          boxShadow: "inset 0 0 0 0.5px rgba(55,52,9,0.06)" }}>
+          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${clamp(bar.v, 0, 1) * 100}%`, borderRadius: 4, background: fill, opacity: 0.85 }} />
+          {ok(bar.mark) && <div style={{ position: "absolute", top: -2, bottom: -2, width: 2, borderRadius: 1, left: `calc(${clamp(bar.mark, 0, 1) * 100}% - 1px)`,
+            background: fill, opacity: 0.35 }} />}
+        </div>
+      )}
+      {sub && <div style={{ fontFamily: F, fontSize: 11, color: BOX_SUB, marginTop: 4, lineHeight: 1.3 }}>{sub}</div>}
+      {sub2 && <div style={{ fontFamily: F, fontSize: 10.5, color: BOX_SUB, marginTop: 1, lineHeight: 1.3 }}>{sub2}</div>}
     </div>
   );
 }
@@ -488,8 +531,19 @@ function ScreenHead({ title, blurb, right }) {
     </div>
   );
 }
-function PeriodLine() {
-  return <div style={{ fontFamily: F, fontSize: 11.5, fontWeight: 500, color: C.faint, margin: "0 0 10px 4px" }}>{PERIOD_LINE}</div>;
+/* Period line with a small "Epic River" chip in River Yellow (the dealer's brand; AUTOPRISM stays the vendor mark). */
+function PeriodLine({ text = PERIOD_LINE }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 10px 4px" }}>
+      <span style={{ flex: 1, minWidth: 0, fontFamily: F, fontSize: 11.5, fontWeight: 500, color: C.faint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{text}</span>
+      <span data-testid="river-chip" style={{ display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0, padding: "3px 8px 3px 6px", borderRadius: 999,
+        background: "rgba(247,236,43,0.32)", boxShadow: "inset 0 0 0 1px rgba(55,52,9,0.10), inset 0 1px 0 rgba(255,255,255,0.6)",
+        fontFamily: F, fontSize: 10, fontWeight: 650, color: RIVER.ink, letterSpacing: 0.1 }}>
+        <span style={{ width: 7, height: 7, borderRadius: "50%", background: RIVER.yellow, boxShadow: "0 0 0 1px rgba(55,52,9,0.28)" }} />
+        Epic River
+      </span>
+    </div>
+  );
 }
 /* iOS segmented control: a tinted track with a raised white thumb that slides to the chosen option. */
 function Seg({ value, onChange, opts, testid }) {
@@ -505,7 +559,7 @@ function Seg({ value, onChange, opts, testid }) {
           <button key={v} type="button" aria-pressed={on} data-testid={`${testid}-${v}`} onClick={() => onChange(v)} style={{
             position: "relative", padding: "5px 9px", borderRadius: 8, border: "none", cursor: "pointer", background: "none",
             color: on ? C.primary : C.sub, fontFamily: F, fontWeight: on ? 600 : 500, fontSize: 11.5, transition: "color .2s ease",
-            WebkitTapHighlightColor: "transparent" }}>{label}</button>
+            WebkitTapHighlightColor: "transparent" }}><span>{label}</span></button>
         );
       })}
     </span>
@@ -830,7 +884,7 @@ function BoardScreen({ open }) {
       <PeriodLine />
       <MetricGrid testid="board-summary">
         <Metric testid="box-retail" label="Retail" value={nIN(g.retail)} after={` / ${nIN(g.target)}`}
-          sub={`${pctS(g.ach)} achieved`} sub2={`proj ${nIN(g.proj)}`} />
+          sub={`${pctS(g.ach)} achieved`} sub2={`proj ${nIN(g.proj)}`} bar={{ v: g.ach, mark: div(g.proj, g.target) }} />
         <Metric testid="box-value" label="Sales value" value={inr(g.value)} sub={`target ${inr(TARGET_VALUE)}`} />
         <Metric testid="box-book" label="Bookings" value={nIN(g.book)} sub={`${nIN(g.book - g.retail)} booked, not yet retailed`} span />
       </MetricGrid>
@@ -848,9 +902,9 @@ const FIN = {
   insfin: {
     label: "Insurance & Finance", title: "Insurance & Finance", Icon: ShieldCheck, hint: FI_HINT, cols: () => INSFIN_COLS,
     summary: (g) => [
-      ["In-house insurance", pctS(g.insPct), `${nIN(g.ins)} of ${nIN(g.retail)} units`],
+      ["In-house insurance", pctS(g.insPct), `${nIN(g.ins)} of ${nIN(g.retail)} units`, g.insPct],
       ["Avg premium", rs(g.premAvg), "per in-house policy"],
-      ["In-house finance", pctS(g.finPct), `${pctS(g.finShare)} of loans`],
+      ["In-house finance", pctS(g.finPct), `${pctS(g.finShare)} of loans`, g.finPct],
       ["Avg loan", lakh(g.loanAvg), `${pctS(g.ltv)} LTV`],
     ],
   },
@@ -883,7 +937,7 @@ function FinanceScreen({ which, open, rates }) {
     <div style={{ padding: "14px 14px 90px" }}>
       <PeriodLine />
       <MetricGrid testid="fin-summary">
-        {summary.map(([k, v, sub], i) => <Metric key={k} label={k} value={v} sub={sub} span={n % 2 === 1 && i === n - 1} />)}
+        {summary.map(([k, v, sub, b], i) => <Metric key={k} label={k} value={v} sub={sub} bar={b != null ? { v: b } : null} span={n % 2 === 1 && i === n - 1} />)}
       </MetricGrid>
       <TreeCard title={d.title} Icon={d.Icon} testid={`fin-${which}`} cols={cols} open={open} mode={mode} setMode={setMode}
         defSort={{ key: "name", dir: "desc" }} hintPeople={d.hint} hintLoc={d.hint} agg={agg} fi />
@@ -898,11 +952,11 @@ function StockScreen({ open }) {
   const g = stockOf(LOC_ROOT);
   return (
     <div style={{ padding: "14px 14px 90px" }}>
-      <div style={{ fontFamily: F, fontSize: 11.5, fontWeight: 500, color: C.faint, margin: "0 0 10px 4px" }}>Today · ex-showroom value</div>
+      <PeriodLine text="Today · ex-showroom value" />
       <MetricGrid testid="stock-summary">
         <Metric label="Units" value={nIN(g.units)} sub={`plus ${nIN(g.demo)} demo`} />
         <Metric label="Value" value={inr(g.value)} sub="ex-showroom" />
-        <Metric label="90+ days" value={nIN(g.aged)} tone={g.aged > 0 ? C.hot : C.faint} sub="aged stock, units" span />
+        <Metric label="90+ days" value={nIN(g.aged)} tone={g.aged > 0 ? TINTS.coral.deep : C.faint} sub="aged stock, units" span />
       </MetricGrid>
       <Card style={TABLE_CARD}>
         <CardHead Icon={Package} title="Stock" testid="stock-title" hint="Tap a name to expand, a header to sort. 90+ days is aged stock." />
