@@ -8,19 +8,19 @@ import React from "react";
    ================================================================================== */
 
 const CSS = `
-.amg-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.amg-box{position:relative;min-width:0;box-sizing:border-box;border-radius:20px;padding:14px 16px 15px;
+.amg-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.amg-box{position:relative;min-width:0;box-sizing:border-box;border-radius:14px;padding:9px 12px 10px;
   /* Modern, still professional: white floating panel, thin white rim, soft NEUTRAL shadow (no colour
      leaves the box). One hero box per screen gets a vivid indigo gradient (.amg-hero). */
   background:rgba(255,255,255,0.92);
   -webkit-backdrop-filter:blur(12px) saturate(140%);backdrop-filter:blur(12px) saturate(140%);
   border:1px solid rgba(255,255,255,0.9);
-  box-shadow:0 0 0 1px rgba(15,23,42,0.04), 0 10px 28px rgba(15,23,42,0.08), 0 2px 6px rgba(15,23,42,0.04),
+  box-shadow:0 0 0 1px rgba(15,23,42,0.05), 0 6px 16px rgba(15,23,42,0.07), 0 1px 3px rgba(15,23,42,0.04),
     inset 0 1px 0 #FFFFFF;
   overflow:hidden;
   font-family:'Inter',-apple-system,system-ui,sans-serif}
-.amg-hero{background:linear-gradient(135deg,#5B6CFF 0%,#3B4BE8 48%,#2A36C9 100%);border-color:rgba(255,255,255,0.35);
-  box-shadow:0 0 0 1px rgba(15,23,42,0.05), 0 12px 30px rgba(15,23,42,0.14), 0 2px 6px rgba(15,23,42,0.06),
+.amg-hero{background:linear-gradient(135deg,#4A5BF2 0%,#3B4BE8 45%,#2A36C9 100%);border-color:rgba(255,255,255,0.35);
+  box-shadow:0 0 0 1px rgba(15,23,42,0.05), 0 6px 18px rgba(15,23,42,0.12), 0 1px 3px rgba(15,23,42,0.06),
     inset 0 1px 0 rgba(255,255,255,0.35)}
 .amg-hero::before{content:"";position:absolute;inset:0;pointer-events:none;
   background:radial-gradient(90% 70% at 0% 0%,rgba(255,255,255,0.28) 0%,rgba(255,255,255,0) 60%),
@@ -33,14 +33,14 @@ const CSS = `
 .amg-hero .amg-fill{background:#FFFFFF}
 .amg-hero .amg-tick{background:#FFFFFF;opacity:0.7}
 .amg-span{grid-column:1/-1}
-.amg-label{font-size:11px;font-weight:600;color:#5D6577;line-height:1.3;letter-spacing:0.04em;text-transform:uppercase;
+.amg-label{font-size:10px;font-weight:600;color:#5D6577;line-height:1.3;letter-spacing:0.04em;text-transform:uppercase;
   overflow-wrap:anywhere}
-.amg-value{margin-top:6px;font-size:24px;font-weight:650;color:#0B1946;line-height:1.1;
+.amg-value{margin-top:2px;font-size:19px;font-weight:650;color:#0B1946;line-height:1.15;
   font-variant-numeric:tabular-nums;letter-spacing:-0.02em;overflow-wrap:anywhere}
-.amg-after{font-size:13px;font-weight:600;color:#5D6577;margin-left:3px;letter-spacing:0}
-.amg-sub{margin-top:3px;font-size:11px;color:#5D6577;line-height:1.35;font-variant-numeric:tabular-nums;
+.amg-after{font-size:12px;font-weight:600;color:#5D6577;margin-left:3px;letter-spacing:0}
+.amg-sub{margin-top:1px;font-size:10.5px;color:#5D6577;line-height:1.35;font-variant-numeric:tabular-nums;
   overflow-wrap:anywhere}
-.amg-bar{position:relative;margin-top:10px;height:3px;border-radius:999px;background:#ECEEF4}
+.amg-bar{position:relative;margin-top:6px;height:3px;border-radius:999px;background:#ECEEF4}
 .amg-fill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:#3B4BE8}
 .amg-tick{position:absolute;top:-2px;bottom:-2px;width:2px;border-radius:1px;background:#0B1946;opacity:0.45}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
@@ -71,8 +71,9 @@ export function MetricBox({ label, value, after, sub, sub2, bar, span, hero, sty
         {value}
         {after != null && <span className="amg-after">{after}</span>}
       </div>
-      {sub != null && <div className="amg-sub">{sub}</div>}
-      {sub2 != null && <div className="amg-sub">{sub2}</div>}
+      {(sub != null || sub2 != null) && (
+        <div className="amg-sub">{sub}{sub != null && sub2 != null && " · "}{sub2}</div>
+      )}
       {bar && (
         <div className="amg-bar">
           <div className="amg-fill" style={{ width: pctOf(bar.value * 100) }} />
