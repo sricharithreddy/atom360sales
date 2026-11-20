@@ -4312,7 +4312,7 @@ function MISReport({ leads, user }) {
         <div style={{ fontFamily: F, fontSize: 11.5, color: C.sub, marginBottom: 12 }}>{periodLabel} · {fmtFull(today)}</div>
         <MetricGrid>
           {stats.map(s => (
-            <MetricBox key={s.label} value={s.value} label={
+            <MetricBox key={s.label} hero={s.label === "Deliveries"} value={s.value} label={
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><s.icon size={12} />{s.label}</span>} />
           ))}
         </MetricGrid>
@@ -7159,12 +7159,12 @@ function InsightCard({ insight }) {
 }
 
 // KPI tile with a like-for-like comparison against the equivalent prior period.
-function KpiTile({ label, value, prev, accent }) {
+function KpiTile({ label, value, prev, accent, hero }) {
   const d = delta(value, prev);
   const up = d != null && d > 0;
   // Indigo glass box — one colour only, so the change vs last period is carried by ▲ / ▼.
   return (
-    <MetricBox label={label} value={value}
+    <MetricBox hero={hero} label={label} value={value}
       after={d != null ? ` ${up ? "▲" : "▼"}${Math.abs(d)}%` : null}
       sub={prev != null ? `${prev} previous period` : "no prior data"} />
   );
@@ -7441,7 +7441,7 @@ function EarningsPanel({ history }) {
 
       {/* Headline */}
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 15, marginBottom: 10 }}>
-        <MetricBox testid="earned" label={`Earned · ${rangeLabel}`} value={inrShort(total)} sub={`on ${units} deliveries`} />
+        <MetricBox hero testid="earned" label={`Earned · ${rangeLabel}`} value={inrShort(total)} sub={`on ${units} deliveries`} />
 
         {/* Where it came from — three lines, each traceable below. */}
         <div style={{ marginTop: 13, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
@@ -7692,7 +7692,7 @@ function SEDashboardScreen({ leads, user }) {
         <KpiTile label="Contacted · this month" value={thisM.contacted} prev={lastM.contacted} />
         <KpiTile label="Test rides · this month" value={thisM.visit} prev={lastM.visit} accent={C.primary} />
         <KpiTile label="Bookings · this month" value={thisM.booking} prev={lastM.booking} accent={C.warm} />
-        <KpiTile label="Retailed · this month" value={thisM.retailed} prev={lastM.retailed} accent={C.darkGreen} />
+        <KpiTile hero label="Retailed · this month" value={thisM.retailed} prev={lastM.retailed} accent={C.darkGreen} />
       </MetricGrid>
 
       {/* ---- Period ---- */}
@@ -8473,7 +8473,7 @@ function LeaderboardScreen({ currentId }) {
     <div style={{ padding: "12px 12px 90px", position: "relative" }}>
       {/* North star */}
       <MetricGrid testid="lb-headline" style={{ marginBottom: 12 }}>
-        <MetricBox span value={me.achieved} after={`/${me.target}`}
+        <MetricBox span hero value={me.achieved} after={`/${me.target}`}
           label={<span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Trophy size={12} />Retails · this month</span>}
           sub={`#${myRank} of ${ranked.length} on the floor`}
           sub2={above ? `${gap} more ${gap === 1 ? "scooter" : "scooters"} to pass ${above.name.split(" ")[0]}.` : "Top of the floor."}

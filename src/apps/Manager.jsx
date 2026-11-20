@@ -713,7 +713,7 @@ function ModelDashboard() {
         Tap a charger variant to see its River Care split.
       </div>
       <MetricGrid testid="model-metrics" style={{ marginBottom: 12 }}>
-        <MetricBox span label="Retail" value={tot.retailed} after={`/ ${tot.target}`}
+        <MetricBox span hero label="Retail" value={tot.retailed} after={`/ ${tot.target}`}
           sub={`${pct(tot.retailed, tot.target)}% achieved`} bar={{ value: tot.target ? tot.retailed / tot.target : 0 }} />
         <MetricBox label="Bookings" value={tot.booking} />
         <MetricBox label="Sales value" value={inr(tot.value)} />
@@ -4068,7 +4068,7 @@ function BoardScreen({ actions, onResolve, onPick, org, onDrill, onOpenLead, han
   return (
     <div style={{ padding: "14px 14px 90px" }}>
       <MetricGrid testid="board-metrics" style={{ marginBottom: 12 }}>
-        <MetricBox label="Retail" value={r.retailed} after={`/ ${r.target}`}
+        <MetricBox hero label="Retail" value={r.retailed} after={`/ ${r.target}`}
           sub={`${pct(r.retailed, r.target)}% achieved`} bar={{ value: r.target ? r.retailed / r.target : 0 }} />
         <MetricBox label="Bookings" value={r.booking} />
       </MetricGrid>
@@ -5482,7 +5482,7 @@ function AdminAgentsScreen({ showToast }) {
       <MetricGrid testid="agents-metrics" style={{ marginBottom: 12 }}>
         <MetricBox label="Running" value={`${running}/${agents.length}`} />
         <MetricBox label="Cost this month" value={inr(totalCost)} />
-        <MetricBox span label="Value captured" value={inr(totalValue)} />
+        <MetricBox span hero label="Value captured" value={inr(totalValue)} />
       </MetricGrid>
 
       {agents.length === 0 && (
@@ -5530,7 +5530,7 @@ function AdminWalletScreen({ showToast }) {
       <AdminScreenHeader title="Wallet" blurb="Prepaid balance for SMS and WhatsApp sends." />
 
       <MetricGrid testid="wallet-metrics" style={{ marginBottom: 10 }}>
-        <MetricBox span label="Wallet balance" value={`₹${balance.toLocaleString("en-IN")}`} />
+        <MetricBox span hero label="Wallet balance" value={`₹${balance.toLocaleString("en-IN")}`} />
       </MetricGrid>
       <div style={{ background: C.ink, borderRadius: 16, padding: 16, marginBottom: 12 }}>
         {low && (

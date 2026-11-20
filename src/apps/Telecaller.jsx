@@ -8625,7 +8625,7 @@ function CallQueueScreen({ leads, subView, onUpdateLead, showToast, onEnterFocus
       )}
 
       <MetricGrid testid="tc-target" style={{ marginBottom: 12 }}>
-        <MetricBox span label="Leads qualified · today" value={qualifiedToday} after={`/${dailyTarget}`}
+        <MetricBox span hero label="Leads qualified · today" value={qualifiedToday} after={`/${dailyTarget}`}
           sub={qualifiedToday >= dailyTarget ? "Target hit 🎯" : `${dailyTarget - qualifiedToday} more`}
           bar={{ value: pct / 100 }} />
       </MetricGrid>
@@ -11452,12 +11452,12 @@ function InsightCard({ insight }) {
 }
 
 // KPI tile with a like-for-like comparison against the equivalent prior period.
-function KpiTile({ label, value, prev, accent }) {
+function KpiTile({ label, value, prev, accent, hero }) {
   const d = delta(value, prev);
   const up = d != null && d > 0;
   // Indigo glass box — one colour only, so the change vs last period is carried by ▲ / ▼.
   return (
-    <MetricBox label={label} value={value}
+    <MetricBox hero={hero} label={label} value={value}
       after={d != null ? ` ${up ? "▲" : "▼"}${Math.abs(d)}%` : null}
       sub={prev != null ? `${prev} previous period` : "no prior data"} />
   );
@@ -11535,7 +11535,7 @@ function DashboardScreen({ leads }) {
         <KpiTile label="Contacted · this month" value={thisM.contacted} prev={lastM.contacted} />
         <KpiTile label="Qualified · this month" value={thisM.opportunity} prev={lastM.opportunity} accent={C.primary} />
         <KpiTile label="Test rides · this month" value={thisM.visit} prev={lastM.visit} accent={C.warm} />
-        <KpiTile label="Retailed · this month" value={thisM.retailed} prev={lastM.retailed} accent={C.green} />
+        <KpiTile hero label="Retailed · this month" value={thisM.retailed} prev={lastM.retailed} accent={C.green} />
       </MetricGrid>
 
       <div style={{ display: "flex", gap: 5, marginBottom: 8 }}>

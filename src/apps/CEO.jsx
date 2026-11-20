@@ -809,7 +809,7 @@ function FinanceScreen({ which, open, rates }) {
   const n = summary.length;
   const top = (
     <MetricGrid testid="fin-summary" style={{ padding: "6px 0 12px" }}>
-      {summary.map(([k, v, sub], i) => <MetricBox key={k} label={k} value={v} sub={sub} span={n % 2 === 1 && i === 0} />)}
+      {summary.map(([k, v, sub], i) => <MetricBox key={k} label={k} value={v} sub={sub} hero={i === 0} span={n % 2 === 1 && i === 0} />)}
     </MetricGrid>
   );
   return (
@@ -896,8 +896,9 @@ function OutletScreen({ id, onBack, rates }) {
   // One colour on the glass: the green / red verdict is spelled out in the grey group line.
   const verdict = (tone) => (tone === C.green ? " · better" : tone === C.hot ? " · worse" : "");
   const line = (k, v, tone, gv, sub) => (
-    <MetricBox key={k} testid="outlet-fin-row" label={k} value={v} sub={sub} sub2={`group ${gv}${verdict(tone)}`} />
+    <MetricBox key={k} testid="outlet-fin-row" hero={k === line.hero} label={k} value={v} sub={sub} sub2={`group ${gv}${verdict(tone)}`} />
   );
+  line.hero = "In-house insurance";
   return (
     <div data-testid="outlet-page" style={{ padding: "14px 14px 90px" }}>
       <BackBar title={l.name} sub={`${l.city} · ${l.state}`} onBack={onBack} />
