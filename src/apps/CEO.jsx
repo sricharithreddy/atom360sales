@@ -230,7 +230,7 @@ function nudge(A, T, plan) {
   return Math.max(0, A);
 }
 const KEYS = ["heads", "target", "retail", "book", "value",
-  "ins", "insPrem", "loans", "fin", "loanAmt", "loanRoad", "accBuy", "acc", "rc", "p2", "p5", "rcVal"];
+  "ins", "insPrem", "loans", "fin", "loanAmt", "loanRoad", "accBuy", "acc", "rc", "p2", "p5", "rcVal", "disc"];
 // Split an integer total across weights with a cap per part (part ≤ cap); integer parts that add back.
 function splitCap(total, weights, caps) {
   const out = weights.map(() => 0);
@@ -249,6 +249,7 @@ function within(n, rate, lo, hi) {
   const a = Math.ceil(n * lo - 1e-9), b = Math.floor(n * hi + 1e-9);
   return a <= b ? clamp(Math.round(n * rate), a, b) : Math.round(n * rate);
 }
+const METRO_CITIES = new Set(["Hyderabad", "Secunderabad", "Pune", "Chennai", "Bengaluru", "Mumbai", "Thane", "Navi Mumbai"]);
 const SE_ROWS = (() => {
   const rows = new Array(SES.length);
   LOCS.forEach(l => {
@@ -268,6 +269,11 @@ const SE_ROWS = (() => {
     const accB = splitCap(within(U, fi.acc, 0.5, 0.9), w(3), tA);
     const plans = splitCap(PL, w(4), tA);
     const p5s = splitCap(within(PL, fi.p5, 0.15, 0.45), w(5), plans);
+    // Vehicle discount (own seed): an outlet-level ₹/scooter — metros and older outlets discount
+    // more — split across its SEs in ₹10 steps (weight = units × SE noise), so the parts add back.
+    const dq = rngFor("disc1:" + l.id);
+    l.discPU = clamp(1380 + (METRO_CITIES.has(l.city) ? 450 : 0) + 900 * clamp(l.mo / 18, 0, 1) + rr(dq, -500, 500), 1000, 3500);
+    const discs = splitInt(Math.round((U * l.discPU) / 10), se.map((s, k) => tA[k] * rr(rngFor("disc1:" + s.id), 0.75, 1.25)));
     l.ses.forEach((i, k) => {
       const s = SES[i];
       const retail = tA[k];
@@ -283,6 +289,7 @@ const SE_ROWS = (() => {
         loans: loans[k], fin: n, loanAmt: Math.round((road * ltv) / 1000) * 1000, loanRoad: road,
         accBuy: accB[k], acc: Math.round((accB[k] * fi.bill * (0.93 + 0.14 * s.nz[8])) / 10) * 10,
         rc: plans[k], p2, p5, rcVal: p2 * RC_PLUS2 + p5 * RC_PLUS5,
+        disc: discs[k] * 10,
       };
     });
   });
@@ -669,15 +676,21 @@ function fnAggFor(a, b) {
 }
 
 /* ---------------- Dealer income at the Admin rates ----------------
-   Linear in the summed fields, so per-SE income summed = income of the sums. */
-const DEFAULT_RATES = { ins: 15, pay: 1.5, file: 750, acc: 25, rc: 20 };
+   Linear in the summed fields, so per-SE income summed = income of the sums.
+   Vehicle margin = dealer margin (`vm`, % of ex-showroom, before discount) × ex-showroom value
+   − discounts given. FADA: two-wheeler dealer margins 2.9–7.5% of ex-showroom (avg < 5%); EV
+   margins reported lower. Demo default 4.5% (≈ ₹6,966 on a 750W, ₹6,786 on a 480W). */
+const DEFAULT_RATES = { vm: 4.5, ins: 15, pay: 1.5, file: 750, acc: 25, rc: 20 };
 function withIncome(a, R) {
+  const incVeh = (a.value * R.vm) / 100 - a.disc;
   const incIns = (a.insPrem * R.ins) / 100;
   const incFin = (a.loanAmt * R.pay) / 100 + R.file * a.fin;
   const incAdd = (a.acc * R.acc) / 100 + (a.rcVal * R.rc) / 100;
-  const incTot = incIns + incFin + incAdd;
-  return { ...a, incIns, incFin, incAdd, incTot,
-    insPV: div(incIns, a.retail), finPV: div(incFin, a.retail), addPV: div(incAdd, a.retail), totPV: div(incTot, a.retail) };
+  const incTot = incVeh + incIns + incFin + incAdd;
+  return { ...a, incVeh, incIns, incFin, incAdd, incTot,
+    vehPV: div(incVeh, a.retail), discPV: div(a.disc, a.retail),
+    insPV: div(incIns, a.retail), finPV: div(incFin, a.retail), fiPV: div(incIns + incFin, a.retail),
+    addPV: div(incAdd, a.retail), totPV: div(incTot, a.retail) };
 }
 const INC_AGG = new Map();
 function aggWith(R) {
@@ -1081,11 +1094,15 @@ const ADDON_COLS = [
     cell: (a) => top2(rs(a.addPU), null, rsTone(a.addPU, G.addPU, a.retail)) },
 ];
 // Finance · Income per vehicle — ₹ per scooter sold, at the Admin rates (`gi` = group with income).
+// Vehicle = net margin after discount; F&I = insurance commission + lender payout.
 const incomeCols = (gi) => {
-  const col = (key, label, w, f, align) => ({ key, label, w, align, sort: (a) => a[f],
-    cell: (a) => top2(rs(a[f]), null, rsTone(a[f], gi[f], a.retail)) });
-  return [col("ins", "Insurance", 56, "insPV"), col("fin", "Finance", 48, "finPV"), col("add", "Add-ons", 48, "addPV"),
-    col("tot", "Total", 46, "totPV", "right")];
+  const col = (key, label, w, f, subF, align) => ({ key, label, w, align, sort: (a) => a[f],
+    cell: (a) => top2(rs(a[f]), subF ? subF(a) : null, rsTone(a[f], gi[f], a.retail)) });
+  return [
+    col("veh", "Vehicle", 58, "vehPV", (a) => grey(ok(a.discPV) ? `−${rs(a.discPV)} disc` : "—")),
+    col("fi", "F&I", 54, "fiPV", (a) => ok(a.insPV) ? <>{grey(`ins ${rs(a.insPV)}`)}{grey(`fin ${rs(a.finPV)}`)}</> : null),
+    col("add", "Add-ons", 46, "addPV"),
+    col("tot", "Total", 48, "totPV", null, "right")];
 };
 const STOCK_COLS = [
   { key: "u", label: "Units", w: 46, sort: (s) => s.units, cell: (s) => num(nIN(s.units), true) },
@@ -1438,10 +1455,11 @@ const FIN = {
   },
   income: {
     label: "Income per vehicle", title: "Income per vehicle", Icon: IndianRupee, cols: incomeCols,
-    hint: "Epic River's earnings per scooter sold, at the rates in Admin → Payout & margin rates.",
+    hint: "Epic River's earnings per scooter sold: vehicle margin after discount, plus insurance, finance and add-ons at the rates in Admin.",
     summary: (g) => [
-      ["F&I and add-on income", inr(g.incTot), "month to date"],
-      ["Income per scooter", rs(g.totPV), `${nIN(g.retail)} scooters sold`],
+      ["Income per scooter", rs(g.totPV), "incl. vehicle margin"],
+      ["Vehicle margin", rs(g.vehPV), `after ${rs(g.discPV)} avg discount`],
+      ["Total income", inr(g.incTot), "month to date"],
     ],
   },
 };
@@ -1633,8 +1651,8 @@ function OutletScreen({ id, onBack, rates }) {
   const gi = aggWith(rates)(LOC_ROOT);
   // One colour on the glass: the green / red verdict is spelled out in the grey group line.
   const verdict = (tone) => (tone === C.green ? " · better" : tone === C.hot ? " · worse" : "");
-  const line = (k, v, tone, gv, sub) => (
-    <MetricBox key={k} testid="outlet-fin-row" hero={k === line.hero} label={k} value={v} sub={sub} sub2={`group ${gv}${verdict(tone)}`} />
+  const line = (k, v, tone, gv, sub, span) => (
+    <MetricBox key={k} testid="outlet-fin-row" hero={k === line.hero} span={span} label={k} value={v} sub={sub} sub2={`group ${gv}${verdict(tone)}`} />
   );
   line.hero = "In-house insurance";
   return (
@@ -1661,7 +1679,8 @@ function OutletScreen({ id, onBack, rates }) {
         {line("In-house finance", pctS(a.finPct), rateTone(a.finPct, G.finPct, a.retail), pctS(G.finPct), `${pctS(a.finShare)} of loans · group ${pctS(G.finShare)}`)}
         {line("Avg loan", lakh(a.loanAvg), rsTone(a.loanAvg, G.loanAvg, a.retail, a.fin), lakh(G.loanAvg), `${nIN(a.fin)} loans · ${pctS(a.ltv)} LTV`)}
         {line("Add-ons ₹/scooter", rs(a.addPU), rsTone(a.addPU, G.addPU, a.retail), rs(G.addPU), "accessories + River Care")}
-        {line("Income per scooter", rs(a.totPV), rsTone(a.totPV, gi.totPV, a.retail), rs(gi.totPV), "at Admin → Payout & margin rates")}
+        {line("Vehicle margin / scooter", rs(a.vehPV), rsTone(a.vehPV, gi.vehPV, a.retail), rs(gi.vehPV), `after ${rs(a.discPV)} discount`)}
+        {line("Income per scooter", rs(a.totPV), rsTone(a.totPV, gi.totPV, a.retail), rs(gi.totPV), "incl. vehicle margin · Admin rates", true)}
         </MetricGrid>
       </Card>
       <SplitCard kind="ins" scope={outletScope} compact />
@@ -1835,7 +1854,7 @@ function AdminFieldsScreen({ cfs, setCfs, showToast }) {
 }
 /* Payout & margin rates — what Epic River earns on each sale. In memory; Save recomputes
    Finance → Income per vehicle and the outlet pages. */
-const RATE_PCT = ["ins", "pay", "acc", "rc"];
+const RATE_PCT = ["vm", "ins", "pay", "acc", "rc"];
 function AdminRatesScreen({ rates, setRates, showToast }) {
   const toDraft = (r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, String(v)]));
   const [d, setD] = useState(() => toDraft(rates));
@@ -1853,6 +1872,7 @@ function AdminRatesScreen({ rates, setRates, showToast }) {
     <div style={{ padding: "14px 14px 90px" }}>
       <ScreenHead title="Payout & margin rates" blurb="What Epic River earns on each sale. Used by Finance → Income per vehicle." />
       <Card>
+        <Field label="Dealer margin (% of ex-showroom)">{row(box("vm"), unit("% of ex-showroom, before discount"))}</Field>
         <Field label="Insurance commission">{row(box("ins"), unit("% of premium"))}</Field>
         <Field label="Lender payout">{row(
           box("pay"), unit("% of loan  +  ₹"),
@@ -1865,7 +1885,7 @@ function AdminRatesScreen({ rates, setRates, showToast }) {
             <span style={{ fontFamily: F, fontSize: 15, fontWeight: 800, color: valid ? C.ink : C.faint }}>{rs(gi.totPV)}</span>
           </div>
           <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, marginTop: 2 }}>
-            {valid ? `insurance ${rs(gi.insPV)} · finance ${rs(gi.finPV)} · add-ons ${rs(gi.addPV)}` : "Enter a number in every box (percentages up to 100)."}
+            {valid ? `vehicle ${rs(gi.vehPV)} · insurance ${rs(gi.insPV)} · finance ${rs(gi.finPV)} · add-ons ${rs(gi.addPV)}` : "Enter a number in every box (percentages up to 100)."}
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
