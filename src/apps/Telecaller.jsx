@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
 import { stockFor, unitsOf, PUNE_STORES, INVENTORY_AS_OF } from "../data/epicRiverInventory.js";
 import { MetricBox, MetricGrid } from "../ui/MetricGlass.jsx";
+import { LEADS as POOL_ALL, leadsFor, TELECALLER } from "../data/epicRiverLeads.js";
 import {
   AlertTriangle, BarChart3, Calendar, Camera, Bike as Car, Check, CheckCircle2, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, Clock, Copy, Download, Eye, FileText, Filter, GraduationCap, Headphones, Image, Link2, Lock, LogOut, Mail, MapPin, Menu, MessageSquare, Mic, MoreHorizontal, Navigation, Package, Pause, Pencil, Phone, Play, PlayCircle, Plus, Search, Settings, Sparkles, Square, Star, Store, Tag, TrendingUp, User, UserPlus, Users, Wind, X, Zap,
 } from "lucide-react";
@@ -390,6 +391,7 @@ const EXTRA_DISPOSITION_LABELS = {
   car_blocked: "Scooter Blocked",
   connected: "Connected", no_answer: "No Answer", busy: "Busy",
   wrong_number: "Wrong Number", switched_off: "Switched Off",
+  callback: "Call Back Later", test_drive_scheduled: "Test Ride Scheduled", quote_sent: "Quote Sent",
 };
 const NOT_INTERESTED_REASONS = [
   "Bought elsewhere", "Postponed purchase", "Budget constraint",
@@ -632,6 +634,123 @@ const CALL_QUEUE = [
     callHistory: [{ id: "seed14", date: dh(-20, 17), disposition: "connected", recordingDuration: "2:14", note: "Fleet enquiry for last-mile delivery riders, budget approval pending at their end." }],
   },
 ];
+
+// ============================== SHARED SAMPLE LEADS (Epic River pool) ==============================
+// The 14 hand-written leads above drive the scripted demo moments. Everything below adds the
+// telecaller's slice of the shared Epic River pool (src/data/epicRiverLeads.js) — her early-funnel
+// and lost leads, plus the retailed / delivered customers she makes post-delivery feedback calls
+// to — mapped once, at module load, onto this app's lead shape and stage names.
+// Pool dates are anchored on 19 Nov 2026; they're shifted by whole days so "today" in the pool
+// is today on the device, keeping overdue / due-today follow-ups meaningful whenever the demo runs.
+const POOL_DAY_SHIFT = Math.round((new Date(today.getFullYear(), today.getMonth(), today.getDate()) - new Date(2026, 10, 19)) / 864e5);
+function poolDate(iso) {
+  if (!iso) return null;
+  const x = new Date(iso);
+  x.setDate(x.getDate() + POOL_DAY_SHIFT);
+  // A pool timestamp later today than "now" would read as a call from the future.
+  return x > today ? new Date(today.getTime() - 25 * 60000) : x;
+}
+const POOL_STAGE = { new: "New", attempted: "New", contacted: "Contacted", interested: "Opportunity", test_ride: "Test Drive", booking: "Booking", retailed: "Retailed", delivered: "Delivered" };
+const POOL_SOURCE = { "Google Ad": "Google", "Corporate/Fleet": "Corporate Tie-up" };
+const POOL_DISPOSITION = { "Connected": "connected", "No answer": "no_answer", "Busy": "busy", "Switched off": "switched_off", "Call back later": "callback" };
+// The pool's SE team uses the same names as this app's roster, except Sameer Khan, who isn't on
+// it — his leads go to Vikram Singh. Branch follows the lead's store.
+const POOL_SE_NAME = { "Sameer Khan": "Vikram Singh" };
+const FEMALE_FIRST = new Set(["Aditi", "Ananya", "Anjali", "Asha", "Bhavna", "Divya", "Gauri", "Isha", "Kavita", "Lakshmi", "Manasi", "Meera", "Neha", "Pooja", "Prachi", "Riya", "Sakshi", "Shreya", "Sneha", "Swati", "Tanvi", "Zoya", "Fatima", "Mary", "Harpreet", "Pallavi"]);
+const EXCHANGE_GRADES = ["bad", "good", "good", "very_good", "excellent"];
+
+function mapPoolLead(p) {
+  const h = hashStr(p.id);
+  const order = ["new", "attempted", "contacted", "interested", "test_ride", "booking", "retailed", "delivered"];
+  const lost = p.stage === "lost";
+  const effStage = lost ? (p.lostAt || "contacted") : p.stage;
+  const idx = order.indexOf(effStage);
+  const [first, ...rest] = p.name.split(" ");
+  const seName = p.se ? (POOL_SE_NAME[p.se] || p.se) : null;
+  const callHistory = (p.calls || []).map((c, k) => ({
+    id: `${p.id}-c${k + 1}`,
+    date: poolDate(c.at),
+    disposition: POOL_DISPOSITION[c.outcome] || (c.connected ? "connected" : "no_answer"),
+    note: c.comment,
+    by: c.by === TELECALLER ? ME.name : (POOL_SE_NAME[c.by] || c.by),
+    ...(c.connected && c.durationSec ? { recordingDuration: fmtSeconds(c.durationSec) } : {}),
+  }));
+  if (effStage === "test_ride" && !lost && p.testRideAt) {
+    const td = poolDate(p.testRideAt);
+    const slot = generateTimeSlots("showroom")[h % 10];
+    callHistory.push({
+      id: `${p.id}-td`, date: td, disposition: "test_drive_scheduled", by: seName || ME.name,
+      testDriveDate: isoDate(td), testDriveSlot: slot, testDriveMode: "showroom",
+      note: `Test ride at ${p.storeName} showroom, ${fmtDate(td)} ${slot}.`,
+    });
+    callHistory.sort((a, b) => a.date - b.date);
+  }
+  const lastBySE = seName ? [...callHistory].reverse().find(c => c.by === seName) : null;
+  const lastActivity = poolDate(p.lastActivityAt);
+  const exchange = p.exchange ? {
+    model: p.exchange.bike, variant: "STD", year: String(p.exchange.year),
+    odometer: String(Math.min(95000, (2026 - p.exchange.year) * 6000 + (h % 9) * 1000)),
+    condition: EXCHANGE_GRADES[h % EXCHANGE_GRADES.length], photos: idx >= 3 ? 2 + (h % 3) : 0,
+    appraisalScheduled: idx >= 3, appraisedValue: idx >= 4 ? (p.exchange.value / 1e5).toFixed(2) : null,
+    ...(idx >= 5 && !lost ? { customerAccepted: "yes" } : {}),
+  } : null;
+  const finance = p.finance ? {
+    loanAmount: (p.finance.amount / 1e5).toFixed(2), bank: idx >= 3 ? p.finance.lender : "",
+    status: idx >= 5 ? "approved" : idx === 4 ? "review" : idx === 3 ? "applied" : "",
+    ...(idx >= 6 && !lost ? { customerAccepted: "yes" } : {}),
+  } : null;
+  let targetDeliveryDate = null;
+  if (p.stage === "delivered") targetDeliveryDate = isoDate(lastActivity);
+  else if (p.stage === "retailed" && h % 10 < 7) targetDeliveryDate = isoDate(d(2 + (h % 6)));
+  else if (p.stage === "booking" && h % 2) targetDeliveryDate = isoDate(d(7 + (h % 14)));
+  return {
+    id: Number(p.id.slice(3)), erId: p.id, name: p.name, phone: p.phone, altPhone: "",
+    email: h % 3 === 0 ? `${first.toLowerCase()}.${rest.join("").replace(/[^A-Za-z]/g, "").toLowerCase()}@gmail.com` : "",
+    model: "Indie", variant: p.variant, source: POOL_SOURCE[p.source] || p.source,
+    customerType: p.source === "Corporate/Fleet" ? "Fleet" : FEMALE_FIRST.has(first) ? "Female" : "Male",
+    location: p.storeName, locality: p.locality,
+    sourceContext: `${p.locality} · ${p.note}`,
+    bookingAmount: p.bookingAmount ? String(p.bookingAmount) : undefined,
+    propensity: Math.max(5, p.rating * 20 - (h % 9)),
+    priority: p.rating >= 4 ? "high" : p.rating === 3 ? "medium" : "low",
+    contacted: callHistory.filter(c => c.disposition !== "test_drive_scheduled").length,
+    stage: POOL_STAGE[effStage] || "Contacted", createdDate: poolDate(p.createdAt),
+    bestCallTime: "", followUpDate: lost ? null : poolDate(p.followUpAt),
+    signals: [...(exchange ? ["exchange"] : []), ...(finance ? ["finance_needed"] : [])],
+    exchange, finance,
+    modelInterest: idx >= 2 ? { Indie: [p.variant] } : null,
+    colorInterest: idx >= 2 ? [p.colour] : null,
+    commPref: h % 17 === 0 ? "whatsapp" : null,
+    targetDeliveryDate,
+    assignedSE: seName ? { name: seName, branch: p.storeName } : null,
+    lastSEContactDate: seName ? (lastBySE ? lastBySE.date : lastActivity) : null,
+    drivingLicense: idx >= 4 && !lost ? { done: true, via: "Photo" } : null,
+    cancellationRequest: null,
+    closed: lost,
+    ...(lost ? { closedReason: p.lostReason + (p.lostTo ? ` (${p.lostTo})` : ""), lostAt: POOL_STAGE[effStage] } : {}),
+    callHistory,
+  };
+}
+
+const POOL_LEADS = (() => {
+  const handNames = new Set(CALL_QUEUE.map(l => l.name.toLowerCase()));
+  const picked = [...leadsFor("telecaller"), ...POOL_ALL.filter(l => l.stage === "retailed" || l.stage === "delivered")];
+  const seen = new Set();
+  const out = [];
+  picked.forEach(p => {
+    const key = p.name.toLowerCase();
+    if (seen.has(p.id) || seen.has(key) || handNames.has(key)) return;
+    seen.add(p.id); seen.add(key);
+    out.push(mapPoolLead(p));
+  });
+  // Same order the queue is worked in: missed follow-ups first, then due today, then never
+  // called, then by propensity.
+  const dayStart = new Date(today); dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
+  const rank = l => l.followUpDate && l.followUpDate < dayStart ? 0 : l.followUpDate && l.followUpDate < dayEnd ? 1 : l.contacted === 0 ? 2 : 3;
+  return out.sort((a, b) => rank(a) - rank(b) || b.propensity - a.propensity);
+})();
+const ALL_LEADS = [...CALL_QUEUE, ...POOL_LEADS];
 
 // ============================== VOICE-FIRST CALL LOGGING ==============================
 // Notes field with dictation. Tap-to-speak as a whole logging mode is gone — the form is
@@ -2534,6 +2653,7 @@ function CallHistoryList({ history, limit }) {
   color: C.ink
 }}>
       {fmtDateTime(c.date)}
+      {c.by && <span style={{ fontWeight: 500, color: C.faint }}> · {c.by === ME.name ? "You" : c.by}</span>}
     </span>
     <Pill label={dispoMeta?.label || EXTRA_DISPOSITION_LABELS[c.disposition] || c.disposition} color={C.sub} soft={C.card} />
   </div>
@@ -8721,6 +8841,9 @@ function RecentActivityScreen({ leads, onUpdateLead, showToast }) {
             {e.recordingDuration && (
               <span style={{ fontFamily: F, fontSize: 10, color: C.faint }}>· {e.recordingDuration}</span>
             )}
+            {e.by && (
+              <span style={{ fontFamily: F, fontSize: 10, color: C.faint }}>· {e.by === ME.name ? "You" : e.by}</span>
+            )}
           </div>
           {e.note && <div style={{ fontFamily: F, fontSize: 11.5, color: C.sub, lineHeight: 1.45 }}>{e.note}</div>}
         </div>
@@ -11668,7 +11791,7 @@ function DashboardScreen({ leads }) {
 
 export default function RelationshipManagerApp() {
     const [activeTab, setActiveTab] = useState("queue");
-    const [leads, setLeads] = useState(CALL_QUEUE);
+    const [leads, setLeads] = useState(ALL_LEADS);
     const [customSources, setCustomSources] = useState([]);
     const addCustomSource = (name) => {
       setCustomSources((cs) => cs.some((c) => c.toLowerCase() === name.toLowerCase()) ? cs : [...cs, name]);

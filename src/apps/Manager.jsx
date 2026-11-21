@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { leadsFor } from "../data/epicRiverLeads.js";
 import { unitsOf, PUNE_STORES, VARIANTS as INV_VARIANTS, COLOURS as INV_COLOURS } from "../data/epicRiverInventory.js";
 import { MetricBox, MetricGrid } from "../ui/MetricGlass.jsx";
 import {
@@ -132,7 +133,7 @@ const isDecision = (a) => ["discount", "pricing"].includes(a.kind);
 /* Leads behind the numbers. Tapping a figure in the target table opens exactly these,
    filtered to that person's subtree and that stage — a manager asking "which nine?" gets
    the nine, not a summary of them. */
-const STAGES = ["Ready to Book", "Booking", "Retailed", "Delivered"];
+const STAGES = ["New", "Qualified", "Ready to Book", "Booking", "Retailed", "Delivered", "Lost"];
 // River sells one model (Indie), so the lead mix is "model + variant" strings — the charger
 // (750W / 480W) and the River Care plan. Downstream code splits on the first space for the model.
 const MODELS = ["Indie 750W", "Indie 750W + Plus Two", "Indie 750W", "Indie 480W", "Indie 750W + Plus Five", "Indie 480W + Plus Two"];
@@ -205,11 +206,110 @@ const LEADS = (() => {
   });
 })();
 
+/* ---------------- Shared Epic River lead pool ----------------
+   The hand-written leads above drive the scripted moments (target-table drill-downs,
+   escalations, cancellation requests). On top of them the manager sees the whole shared
+   pool (src/data/epicRiverLeads.js — the same customers the Telecaller and SE logins
+   work), mapped once here onto this app's lead shape:
+     new · attempted → New        contacted · interested → Qualified
+     test_ride → Ready to Book    booking → Booking   retailed → Retailed
+     delivered → Delivered        lost → Lost
+   Pool leads carry `pool: true`. They're the wider pipeline, not this month's target
+   ledger, so the target-table drill-downs, the retailed-value column, incentives and
+   cancellation requests stay on the hand-written month-to-date leads.
+   Owners: an assigned SE keeps their name (every pool SE exists in ORG). Unassigned leads
+   go round-robin to the store's active SEs per this app's branches (Aundh: Rahul, Divya,
+   Kiran · Shivaji Nagar: Arjun, Meera, Sameer). Pool calls made by the telecaller are
+   shown as the store's CRE (Aundh: Kavya Suresh · Shivaji Nagar: Meera Iyer, as in
+   Admin → Users) — the pool's telecaller shares this login's name. */
+const POOL_STAGE = { new: "New", attempted: "New", contacted: "Qualified", interested: "Qualified",
+  test_ride: "Ready to Book", booking: "Booking", retailed: "Retailed", delivered: "Delivered", lost: "Lost" };
+const POOL_CRE = { L014: "Kavya Suresh", L015: "Meera Iyer" };
+const POOL_RR = { L014: [12, 13, 14], L015: [10, 11, 16] };
+const POOL_NEXT = { new: "First call within the hour", attempted: "Retry call — WhatsApp sent",
+  contacted: "Share quote and EMI options", interested: "Fix a test ride slot",
+  test_ride: "Collect booking amount", booking: "Confirm allocation and documents",
+  retailed: "Schedule delivery", delivered: "Day-1 feedback call", lost: "Re-engage after 30 days" };
+const POOL_ORDER = ["new", "attempted", "contacted", "interested", "test_ride", "booking", "retailed", "delivered", "lost"];
+const IST_MS = 5.5 * 3600e3;
+const istDay = (iso) => Math.floor((new Date(iso).getTime() + IST_MS) / 864e5);
+const POOL_TODAY = istDay("2026-11-19T10:00:00+05:30");
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const poolDaysAgo = (iso) => POOL_TODAY - istDay(iso);
+const poolWhen = (iso) => { const d = poolDaysAgo(iso); return d <= 0 ? "Today" : `${d}d ago`; };
+const poolDate = (iso) => { const d = new Date(new Date(iso).getTime() + IST_MS); return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`; };
+const poolTime = (iso) => { const d = new Date(new Date(iso).getTime() + IST_MS); const h = d.getUTCHours();
+  return `${h % 12 || 12}:${String(d.getUTCMinutes()).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`; };
+const poolDur = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+const poolFollowUp = (iso) => { if (!iso) return "—"; const d = -poolDaysAgo(iso);
+  return d < 0 ? `Overdue · ${poolDate(iso)}` : d === 0 ? "Today" : d === 1 ? "Tomorrow" : `In ${d} days`; };
+
+(() => {
+  const handWritten = new Set(LEADS.map(l => l.name));
+  const seByName = Object.fromEntries(flatten(ORG).map(s2 => [s2.name, s2]));
+  const nameOfId = Object.fromEntries(flatten(ORG).map(s2 => [s2.id, s2.name]));
+  const rr = { L014: 0, L015: 0 };
+  const added = leadsFor("manager")
+    .filter(p => !handWritten.has(p.name))   // never clash with a scripted customer
+    .map((p, i) => {
+      const stage = POOL_STAGE[p.stage];
+      const se = p.se && seByName[p.se];
+      const ownerId = se ? se.id : POOL_RR[p.store][rr[p.store]++ % POOL_RR[p.store].length];
+      const owner = nameOfId[ownerId];
+      const cre = POOL_CRE[p.store];
+      const value = Math.round(((p.variant.startsWith("750W") ? 166748 : 162748)
+        + (p.variant.includes("Plus Five") ? 9912 : p.variant.includes("Plus Two") ? 5899 : 0)) / 100) * 100;
+      const late = POOL_ORDER.indexOf(p.lostAt || p.stage);
+      const t = (iso) => new Date(iso).getTime();
+      const ev = [{ at: t(p.createdAt) - 1, what: `New lead · ${p.source} · ${p.locality}`, who: `${cre.split(" ")[0]} · CRE` }];
+      p.calls.forEach(c => ev.push({ at: t(c.at),
+        what: c.connected ? `Call connected (${poolDur(c.durationSec)}) — ${c.comment}` : `${c.outcome} — ${c.comment}`,
+        who: c.by === p.se ? `${p.se.split(" ")[0]} · SE` : `${cre.split(" ")[0]} · CRE` }));
+      if (p.testRideAt) ev.push({ at: t(p.testRideAt), what: `Test ride completed at ${p.storeName} showroom`, who: `${owner.split(" ")[0]} · SE` });
+      if (p.bookingAmount) ev.push({ at: (t(p.testRideAt || p.createdAt) + t(p.lastActivityAt)) / 2,
+        what: `Booking amount ₹2,500 received · ${p.colour}`, who: `${owner.split(" ")[0]} · SE` });
+      if (p.stage === "retailed") ev.push({ at: t(p.lastActivityAt) + 1, what: "Invoice raised — RTO registration in progress", who: `${owner.split(" ")[0]} · SE` });
+      if (p.stage === "delivered") ev.push({ at: t(p.lastActivityAt) + 1, what: `Delivered at ${p.storeName} showroom`, who: `${owner.split(" ")[0]} · SE` });
+      if (p.stage === "lost") ev.push({ at: t(p.lastActivityAt) + 1,
+        what: `Marked lost — ${p.lostReason}${p.lostTo ? ` (${p.lostTo})` : ""}`, who: `${(p.se || cre).split(" ")[0]} · ${p.se ? "SE" : "CRE"}` });
+      const note = p.note.includes("₹—") ? "Booked with ₹2,500 token." : p.note;
+      ev.push({ at: t(p.lastActivityAt) + 2, what: `Note — ${note}`, who: `${(p.se || cre).split(" ")[0]} · ${p.se ? "SE" : "CRE"}` });
+      ev.sort((a, b) => b.at - a.at);
+      const connected = p.calls.filter(c => c.connected).length;
+      return {
+        id: 1000 + i, pool: true, ref: p.id, ownerId, owner, name: p.name, model: `Indie ${p.variant}`, stage, value,
+        days: Math.max(1, poolDaysAgo(p.lastActivityAt)),
+        phone: p.phone, source: p.source, store: p.store, storeName: p.storeName, locality: p.locality,
+        commPref: ["Facebook Ad", "Instagram Ad", "OLX"].includes(p.source) || (i % 4 === 1) ? "whatsapp" : "phone",
+        exchange: !!p.exchange, finance: !!p.finance, exchangeInfo: p.exchange, financeInfo: p.finance,
+        budget: p.finance ? `EMI · ₹${(p.finance.amount / 100000).toFixed(1)} L loan` : value > 170000 ? "₹1.7–1.8 L" : "₹1.6–1.7 L",
+        testDrive: p.testRideAt ? `Done · ${poolDate(p.testRideAt)}` : late >= 4 ? "Done · showroom" : p.stage === "interested" ? "To be scheduled" : "Not yet",
+        docs: ["retailed", "delivered"].includes(p.stage) ? 6 : p.stage === "booking" ? 2 + (i % 3) : p.stage === "test_ride" && p.finance ? 1 : 0,
+        next: p.stage === "delivered" && poolDaysAgo(p.lastActivityAt) > 10 ? "First service reminder at 1,000 km" : POOL_NEXT[p.stage],
+        followUp: poolFollowUp(p.followUpAt), followUpAt: p.followUpAt, colour: p.colour, rating: p.rating,
+        lostReason: p.lostReason, lostAt: p.lostAt ? POOL_STAGE[p.lostAt] : null, lostTo: p.lostTo,
+        calls: p.calls, connectedCalls: connected, cre, seName: p.se,
+        createdAt: p.createdAt, lastActivityAt: p.lastActivityAt, testRideAt: p.testRideAt,
+        status: p.stage === "lost" ? (poolDaysAgo(p.lastActivityAt) <= 90 ? "Lost <3m" : "Lost <6m")
+          : ["new", "attempted"].includes(p.stage) ? "Pre-Qualification"
+          : ["contacted", "interested"].includes(p.stage) ? "Qualification" : "Opportunity",
+        timeline: ev.map(e => ({ when: poolWhen(new Date(e.at).toISOString()), what: e.what, who: e.who })),
+      };
+    });
+  // Active leads by follow-up (overdue first), then post-sale by recency, then lost.
+  const rank = (l) => (l.stage === "Lost" ? 2 : l.followUpAt ? 0 : 1);
+  added.sort((a, b) => rank(a) - rank(b)
+    || (rank(a) === 0 ? a.followUpAt.localeCompare(b.followUpAt) : b.lastActivityAt.localeCompare(a.lastActivityAt)));
+  added.forEach((l, i) => { l.id = 1000 + i; });
+  LEADS.push(...added);
+})();
+
 // Retailed value per owner, derived from the leads themselves.
 // A funnel status distinct from `stage` — Booking/Retailed/Delivered track the deal once
 // it exists; this tracks where a lead sits (or died) before that, for segmentation.
 const ADMIN_LEAD_STATUSES = ["Pre-Qualification", "Qualification", "Opportunity", "Lost <3m", "Lost <6m", "Lost"];
 LEADS.forEach(l => {
+  if (l.pool) return;   // pool leads carry a status derived from their real stage
   const bucket = (l.id * 7919) % 10;
   if (bucket < 2) {
     const sinceLost = (l.id * 104729) % 220;
@@ -238,7 +338,7 @@ LEADS.forEach(l => {
 });
 
 const LEAD_VALUE_BY_OWNER = LEADS.reduce((m, l) => {
-  if (l.stage === "Retailed" || l.stage === "Delivered") m[l.ownerId] = (m[l.ownerId] || 0) + l.value;
+  if (!l.pool && (l.stage === "Retailed" || l.stage === "Delivered")) m[l.ownerId] = (m[l.ownerId] || 0) + l.value;
   return m;
 }, {});
 
@@ -263,7 +363,7 @@ function Avatar({ r, size = 28 }) {
    the same view, not a manager-only summary of it. */
 function LeadCard({ lead, onOpen, handling }) {
   const mine = handling && handling[lead.id];
-  const tone = lead.stage === "Retailed" ? C.green : lead.stage === "Booking" ? C.teal : C.warm;
+  const tone = lead.stage === "Retailed" || lead.stage === "Delivered" ? C.green : lead.stage === "Booking" ? C.teal : lead.stage === "Lost" ? C.ghost : C.warm;
   return (
     <button onClick={() => onOpen(lead)} style={{
       display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
@@ -296,8 +396,9 @@ function LeadScreen({ lead, onBack, showToast, handling, onTakeOver, onReassign 
   const [taking, setTaking] = useState(false);
   const [why, setWhy] = useState("");
   const mine = handling && handling[lead.id];
-  const steps = ["Ready to Book", "Booking", "Retailed", "Delivered"];
-  const at = steps.indexOf(lead.stage);
+  const steps = ["New", "Qualified", "Ready to Book", "Booking", "Retailed", "Delivered"];
+  const lost = lead.stage === "Lost";
+  const at = steps.indexOf(lost ? lead.lostAt : lead.stage);
   const esc = lead.escalation;
 
   return (
@@ -332,12 +433,18 @@ function LeadScreen({ lead, onBack, showToast, handling, onTakeOver, onReassign 
           {steps.map((st, i) => (
             <span key={st} style={{ flex: 1, textAlign: "center" }}>
               <span style={{ display: "block", height: 4, borderRadius: 999,
-                background: i <= at ? C.primary : C.border, marginBottom: 5 }} />
+                background: i <= at ? (lost ? C.ghost : C.primary) : C.border, marginBottom: 5 }} />
               <span style={{ fontFamily: F, fontSize: 9, fontWeight: i === at ? 800 : 500,
-                color: i === at ? C.primary : C.faint }}>{st}</span>
+                color: i === at ? (lost ? C.sub : C.primary) : C.faint }}>{st}</span>
             </span>
           ))}
         </div>
+        {lost && (
+          <div style={{ marginTop: 10, background: C.hotSoft, borderRadius: 8, padding: "7px 10px",
+            fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.hot }}>
+            Lost at {lead.lostAt || "enquiry"} · {lead.lostReason}{lead.lostTo ? ` · bought ${lead.lostTo}` : ""}
+          </div>
+        )}
         <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
           <TagChip label={lead.commPref === "whatsapp" ? "WhatsApp only" : "Phone"} on />
           <TagChip label="Exchange" on={lead.exchange} />
@@ -374,6 +481,14 @@ function LeadScreen({ lead, onBack, showToast, handling, onTakeOver, onReassign 
         <InfoRow k="Deal value" v={inr(lead.value)} />
         <InfoRow k="Test ride" v={lead.testDrive} />
         <InfoRow k="Documents" v={`${lead.docs} / 6`} />
+        {lead.pool && <>
+          {lead.followUpAt && <InfoRow k="Next follow-up" v={lead.followUp} />}
+          <InfoRow k="Colour" v={lead.colour} />
+          <InfoRow k="Branch" v={`${lead.storeName} · ${lead.locality}`} />
+          {lead.exchangeInfo && <InfoRow k="Exchange" v={`${lead.exchangeInfo.year} ${lead.exchangeInfo.bike} · ${inr(lead.exchangeInfo.value)}`} />}
+          {lead.financeInfo && <InfoRow k="Finance" v={`${lead.financeInfo.lender} · ${inr(lead.financeInfo.amount)}`} />}
+          <InfoRow k="Calls" v={`${lead.calls.length} logged · ${lead.connectedCalls} connected`} />
+        </>}
       </InfoCard>
 
       <InfoCard title="Activity">
@@ -381,7 +496,10 @@ function LeadScreen({ lead, onBack, showToast, handling, onTakeOver, onReassign 
           <div key={i} style={{ display: "flex", gap: 9, padding: "7px 0",
             borderBottom: i < lead.timeline.length - 1 ? `1px solid ${C.border}` : "none" }}>
             <span style={{ width: 52, flexShrink: 0, fontFamily: F, fontSize: 11, color: C.faint }}>{t2.when}</span>
-            <span style={{ fontFamily: F, fontSize: 12.5, color: C.ink, lineHeight: 1.4 }}>{t2.what}</span>
+            <span style={{ minWidth: 0, fontFamily: F, fontSize: 12.5, color: C.ink, lineHeight: 1.4 }}>
+              {t2.what}
+              {t2.who && <span style={{ display: "block", fontSize: 10.5, color: C.faint, marginTop: 1 }}>{t2.who}</span>}
+            </span>
           </div>
         ))}
       </InfoCard>
@@ -450,7 +568,8 @@ function LeadScreen({ lead, onBack, showToast, handling, onTakeOver, onReassign 
 /* Result of tapping a number in the target table. */
 function DrillScreen({ drill, onBack, onOpenLead, handling }) {
   const ids = subtreeIds(drill.node);
-  const rows = LEADS.filter(l => ids.includes(l.ownerId) && l.stage === drill.stage);
+  // Month-to-date ledger only — the number tapped is the number listed.
+  const rows = LEADS.filter(l => !l.pool && ids.includes(l.ownerId) && l.stage === drill.stage);
   // Count the people actually carrying leads, not every manager in the subtree.
   const owners = new Set(rows.map(l => l.ownerId)).size;
   return (
@@ -2296,7 +2415,7 @@ function ManagerCallLogForm({ lead, onCancel, onSubmit }) {
 
 function ManagerQueueRow({ lead, rank, onOpen, onLogCall, showToast }) {
   const [logging, setLogging] = useState(false);
-  const tone = lead.stage === "Retailed" ? C.green : lead.stage === "Booking" ? C.teal : C.warm;
+  const tone = lead.stage === "Retailed" || lead.stage === "Delivered" ? C.green : lead.stage === "Booking" ? C.teal : lead.stage === "Lost" ? C.ghost : C.warm;
   return (
     <div onClick={() => onOpen(lead)} style={{ display: "flex", gap: 10, background: C.card, borderRadius: 14,
       border: `1px solid ${C.border}`, borderLeft: `3px solid ${tone}`, padding: 12, marginBottom: 9, cursor: "pointer" }}>
@@ -2332,14 +2451,18 @@ function OrgLeadsScreen({ sub, handling, transfers, onOpen, managerActivity = []
   const nameOf = (id) => (flatten(ORG).find(s2 => s2.id === id) || {}).name || "";
   const all = LEADS.map(l => ({ ...l, ownerId: ownerOf(l), owner: nameOf(ownerOf(l)) }));
   const TITLES = { all: "All Leads", queue: "Call Queue", followups: "Follow-Ups", activity: "Recent Activity" };
-  const base = sub === "queue" ? all.filter(l => l.days >= 5 && l.stage !== "Delivered")
-    : sub === "followups" ? all.filter(l => l.days < 5 && l.stage !== "Delivered") : all;
+  const isOpen = (l) => l.stage !== "Delivered" && l.stage !== "Lost";
+  const base = sub === "queue" ? all.filter(l => l.days >= 5 && isOpen(l))
+    : sub === "followups" ? all.filter(l => l.days < 5 && isOpen(l)) : all;
   const TABS = [
     { key: "all",   label: "All",           match: () => true },
+    { key: "new",   label: "New",           match: (l) => l.stage === "New" },
+    { key: "qual",  label: "Qualified",     match: (l) => l.stage === "Qualified" },
     { key: "ready", label: "Ready to Book", match: (l) => l.stage === "Ready to Book" },
     { key: "book",  label: "Booking",       match: (l) => l.stage === "Booking" },
     { key: "ret",   label: "Retailed",      match: (l) => l.stage === "Retailed" || l.stage === "Delivered" },
-  ];
+    { key: "lost",  label: "Lost",          match: (l) => l.stage === "Lost" },
+  ].filter(x => x.key === "all" || base.some(x.match));
   const t2 = TABS.find(x => x.key === tab) || TABS[0];
   const rows = base.filter(t2.match).filter(l => !q || l.name.toLowerCase().includes(q.toLowerCase())
     || l.model.toLowerCase().includes(q.toLowerCase()) || l.owner.toLowerCase().includes(q.toLowerCase()));
@@ -2372,11 +2495,12 @@ function OrgLeadsScreen({ sub, handling, transfers, onOpen, managerActivity = []
           <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search name, model or rep…"
             style={{ width: "100%", boxSizing: "border-box", border: `1.5px solid ${C.border}`, borderRadius: 10,
               padding: "9px 12px", fontFamily: F, fontSize: 12.5, color: C.ink, background: C.card, outline: "none", marginBottom: 10 }} />
-          <div style={{ display: "flex", gap: 5, marginBottom: 11 }}>
+          <div data-testid="org-leads-tabs" style={{ display: "flex", gap: 5, marginBottom: 11, overflowX: "auto",
+            margin: "0 -14px 11px", padding: "0 14px", scrollbarWidth: "none" }}>
             {TABS.map(x => {
               const on = tab === x.key; const n = base.filter(x.match).length;
               return (
-                <button key={x.key} onClick={() => setTab(x.key)} style={{ flex: 1, padding: "8px 3px", borderRadius: 9,
+                <button key={x.key} onClick={() => setTab(x.key)} style={{ flex: "1 0 auto", minWidth: 58, padding: "8px 7px", borderRadius: 9,
                   cursor: "pointer", border: `1.5px solid ${on ? C.primary : C.border}`, background: on ? C.primarySoft : C.card,
                   display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
                   <span style={{ fontFamily: F, fontSize: 13.5, fontWeight: 800, color: on ? C.primary : C.ink, lineHeight: 1 }}>{n}</span>
@@ -2705,6 +2829,25 @@ const ADMIN_SE_CALL_LOG = [];
 const ADMIN_TEST_DRIVES = [];
 
 LEADS.forEach(l => {
+  // Pool leads bring their real call history (who called, outcome, duration, comment).
+  if (l.pool) {
+    const nextFollowUp = l.followUpAt ? l.followUp : "—";
+    l.calls.forEach(c => {
+      const row = { dateLabel: adminDaysAgoLabel(Math.max(0, poolDaysAgo(c.at))), time: poolTime(c.at),
+        customer: l.name, phone: l.phone, model: l.model, outcome: c.connected ? "Connected" : c.outcome,
+        duration: c.connected ? poolDur(c.durationSec) : "—", notes: c.comment, nextFollowUp };
+      if (l.seName && c.by === l.seName) ADMIN_SE_CALL_LOG.push({ ...row, se: l.seName, stage: l.stage, testDrive: l.testRideAt ? "Yes" : "No" });
+      else ADMIN_CRE_CALL_LOG.push({ ...row, telecaller: l.cre, source: l.source });
+    });
+    if (l.testRideAt) {
+      const ride = l.calls.find(c => /test ride done|took a 5 km ride|compared ride/i.test(c.comment));
+      ADMIN_TEST_DRIVES.push({ dateLabel: adminDaysAgoLabel(Math.max(0, poolDaysAgo(l.testRideAt))), time: poolTime(l.testRideAt),
+        customer: l.name, phone: l.phone, model: "Indie", variant: l.model.slice(6), se: l.owner, branch: l.storeName,
+        status: "Completed", feedback: ride ? ride.comment : "Liked it, comparing options",
+        converted: (l.stage === "Retailed" || l.stage === "Delivered") ? "Yes" : "No" });
+    }
+    return;
+  }
   const owner = ADMIN_USERS_SEED.find(u => u.id === l.ownerId);
   const branch = owner ? owner.branch : "Aundh";
   const cre = ADMIN_USERS_SEED.find(u => u.role === "CRE" && u.branch === branch);
@@ -2760,7 +2903,7 @@ const ADMIN_WALLET_BILLING = LEADS.map(l => {
   const seed = l.id * 41;
   const smsSent = 2 + (seed % 6);
   const waSent = 1 + (seed % 4);
-  const calls = 1 + (seed % 3);
+  const calls = l.pool ? l.calls.length : 1 + (seed % 3);
   const smsCost = smsSent * 0.20;
   const waCost = waSent * 0.90;
   const callCost = calls * 1.50;
@@ -4047,7 +4190,7 @@ function AdminCancellationCard({ lead, onOpen, onLogCall, showToast }) {
 function BoardScreen({ actions, onResolve, onPick, org, onDrill, onOpenLead, handling = {}, onLogFollowUp, onOpenCancellation, onLogCall, showToast }) {
   const nameOf = (id) => (flatten(ORG).find(s2 => s2.id === id) || {}).name || "";
   const cancellations = onOpenCancellation ? LEADS
-    .filter(l => (l.stage === "Booking" || l.stage === "Retailed") && l.id % 11 === 0)
+    .filter(l => !l.pool && (l.stage === "Booking" || l.stage === "Retailed") && l.id % 11 === 0)
     .map(l => ({ ...l, owner: nameOf(l.ownerId) })) : [];
   const r = roll(org);
   const [expanded, setExpanded] = useState(new Set([org.id]));
@@ -5056,7 +5199,7 @@ function adminTierFor(retailed, tiers) {
 }
 
 function adminComputeIncentive(rep, tiers, volumeOn, modelBonus, modelOn, variantRules, addons, addonsOn, targetBonus, targetBonusOn) {
-  const closed = LEADS.filter(l => l.ownerId === rep.id && (l.stage === "Retailed" || l.stage === "Delivered"));
+  const closed = LEADS.filter(l => !l.pool && l.ownerId === rep.id && (l.stage === "Retailed" || l.stage === "Delivered"));
   const tier = adminTierFor(rep.retailed, tiers);
 
   // Grouped by the exact model + variant a scooter was — the finest grain a variant rule can

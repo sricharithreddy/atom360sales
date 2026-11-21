@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { stockFor, unitsOf, PUNE_STORES, INVENTORY_AS_OF } from "../data/epicRiverInventory.js";
 import { MetricBox, MetricGrid } from "../ui/MetricGlass.jsx";
+import { leadsFor } from "../data/epicRiverLeads.js";
 import {
   AlertTriangle, PlayCircle, Headphones, MessageSquare, Flame, TrendingDown, TrendingUp, Settings, Wind, Eye, User, Calendar, MessageCircle, IndianRupee, Heart, RefreshCw,
   Phone, Bike as ScooterIcon, FileText, ChevronLeft, ChevronRight,
@@ -811,6 +812,221 @@ const RAW_LEADS = [
     notes: ["First EV — checking a charging point in her society parking.", "Wants delivery before month-end for the festive offer."],
     timeline: [{ type: "call", text: "Discussed home charging & PM E-DRIVE subsidy", date: d(-1) }] }),
 ];
+
+/* ============================== SHARED SAMPLE POOL (Epic River) ==============================
+   ~130 extra leads for this login, mapped once at module load from the shared pool in
+   src/data/epicRiverLeads.js (leadsFor("sales") = Rahul Kumar's leads + unassigned Aundh
+   walk-ins). The hand-written leads above stay first — they drive the scripted demo moments.
+   Pool dates are relative to the pool's "today" (19 Nov); they are shifted day-for-day onto this
+   app's fixed demo today so follow-ups land on the same relative day.
+   Stage mapping (generic → this app):
+     contacted (unassigned walk-in handed to the SE) → New · interested → Contacted ·
+     test_ride (ride still to happen, or done and weighing up) → Test Ride ·
+     test_ride (ride done, rated 3+, now negotiating) → Opportunity · booking → Booking ·
+     retailed → Retailed · delivered → Delivered · lost → Lost.
+   Calls: every pool call (telecaller Priya Nambiar first, then Rahul — "You") becomes a call
+   entry on the timeline with outcome, duration and comment; channelUsage and lastContactedAt
+   are derived from them. */
+const POOL_TODAY_MS = new Date("2026-11-19T00:00:00+05:30").getTime();
+const IST_OFFSET_MS = 330 * 60000;
+const poolOffset = (iso) => Math.floor((new Date(iso).getTime() - POOL_TODAY_MS) / 86400000);
+const poolDate = (iso) => d(poolOffset(iso));
+const poolHourIST = (iso) => new Date(new Date(iso).getTime() + IST_OFFSET_MS).getUTCHours();
+const poolWindow = (iso) => { const h = poolHourIST(iso); return h < 12 ? "morning" : h < 16 ? "afternoon" : "evening"; };
+const POOL_LOST_KEY = {
+  "Bought competitor": "competitor", "Price / budget": "budget", "Low exchange value": "budget",
+  "Postponed purchase": "postponed", "Charging / range concern": "not_interested",
+  "Not reachable": "other", "Finance rejected": "other", "Long delivery wait": "other", "Other": "other",
+};
+const POOL_STAGE_LABEL = { attempted: "first contact", contacted: "first contact", interested: "Contacted", test_ride: "Test Ride", booking: "Booking" };
+// Same on-road figures as VARIANT_PRICES (declared further down, so not usable at module load here).
+const POOL_VARIANT_LAKH = { "750W": 1.67, "750W + Plus Two": 1.73, "750W + Plus Five": 1.77, "480W": 1.63, "480W + Plus Two": 1.69, "480W + Plus Five": 1.73 };
+const fmtDur = (s) => `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s`;
+
+function poolAppStage(p) {
+  if (p.stage === "new" || p.stage === "attempted" || p.stage === "contacted") return "New";
+  if (p.stage === "interested") return "Contacted";
+  if (p.stage === "test_ride") return (/booked/i.test(p.note) || p.rating < 3) ? "Test Ride" : "Opportunity";
+  return { booking: "Booking", retailed: "Retailed", delivered: "Delivered", lost: "Lost" }[p.stage];
+}
+
+function mapPoolLead(p, usedNames) {
+  const h = hashStr(p.id);
+  const stage = poolAppStage(p);
+  const open = !["Booking", "Retailed", "Delivered", "Lost"].includes(stage);
+  const rideScheduled = p.stage === "test_ride" && /booked/i.test(p.note);
+  const calls = [...(p.calls || [])].sort((a, b) => new Date(a.at) - new Date(b.at));
+  const connected = calls.filter(c => c.connected);
+  const lastConnected = connected[connected.length - 1] || null;
+  const lastContactOff = lastConnected ? poolOffset(lastConnected.at) : poolOffset(p.createdAt);
+  const quiet = open && stage !== "New" && lastContactOff <= -8;
+  const priceLakh = POOL_VARIANT_LAKH[p.variant] || 1.67;
+
+  // Name collisions inside the pool get a different surname so search/cards stay unambiguous.
+  let name = p.name;
+  if (usedNames.has(name)) { const alt = ["Apte", "Karnik", "Lele", "Mhatre", "Ranade"][h % 5]; name = `${p.name.split(" ")[0]} ${alt}`; }
+  usedNames.add(name);
+
+  // ---- Follow-up (open stages only; closed stages surface via delivery dates instead) ----
+  let followUp = null;
+  if (open && p.followUpAt) {
+    const off = poolOffset(p.followUpAt);
+    // About a third of today's calls have no preferred window — they go to "Do These First".
+    const window = off === 0 && h % 3 === 0 ? null : poolWindow(p.followUpAt);
+    followUp = { date: d(off), window };
+  } else if (open) {
+    followUp = { date: d(1 + (h % 4)), window: poolWindow(p.lastActivityAt) };
+  }
+  const fuOff = followUp ? daysUntil(followUp.date) : 0;
+
+  // ---- Bucket / propensity / flag ----
+  let bucket;
+  if (stage === "New") bucket = "new";
+  else if (!open) bucket = stage === "Lost" ? "nurture" : "ready";
+  else if (quiet) bucket = "quiet";
+  else if (stage === "Contacted") bucket = p.rating >= 4 ? (p.finance ? "finance" : "price") : p.rating <= 1 ? "nurture" : "comparing";
+  else if (stage === "Test Ride") bucket = p.rating >= 4 ? "ready" : p.finance ? "finance" : "comparing";
+  else bucket = p.rating >= 4 ? "ready" : "price"; // Opportunity
+  const baseProp = { New: 30, Contacted: 38, "Test Ride": 52, Opportunity: 62, Booking: 90, Retailed: 98, Delivered: 100, Lost: 10 }[stage];
+  const propensity = Math.min(100, stage === "Delivered" || stage === "Retailed" ? baseProp : baseProp + (p.rating - 3) * 7 + (h % 7));
+  const flag = quiet || fuOff < 0 ? "attention" : p.rating >= 4 || !open && stage !== "Lost" ? "positive" : "neutral";
+
+  // ---- Exchange / Finance modules ----
+  const labels = [];
+  let exchange = null;
+  if (p.exchange) {
+    labels.push("Exchange");
+    const appraised = stage !== "New" && stage !== "Contacted";
+    exchange = {
+      model: p.exchange.bike, variant: ["STD", "DLX", "ZX", "SMW"][h % 4], year: String(p.exchange.year),
+      odometer: String(12000 + (h % 40) * 1000), condition: ["good", "bad", "very_good", "good"][h % 4],
+      photos: appraised ? 2 + (h % 3) : 0, appraisalScheduled: appraised, appraisedValue: appraised ? +(p.exchange.value / 100000).toFixed(2) : null,
+    };
+  }
+  let finance = null;
+  if (p.finance) {
+    labels.push("Finance");
+    const status = stage === "Lost" && p.lostReason === "Finance rejected" ? "rejected"
+      : stage === "New" ? "" : stage === "Contacted" ? "applied"
+      : stage === "Test Ride" ? "review" : stage === "Opportunity" ? (h % 2 ? "approved" : "review") : "approved";
+    finance = { loanAmount: (p.finance.amount / 100000).toFixed(2), bank: p.finance.lender, status };
+  }
+  if (open && p.rating === 5 && fuOff <= 1) labels.push("Urgent");
+
+  // ---- Timeline (newest first once sorted) ----
+  const timeline = [];
+  const created = poolDate(p.createdAt);
+  timeline.push({ type: "visit", date: created, text: p.source === "Walk-in"
+    ? `Walked in at ${p.storeName} showroom — enquired about the Indie ${p.variant}`
+    : `New enquiry via ${p.source} (${p.locality}) — routed to telecaller Priya Nambiar` });
+  calls.forEach(c => {
+    const who = c.by === "Rahul Kumar" ? "You" : `${c.by} (telecaller)`;
+    const comment = (c.comment || "").trim();
+    const text = c.connected
+      ? `Connected call · ${who} · ${fmtDur(c.durationSec || 0)} — ${comment}`
+      : `Missed call · ${who} · ${!comment ? c.outcome : comment.toLowerCase().startsWith(String(c.outcome).toLowerCase()) ? comment : `${c.outcome} — ${comment}`}`;
+    timeline.push({ type: "call", date: poolDate(c.at), text, by: c.by, connected: c.connected, outcome: c.outcome, durationSec: c.durationSec, comment });
+  });
+  const firstSe = calls.find(c => c.by === "Rahul Kumar");
+  if (firstSe && calls[0] && calls[0].by !== "Rahul Kumar") {
+    timeline.push({ type: "visit", date: poolDate(firstSe.at), text: "Handed over by telecaller Priya Nambiar — qualified lead" });
+  }
+  let testDrive = null;
+  if (rideScheduled) {
+    const off = Math.max(0, fuOff);
+    testDrive = { mode: h % 4 === 0 ? "location" : "showroom", date: d(off), time: ["11:00", "12:30", "16:00", "17:30"][h % 4],
+      location: h % 4 === 0 ? { text: `${p.locality}, Pune`, mapsLink: "" } : null };
+  } else if (p.testRideAt) {
+    timeline.push({ type: "test-drive", date: poolDate(p.testRideAt),
+      text: `Test ride done — Indie ${p.variant}${p.colour ? ` in ${p.colour}` : ""}${p.rating >= 4 ? ", liked the ride quality" : ""}` });
+  }
+  const lastOff = poolOffset(p.lastActivityAt);
+  const quoteOff = Math.min(-1, lastOff - 1);
+  if (stage === "Opportunity" || (!open && stage !== "Lost")) {
+    const q = computeQuoteBreakup(priceLakh, [0, 1000, 2000, 1500][h % 4], 0, p.variant);
+    timeline.push({ type: "quote", date: d(quoteOff), text: `Quote shared — ${formatINR(q.total)}`, quoteDetails: q });
+  }
+  const mode = p.finance ? "Loan" : p.exchange ? "Exchange" : "Cash";
+  let booking = null, expectedDeliveryDate = null, retailDate = null, paymentDetails = null, actualDeliveryDate = null;
+  if (!open && stage !== "Lost") {
+    const bookOff = Math.min(0, lastOff);
+    const bookDate = d(stage === "Booking" ? bookOff : bookOff - 6);
+    timeline.push({ type: "booking", date: bookDate, text: `Booking confirmed — Indie ${p.variant}, ₹${(p.bookingAmount || 2500).toLocaleString("en-IN")} advance (${mode})` });
+    if (stage === "Booking") expectedDeliveryDate = d(h % 5 === 0 ? 0 : 1 + (h % 9));
+    else if (stage === "Retailed") expectedDeliveryDate = d(h % 6 === 0 ? 0 : 1 + (h % 6));
+    else expectedDeliveryDate = d(Math.min(-1, lastOff));
+    booking = { advance: String(p.bookingAmount || 2500), deliveryDate: expectedDeliveryDate, mode };
+    if (stage === "Retailed" || stage === "Delivered") {
+      retailDate = d(stage === "Retailed" ? bookOff : bookOff - 2);
+      const total = computeQuoteBreakup(priceLakh, 0, 0, p.variant).total;
+      const fin = p.finance ? Math.min(p.finance.amount, total - 10000) : 0;
+      paymentDetails = { ...defaultPaymentBreakdown(), financeAmount: fin ? String(fin) : "", financeCompany: p.finance ? p.finance.lender : "",
+        cashAmount: String(total - fin), insuranceCompany: "ICICI Lombard", isFullPayment: true };
+      timeline.push({ type: "booking", date: retailDate, text: `Retailed — invoice raised, ${formatINR(total)} settled${p.finance ? ` (${p.finance.lender} loan)` : ""}` });
+    }
+    if (stage === "Delivered") {
+      actualDeliveryDate = expectedDeliveryDate;
+      timeline.push({ type: "delivery", date: actualDeliveryDate, text: `Vehicle delivered — ${p.note.replace(/^Delivered[;—,]?\s*/i, "") || "customer happy"}` });
+    }
+  }
+  let lostReason = null;
+  if (stage === "Lost") {
+    const key = POOL_LOST_KEY[p.lostReason] || "other";
+    const atLabel = POOL_STAGE_LABEL[p.lostAt] || "Contacted";
+    const note = `${p.lostReason}${p.lostTo ? ` — bought ${p.lostTo}` : ""} · dropped at ${atLabel} stage`;
+    lostReason = { reason: key, note, date: d(Math.min(0, lastOff)) };
+    timeline.push({ type: "call", date: d(Math.min(0, lastOff)), text: `Marked as Lost — ${LOST_REASONS.find(r => r.key === key)?.label || "Other"} (${note})` });
+  }
+  // Newest first; same-day entries keep their natural order (later events first).
+  const ordered = timeline.map((t, i) => ({ t, i })).sort((a, b) => (b.t.date - a.t.date) || (b.i - a.i)).map(x => x.t);
+
+  // ---- Copy for the cards ----
+  const firstName = name.split(" ")[0];
+  const lastComment = lastConnected?.comment || p.note;
+  const nextAction = {
+    New: fuOff < 0 ? `Overdue — call ${firstName} now, first SE contact pending` : `First SE call — introduce yourself and offer a test ride`,
+    Contacted: quiet ? `Gone quiet — WhatsApp ${firstName} a fresh offer` : p.finance ? `Share EMI breakup and push for a test ride` : `Invite ${firstName} for a test ride this week`,
+    "Test Ride": rideScheduled ? `Confirm the test ride slot and keep a ${p.colour} demo ready` : `Follow up on the test ride — ask what's holding the decision`,
+    Opportunity: p.rating >= 4 ? `Close the booking — ask for the ₹2,500 token` : `Send a revised quote and handle the price objection`,
+    Booking: `Keep ${firstName} updated on ${p.colour} allotment and delivery`,
+    Retailed: `Fix the delivery slot and finish RTO paperwork`,
+    Delivered: `Ask for a Google review and referrals`,
+    Lost: `Light re-engage in 60 days — check if still open`,
+  }[stage];
+  const summary = stage === "Lost" ? `Lost — ${p.lostReason}${p.lostTo ? ` (${p.lostTo})` : ""}. ${lastComment}` : lastComment;
+  const docsDone = (keys) => { const docs = defaultDocuments(); keys.forEach(k => { docs[k] = { done: true, via: "customer" }; }); return docs; };
+  const budgetLow = priceLakh - 0.05;
+  return mkLead({
+    owner: 10, poolId: p.id, name, phone: p.phone.replace(/^\+91 (\d{5})(\d{5})$/, "$1 $2"), location: p.locality,
+    model: "Indie", variant: p.variant, color: (stage === "New" || stage === "Contacted") && h % 3 === 0 ? "" : p.colour,
+    colorInterest: [p.colour], bucket, propensity, stage, source: p.source,
+    budget: `₹${budgetLow.toFixed(2)}–${(priceLakh + 0.03).toFixed(2)} L`,
+    targetDate: fmt(stage === "Delivered" ? actualDeliveryDate : expectedDeliveryDate || d(Math.max(fuOff, 0) + 7 + (h % 14))),
+    created, followUp, summary, flag, nextAction, labels,
+    exchange, finance, testDrive, booking, expectedDeliveryDate, retailDate, paymentDetails, actualDeliveryDate, lostReason,
+    commPref: open && h % 17 === 0 ? "whatsapp" : null,
+    channelUsage: { call: calls.length, whatsapp: calls.filter(c => /whatsapp/i.test(c.comment || "")).length },
+    lastContactedAt: lastConnected ? poolDate(lastConnected.at) : null,
+    callCount: calls.length, connectedCallCount: connected.length,
+    documents: stage === "Booking" ? docsDone(["aadhaar", "pan"]) : stage === "Retailed" || stage === "Delivered" ? docsDone(DOCUMENT_ITEMS.map(x => x.key)) : defaultDocuments(),
+    drivingLicense: stage === "Retailed" || stage === "Delivered" ? { done: true, via: "customer" } : { done: false, via: null },
+    notes: [p.note,
+      ...(p.exchange ? [`Exchange: ${p.exchange.year} ${p.exchange.bike}, customer expects ~₹${p.exchange.value.toLocaleString("en-IN")}.`] : []),
+      ...(p.finance ? [`Finance: ${p.finance.lender}, ₹${(p.finance.amount / 100000).toFixed(2)} L loan.`] : [])],
+    timeline: ordered,
+  });
+}
+
+// Sorted once: due/overdue first, then by follow-up date, then closed deals (latest first), Lost last.
+const POOL_LEADS = (() => {
+  const used = new Set(RAW_LEADS.map(l => l.name));
+  const mapped = leadsFor("sales").map(p => mapPoolLead(p, used));
+  const rank = (l) => l.stage === "Lost" ? 3 : l.followUp ? 0 : 2;
+  return mapped.sort((a, b) => rank(a) - rank(b)
+    || (a.followUp && b.followUp ? a.followUp.date - b.followUp.date || b.propensity - a.propensity : 0)
+    || ((b.timeline[0]?.date || 0) - (a.timeline[0]?.date || 0)));
+})();
+const SEED_LEADS = [...RAW_LEADS, ...POOL_LEADS];
 
 /* ============================== MOCK INVENTORY (flat variants — grouped by model for display) ============================== */
 const INVENTORY = [
@@ -9006,7 +9222,7 @@ export default function SalesExecutiveApp() {
   const [showProfile, setShowProfile] = useState(false);
   const [voiceFirst, setVoiceFirst] = useState(true);
   const [lang, setLang] = useState("en"); // "en" | "hi" | "te" | "mr" | "ta"
-  const [leads, setLeads] = useState(RAW_LEADS);
+  const [leads, setLeads] = useState(SEED_LEADS);
   const [toast, setToast] = useState("");
   const toastTimer = useRef(null);
   const [showAddLead, setShowAddLead] = useState(false);
