@@ -648,7 +648,8 @@ function poolDate(iso) {
   const x = new Date(iso);
   x.setDate(x.getDate() + POOL_DAY_SHIFT);
   // A pool timestamp later today than "now" would read as a call from the future.
-  return x > today ? new Date(today.getTime() - 25 * 60000) : x;
+  // Pull those back into the hours just gone, keeping their relative order.
+  return x > today ? new Date(today.getTime() - 15 * 60000 - ((x - today) % (5 * 3600e3))) : x;
 }
 const POOL_STAGE = { new: "New", attempted: "New", contacted: "Contacted", interested: "Opportunity", test_ride: "Test Drive", booking: "Booking", retailed: "Retailed", delivered: "Delivered" };
 const POOL_SOURCE = { "Google Ad": "Google", "Corporate/Fleet": "Corporate Tie-up" };
