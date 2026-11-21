@@ -41,11 +41,11 @@ export const STAGES = ["new", "attempted", "contacted", "interested", "test_ride
 export const TELECALLER = "Priya Nambiar";
 export const SALES_TEAM = [
   { name: "Rahul Kumar", store: "L014", login: true },   // the Sales Executive login
-  { name: "Meera Iyer", store: "L014" },
-  { name: "Arjun Nair", store: "L014" },
-  { name: "Divya Pillai", store: "L015" },
+  { name: "Divya Pillai", store: "L014" },
+  { name: "Kiran Bhat", store: "L014" },
+  { name: "Meera Iyer", store: "L015" },
+  { name: "Arjun Nair", store: "L015" },
   { name: "Sameer Khan", store: "L015" },
-  { name: "Kiran Bhat", store: "L015" },
 ];
 
 const NOTES = {
@@ -210,7 +210,16 @@ function buildCalls(l, i) {
 }
 
 /** The full pool (360 leads): ~62% Aundh, ~38% Shivaji Nagar; every stage well represented. */
-export const LEADS = Array.from({ length: 360 }, (_, i) => { const l = makeLead(i + 1); l.calls = buildCalls(l, i + 1); return l; });
+export const LEADS = Array.from({ length: 360 }, (_, i) => {
+  const l = makeLead(i + 1);
+  // A lead lost on exchange value must have had an exchange offer (separate seed: other fields unchanged).
+  if (l.lostReason === "Low exchange value" && !l.exchange) {
+    const r = rng("exch:" + (i + 1));
+    l.exchange = { bike: pick(r, EXCHANGE_BIKES), year: 2013 + Math.floor(r() * 9), value: 9000 + Math.round(r() * 12) * 1000 };
+  }
+  l.calls = buildCalls(l, i + 1);
+  return l;
+});
 
 /** Leads for a login.
  *  telecaller → early-funnel + lost (≥ 100)       sales → Rahul Kumar's leads + unassigned Aundh walk-ins (≥ 100)
