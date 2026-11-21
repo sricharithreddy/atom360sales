@@ -312,10 +312,12 @@ const aggOf = (t) => { let a = AGG.get(t.key); if (!a) { a = derive(sumIdx(t.ses
 const GROUP_AGG = derive(sumIdx(ALL_SE));
 
 /* ---------------- Insurer and finance-partner split (sample data) ----------------
-   ILLUSTRATIVE ONLY: these are typical dealer tie-ups for two-wheelers / EVs in South and West
-   India, not River's or Epic River's actual insurance or finance partners.
-   Each outlet ties up with 3–5 lenders, and with TATA AIG plus 1–3 other insurers; the group mix leans by state (Royal Sundaram in Tamil
-   Nadu, Go Digit in Karnataka / Telangana, Shriram in AP / TN districts, Ecofy in metros) and is
+   ILLUSTRATIVE ONLY. Insurers are typical dealer tie-ups for two-wheelers, not River's or Epic
+   River's actual insurers. Lenders are evfin and its reported co-lending partners (see LENDERS).
+   Every share, count and average below is sample data, not real volumes.
+   Each outlet ties up with TATA AIG plus 1–3 other insurers, and evfin plus 2–4 other lenders.
+   The mix leans by state (Royal Sundaram in Tamil Nadu, Go Digit in Karnataka / Telangana,
+   Shriram in AP / TN districts, Muthoot in TN and districts); the non-anchor weights are
    calibrated to the target group mix. Every SE's in-house policies (`ins`, `insPrem`) and in-house
    loans (`fin`, `loanAmt`) are split across the outlet's companies as integers that add back
    exactly, so any scope's split sums to that scope's policies / loans / ₹. Avg premium and avg
@@ -328,11 +330,15 @@ const INSURERS = [
   { name: "HDFC ERGO", mix: 4.2, f: 1.035 }, { name: "Go Digit", mix: 2.8, f: 0.965 },
   { name: "Royal Sundaram", mix: 1.4, f: 0.98 },
 ];
+// Lenders: evfin (Greaves Finance, an EV two-wheeler NBFC with a public financing tie-up with River
+// Mobility) and the institutions it is reported to co-lend with. The names are real; the SHARES are
+// illustrative sample data, not actual volumes. evfin is the anchor: every outlet ties up with it
+// (≈ 22–38% of the outlet's in-house loans, ≈ 30% group) plus 2–4 of the others.
 const LENDERS = [
-  { name: "IDFC FIRST Bank", mix: 24, f: 1.0 }, { name: "HDFC Bank", mix: 18, f: 1.04 },
-  { name: "Bajaj Finance", mix: 17, f: 0.97 }, { name: "Shriram Finance", mix: 14, f: 0.955 },
-  { name: "L&T Finance", mix: 11, f: 1.01 }, { name: "AU Small Finance Bank", mix: 9, f: 0.98 },
-  { name: "Ecofy", mix: 7, f: 1.045 },
+  { name: "evfin (Greaves Finance)", mix: 30, f: 1.02, anchor: [0.22, 0.38] },
+  { name: "IDFC FIRST Bank", mix: 18, f: 1.0 }, { name: "HDFC Bank", mix: 16, f: 1.04 },
+  { name: "Kotak Mahindra Bank", mix: 13, f: 1.01 }, { name: "Shriram Finance", mix: 13, f: 0.955 },
+  { name: "Muthoot Capital", mix: 10, f: 0.965 },
 ];
 const METROS = new Set(["Hyderabad", "Secunderabad", "Bengaluru", "Chennai", "Mumbai", "Navi Mumbai", "Thane", "Pune"]);
 function partnerTilt(kind, name, l) {
@@ -343,21 +349,23 @@ function partnerTilt(kind, name, l) {
     return 1;
   }
   if (name === "Shriram Finance") return (l.state === "Andhra Pradesh" || l.state === "Tamil Nadu") && !metro ? 2.2 : metro ? 0.45 : 0.9;
-  if (name === "Ecofy") return metro ? 2.0 : 0.4;
+  if (name === "Muthoot Capital") return l.state === "Tamil Nadu" ? (metro ? 1.5 : 2.2) : metro ? 0.55 : 1.4;
   return 1;
 }
-const SPLIT_KINDS = { ins: { list: INSURERS, n: "ins", amt: "insPrem", unit: 10 }, fin: { list: LENDERS, n: "fin", amt: "loanAmt", unit: 1000 } };
+// `others`: how many companies besides the anchor an outlet ties up with.
+const SPLIT_KINDS = { ins: { list: INSURERS, n: "ins", amt: "insPrem", unit: 10, others: [1, 3] },
+  fin: { list: LENDERS, n: "fin", amt: "loanAmt", unit: 1000, others: [2, 4] } };
 const SE_SPLIT = { ins: new Array(SES.length), fin: new Array(SES.length) };
 (() => {
   Object.entries(SPLIT_KINDS).forEach(([kind, K]) => {
     const target = K.list.map(c => c.mix);
     let base = [...target];
     const outletW = (l) => {
-      // Tie-ups: 3–5 companies (anchor + 1–3 others), drawn without replacement by (base × state
+      // Tie-ups: the anchor + K.others more, drawn without replacement by (base × state
       // tilt); then outlet weights. An anchor company takes a fixed share of the outlet.
       const r = rngFor(`tie:${kind}:${l.id}`);
       const a = K.list.findIndex(c => c.anchor);
-      const k = a >= 0 ? 1 + ri(r, 1, 3) : ri(r, 3, 5);
+      const k = a >= 0 ? 1 + ri(r, ...K.others) : ri(r, 3, 5);
       const pw = K.list.map((c, i) => (i === a ? 0 : base[i] * partnerTilt(kind, c.name, l)));
       const pick = new Set();
       if (a >= 0) pick.add(a);
@@ -374,20 +382,28 @@ const SE_SPLIT = { ins: new Array(SES.length), fin: new Array(SES.length) };
       return w.map((x, i) => (i === a ? t : ((1 - t) * x) / W));
     };
     // Calibrate the base weights so the expected group mix lands on the target mix.
-    for (let it = 0; it < 8; it++) {
+    for (let it = 0; it < 24; it++) {
       const tot = K.list.map(() => 0);
       LOCS.forEach(l => {
         const w = outletW(l), W = w.reduce((a, b) => a + b, 0), n = sumIdx(l.ses)[K.n];
         w.forEach((x, i) => { tot[i] += (n * x) / W; });
       });
       const T = tot.reduce((a, b) => a + b, 0), S = target.reduce((a, b) => a + b, 0);
-      base = base.map((b, i) => (K.list[i].anchor ? b : b * Math.pow(target[i] / S / (tot[i] / T || 1e-3), 0.8)));
+      base = base.map((b, i) => (K.list[i].anchor ? b : b * Math.pow(target[i] / S / (tot[i] / T || 1e-3), 0.6)));
     }
     LOCS.forEach(l => {
+      // Outlet counts per company first (so small per-SE counts don't skew the mix), then the
+      // policies / loans are dealt out to the SEs in a shuffled order: both sums stay exact.
       const w = outletW(l);
+      const cnt = splitInt(l.ses.reduce((a, i) => a + SE_ROWS[i][K.n], 0), w);
+      const slots = cnt.flatMap((c, j) => Array(c).fill(j));
+      const rs = rngFor(`deal:${kind}:${l.id}`);
+      for (let x = slots.length - 1; x > 0; x--) { const y = Math.floor(rs() * (x + 1)); [slots[x], slots[y]] = [slots[y], slots[x]]; }
+      let at = 0;
       l.ses.forEach(i => {
         const row = SE_ROWS[i], r = rngFor(`mix:${kind}:${SES[i].id}`);
-        const n = splitInt(row[K.n], w.map(x => x * (0.85 + 0.3 * r())));
+        const n = K.list.map(() => 0);
+        for (let x = 0; x < row[K.n]; x++) n[slots[at++]]++;
         const f = K.list.map(c => c.f * (0.99 + 0.02 * r()));
         const raw = n.map((k, j) => k * f[j]), R = raw.reduce((a, b) => a + b, 0);
         const amt = raw.map(v => (R ? Math.round((row[K.amt] * v) / R / K.unit) * K.unit : 0));
@@ -954,9 +970,10 @@ function FinanceScreen({ which, open, rates, embedded }) {
    Rows = company with a slim share bar, share of in-house policies / loans, count and average.
    Scope = group, a state or a city (Locations order); the outlet page passes its outlet. */
 const SPLIT_DEF = {
-  ins: { title: "Insurers", Icon: ShieldCheck, count: "Policies", avgLabel: two("Avg", "premium"), avg: rs, word: "insurer",
+  ins: { title: "Insurers", Icon: ShieldCheck, count: "Policies", avgLabel: two("Avg", "premium"), avg: rs, word: "insurer", note: "Sample partner mix",
     hint: "Share of in-house policies by insurer. Tap a header to sort." },
   fin: { title: "Finance partners", Icon: Landmark, count: "Loans", avgLabel: two("Avg", "loan"), avg: lakh, word: "lender",
+    note: "Lenders: evfin and its reported co-lending partners · shares are sample data",
     hint: "Share of in-house loans by lender. Tap a header to sort." },
 };
 const SCOPES = (() => {
@@ -1029,7 +1046,7 @@ function SplitCard({ kind, scope: fixed, compact }) {
           <span style={cellW(cols[2])}>{avgTxt(r.avg)}</span>
         </div>
       ))}
-      <div style={{ fontFamily: F, fontSize: 10, color: C.faint, padding: "8px 4px 0" }}>Sample partner mix</div>
+      <div style={{ fontFamily: F, fontSize: 10, color: C.faint, padding: "8px 4px 0", lineHeight: 1.4 }}>{d.note}</div>
     </Card>
   );
 }
