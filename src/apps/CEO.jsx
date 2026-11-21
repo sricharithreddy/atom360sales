@@ -442,6 +442,35 @@ function splitOf(kind, scope) {
    capped integer splits (Σ sources = the SE, stage order kept per source), then each source's
    lost leads by reason (weights by stage × source × outlet), and "Bought competitor" by brand.
    Every split adds back exactly, so a parent is always Σ children in all three groupings. */
+// Unbiased integer split for the funnel: systematic rounding with a random offset, so small
+// counts don't always round toward the first / biggest part (parts add back exactly).
+function splitR(total, weights, r) {
+  const out = weights.map(() => 0);
+  if (!total) return out;
+  let W = weights.reduce((a, b) => a + b, 0);
+  const w = W > 0 ? weights : weights.map(() => 1);
+  if (!(W > 0)) W = w.length;
+  const u = r();
+  let cum = 0, prev = 0;
+  for (let i = 0; i < w.length; i++) {
+    cum += w[i];
+    const c = i === w.length - 1 ? total : Math.min(total, Math.floor((total * cum) / W + u));
+    out[i] = c - prev; prev = c;
+  }
+  return out;
+}
+function splitCapR(total, weights, caps, r) {
+  const out = weights.map(() => 0);
+  let left = Math.min(total, caps.reduce((a, b) => a + b, 0));
+  let free = weights.map((_, i) => i).filter(i => caps[i] > 0);
+  while (left > 0 && free.length) {
+    const part = splitR(left, free.map(i => weights[i]), r);
+    free.forEach((i, k) => { out[i] += part[k]; });
+    left = 0;
+    free = free.filter(i => { if (out[i] >= caps[i]) { left += out[i] - caps[i]; out[i] = caps[i]; return false; } return true; });
+  }
+  return out;
+}
 const FN_START = Date.UTC(2026, 6, 23), FN_DAYS = 120, DMS = 864e5, FN_NP = FN_DAYS + 1;
 const fnIso = (i) => new Date(FN_START + i * DMS).toISOString().slice(0, 10);
 const fnIdx = (iso) => Math.round((Date.parse(iso + "T00:00:00Z") - FN_START) / DMS);
@@ -471,10 +500,10 @@ const LOST_REASONS = [
 ];
 // Reason mix by the stage the lead was lost at (columns in LOST_REASONS order).
 const REASON_BY_STAGE = [
-  [10, 0, 0, 0, 0, 62, 16, 0, 8],       // never got past the lead
-  [0, 0, 0, 0, 0, 92, 0, 0, 5],         // attempted, never contacted
-  [24, 20, 10, 13, 3, 5, 16, 6, 3],     // contacted, not interested
-  [22, 23, 12, 12, 6, 0, 14, 7, 4],     // interested, no test ride
+  [10, 0, 0, 0, 0, 55, 18, 0, 8],       // never got past the lead
+  [5, 0, 0, 0, 0, 75, 10, 0, 6],        // attempted, never contacted
+  [24, 20, 11, 13, 5, 5, 16, 6, 3],     // contacted, not interested
+  [22, 23, 12, 12, 8, 0, 14, 7, 4],     // interested, no test ride
   [18, 26, 24, 4, 10, 0, 8, 8, 2],      // test ride, no booking
   [0, 15, 40, 0, 30, 0, 10, 0, 5],      // booking cancelled
 ];
@@ -529,7 +558,7 @@ const FN_PREF = new Int32Array(FN_SERIES * NSE * FN_NP);
       const qs = rngFor("fns:" + s.id);
       const pa = clamp(0.9 * f.a * rr(qs, 0.97, 1.03), 0.8, 0.97), pc = 0.72 * f.c * rr(qs, 0.92, 1.08),
         pi = 0.45 * f.i * rr(qs, 0.9, 1.1), pt = 0.55 * f.t * rr(qs, 0.9, 1.1), pb = 0.45 * f.b * rr(qs, 0.9, 1.1);
-      const ql = [0.33, 0.42, 0.5, 0.45, 0.4].map(x => clamp(x * f.lost * rr(qs, 0.9, 1.1), 0, 0.95));
+      const ql = [0.3, 0.3, 0.5, 0.45, 0.42].map(x => clamp(x * f.lost * rr(qs, 0.9, 1.1), 0, 0.95));
       const qc = 0.04 * rr(qs, 0.6, 1.4);
       months.forEach(([y, m]) => {
         const mi = MI(y, m);
@@ -557,8 +586,8 @@ const FN_PREF = new Int32Array(FN_SERIES * NSE * FN_NP);
         }
         const gap = B - T.reduce((a, b) => a + b, 0);
         if (gap > 0) { let d = 0; w.forEach((x, j) => { if (x > w[d]) d = j; }); L[d] += gap; A[d] += gap; Cn[d] += gap; I[d] += gap; T[d] += gap; }
-        const Bk = splitCap(B, T, T);
-        const Rt = splitInt(R, w.map(x => x * rr(r, 0.6, 1.4)));
+        const Bk = splitCapR(B, T, T, r);
+        const Rt = splitR(R, w.map(x => x * rr(r, 0.6, 1.4)), r);
         for (let d = 0; d < nd; d++) {
           const ix = first + d;
           if (ix < 0 || ix >= FN_DAYS) continue;
@@ -586,13 +615,14 @@ function fnRange(a, b) {
   for (let s = 0; s < NSE; s++) {
     for (let j = 0; j < FN_SERIES; j++) { const base = (j * NSE + s) * FN_NP; tot[j] = FN_PREF[base + b + 1] - FN_PREF[base + a]; }
     const l = SES[s].loc;
-    const st = [splitInt(tot[0], l.fnMix)];
-    for (let k = 1; k < 6; k++) st[k] = splitCap(tot[k], st[k - 1].map((p, j) => p * FN_SRC[j].cf), st[k - 1]);
-    st[6] = tot[6] <= tot[5] ? splitCap(tot[6], st[5], st[5]) : splitInt(tot[6], st[5].map((x, j) => x + l.fnMix[j] * 1e-3));
+    const r = mulberry32((Math.imul(s + 1, 2654435761) ^ Math.imul(a + 1, 73856093) ^ Math.imul(b + 1, 19349663)) >>> 0);
+    const st = [splitR(tot[0], l.fnMix, r)];
+    for (let k = 1; k < 6; k++) st[k] = splitCapR(tot[k], st[k - 1].map((p, j) => p * FN_SRC[j].cf), st[k - 1], r);
+    st[6] = tot[6] <= tot[5] ? splitCapR(tot[6], st[5], st[5], r) : splitR(tot[6], st[5].map((x, j) => x + l.fnMix[j] * 1e-3), r);
     const lk = [];
     for (let k = 0; k < 6; k++) {
       const caps = k < 5 ? st[k].map((x, j) => x - st[k + 1][j]) : st[5];
-      lk[k] = splitCap(tot[7 + k], caps.map((c, j) => c * FN_SRC[j].lt), caps);
+      lk[k] = splitCapR(tot[7 + k], caps.map((c, j) => c * FN_SRC[j].lt), caps, r);
     }
     for (let j = 0; j < NSRC; j++) {
       const off = (s * NSRC + j) * NF;
@@ -600,10 +630,10 @@ function fnRange(a, b) {
       for (let k = 0; k < 6; k++) {
         const n = lk[k][j];
         src[off + 7 + k] = n;
-        if (n) splitInt(n, l.fnRW[j][k]).forEach((v, x) => { src[off + R0 + x] += v; });
+        if (n) splitR(n, l.fnRW[j][k], r).forEach((v, x) => { src[off + R0 + x] += v; });
       }
       const nc = src[off + R0 + 1];
-      if (nc) splitInt(nc, l.fnCW).forEach((v, x) => { src[off + C0 + x] = v; });
+      if (nc) splitR(nc, l.fnCW, r).forEach((v, x) => { src[off + C0 + x] = v; });
       for (let x = 0; x < NF; x++) all[s * NF + x] += src[off + x];
     }
   }
@@ -1079,9 +1109,9 @@ const stageCol = (key, label, prev, w = 56) => ({ key, label, w, sort: (a) => a[
   cell: (a) => top2(nIN(a[key]), prev ? grey(pct1(div(a[key], a[prev]))) : null, C.ink, 12) });
 const FN_COLS = [
   stageCol("leads", "Leads", null, 58),
-  stageCol("att", "Attempted", "leads"),
-  stageCol("con", "Contacted", "att"),
-  stageCol("int", "Interested", "con", 60),
+  stageCol("att", "Attempted", "leads", 64),
+  stageCol("con", "Contacted", "att", 64),
+  stageCol("int", "Interested", "con", 66),
   stageCol("td", two("Test", "ride"), "int", 50),
   stageCol("bk", "Booking", "td"),
   { key: "rt", label: "Retailed", w: 60, sort: (a) => a.rt,
@@ -1095,7 +1125,7 @@ const REASON_LABEL = { price: two("Price /", "budget"), comp: two("Bought", "com
 const LN_COLS = [
   { key: "lost", label: "Lost", w: 58, sort: (a) => a.lost,
     cell: (a) => top2(nIN(a.lost), grey(`${pct1(div(a.lost, a.leads))} of leads`), C.ink, 12) },
-  ...LOST_REASONS.map(r => ({ key: r.key, label: REASON_LABEL[r.key], w: r.key === "comp" ? 62 : 56, sort: (a) => a[r.key],
+  ...LOST_REASONS.map(r => ({ key: r.key, label: REASON_LABEL[r.key], w: r.key === "comp" ? 68 : r.key === "finr" || r.key === "nr" ? 62 : 58, sort: (a) => a[r.key],
     cell: (a) => top2(nIN(a[r.key]), grey(pct1(div(a[r.key], a.lost))), C.ink, 12) })),
 ];
 
@@ -1112,7 +1142,7 @@ function FnHead({ cols, sort, onSort }) {
       </span>
       {cols.map(c => (
         <button key={c.key} type="button" data-testid={`sort-${c.key}`} data-sort={sort.key === c.key ? sort.dir : ""} onClick={() => onSort(c.key)}
-          style={{ ...h, ...btn, width: c.w, flexShrink: 0, textAlign: "center" }}>{c.label}{arrow(c.key)}</button>
+          style={{ ...h, ...btn, width: c.w, flexShrink: 0, textAlign: "center", padding: "0 2px", boxSizing: "border-box" }}>{c.label}{arrow(c.key)}</button>
       ))}
     </div>
   );
