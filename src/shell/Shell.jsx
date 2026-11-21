@@ -82,6 +82,7 @@ export default function Shell() {
     return (
       <div className="m-shell">
         <div className="m-bar">
+          <img className="m-brand" src={`${BASE}brand/autoprism-icon.png`} alt="Autoprism" width={24} height={20} />
           {ROLES.map((r) => (
             <button key={r.key} className={`m-tab ${r.key === active ? "on" : ""}`} onClick={() => switchTo(r.key)}>
               <r.Icon size={14} strokeWidth={2.2} />
@@ -103,7 +104,7 @@ export default function Shell() {
     <div className="d-shell">
       <aside className="d-panel">
         <div className="brand">
-          Atom360<span className="brand-dot" />
+          <img className="brand-logo" src={`${BASE}brand/autoprism-lockup.png`} alt="Autoprism" width={170} height={35} />
           <span className="brand-sub">Sales CRM</span>
         </div>
         <div className="eyebrow">Live demo · view as</div>

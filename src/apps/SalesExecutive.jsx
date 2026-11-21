@@ -1506,9 +1506,7 @@ function Header({ screenName, user, onAvatar, onBack, attentionCount, onBellTap,
             <Menu size={21} color={C.ink} />
           </button>
         )}
-        <span style={{ fontFamily: F, fontWeight: 900, fontSize: 16, color: C.ink, letterSpacing: -0.8, textTransform: "uppercase", display: "flex", alignItems: "center" }}>
-          AUTOPRISM<span className="pulse-dot" style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: C.primary, marginLeft: 1, marginBottom: 8 }} />
-        </span>
+        <img src={`${import.meta.env.BASE_URL}brand/autoprism-lockup.png`} alt="Autoprism" width={126} height={26} style={{ display: "block", width: 126, height: 26, imageRendering: "auto", flexShrink: 0 }} />
         {screenName && <span style={{ fontFamily: F, fontWeight: 500, fontSize: 13, color: C.faint }}>/ {screenName}</span>}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1568,9 +1566,7 @@ function MenuDrawer({ active, onChange, onClose, onLogout, onQuickQuote, onOpenM
       <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(14,14,12,0.4)" }} />
       <div style={{ position: "relative", width: "78%", maxWidth: 280, height: "100%", background: C.card, boxShadow: "8px 0 32px rgba(0,0,0,0.18)", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 18px 14px" }}>
-          <span style={{ fontFamily: F, fontWeight: 900, fontSize: 15, color: C.ink, letterSpacing: -0.8, textTransform: "uppercase" }}>
-            AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: C.primary, marginLeft: 1, marginBottom: 8 }} />
-          </span>
+          <img src={`${import.meta.env.BASE_URL}brand/autoprism-lockup.png`} alt="Autoprism" width={117} height={24} style={{ display: "block", width: 117, height: 24, imageRendering: "auto", flexShrink: 0 }} />
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }}><X size={19} color={C.faint} /></button>
         </div>
         <div style={{ padding: "6px 10px", flex: 1, overflowY: "auto" }}>

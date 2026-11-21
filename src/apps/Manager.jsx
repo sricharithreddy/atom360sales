@@ -6232,9 +6232,7 @@ export default function ManagerApp() {
           style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
           <Menu size={20} color={C.ink} />
         </button>
-        <span style={{ fontFamily: F, fontWeight: 900, fontSize: 16, letterSpacing: -0.8, color: C.ink }}>
-          AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: C.primary, marginLeft: 1, marginBottom: 8 }} />
-        </span>
+        <img src={`${import.meta.env.BASE_URL}brand/autoprism-lockup.png`} alt="Autoprism" width={126} height={26} style={{ display: "block", width: 126, height: 26, imageRendering: "auto", flexShrink: 0 }} />
         <span style={{ flex: 1 }} />
         <span style={{ position: "relative", display: "flex" }}>
           <Bell size={18} color={C.sub} />
@@ -6316,9 +6314,7 @@ export default function ManagerApp() {
           <div style={{ position: "relative", width: "78%", maxWidth: 280, height: "100%", background: C.card,
             boxShadow: "8px 0 32px rgba(0,0,0,0.18)", display: "flex", flexDirection: "column" }}>
             <div style={{ padding: "18px 18px 12px" }}>
-              <div style={{ fontFamily: F, fontWeight: 900, fontSize: 15.5, color: C.ink, letterSpacing: -0.5 }}>
-                AUTOPRISM<span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: C.primary, marginLeft: 1, marginBottom: 8 }} />
-              </div>
+              <img src={`${import.meta.env.BASE_URL}brand/autoprism-lockup.png`} alt="Autoprism" width={117} height={24} style={{ display: "block", width: 117, height: 24, imageRendering: "auto", flexShrink: 0 }} />
               <div style={{ fontFamily: F, fontSize: 11.5, color: C.faint, marginTop: 3 }}>
                 Priya Nambiar · Sales Manager
               </div>

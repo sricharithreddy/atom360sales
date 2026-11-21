@@ -1320,25 +1320,7 @@ function Header({ screenName, onBack, onMenuClick }) {
 }}>
   <Menu size={21} color={C.ink} />
 </button>}
-    <span style={{
-  fontFamily: F,
-  fontWeight: 900,
-  fontSize: 16,
-  color: C.ink,
-  letterSpacing: -0.8,
-  textTransform: "uppercase"
-}}>
-      AUTOPRISM
-      <span style={{
-  display: "inline-block",
-  width: 5,
-  height: 5,
-  borderRadius: "50%",
-  background: C.primary,
-  marginLeft: 1,
-  marginBottom: 8
-}} />
-    </span>
+    <img src={`${import.meta.env.BASE_URL}brand/autoprism-lockup.png`} alt="Autoprism" width={126} height={26} style={{ display: "block", width: 126, height: 26, imageRendering: "auto", flexShrink: 0 }} />
     {screenName && <span style={{ fontFamily: F, fontWeight: 500, fontSize: 13, color: C.faint }}>/ {screenName}</span>}
   </div>
   <div style={{
@@ -1388,25 +1370,7 @@ function MenuDrawer({ active, onChange, onClose }) {
   justifyContent: "space-between",
   padding: "18px 18px 14px"
 }}>
-      <span style={{
-  fontFamily: F,
-  fontWeight: 900,
-  fontSize: 15,
-  color: C.ink,
-  letterSpacing: -0.8,
-  textTransform: "uppercase"
-}}>
-        AUTOPRISM
-        <span style={{
-  display: "inline-block",
-  width: 5,
-  height: 5,
-  borderRadius: "50%",
-  background: C.primary,
-  marginLeft: 1,
-  marginBottom: 7
-}} />
-      </span>
+      <img src={`${import.meta.env.BASE_URL}brand/autoprism-lockup.png`} alt="Autoprism" width={117} height={24} style={{ display: "block", width: 117, height: 24, imageRendering: "auto", flexShrink: 0 }} />
       <button onClick={onClose} style={{
   background: "none",
   border: "none",
@@ -8384,24 +8348,7 @@ function QuoteShareScreen({ lead, quote, onMediumUsed, onDone }) {
   paddingBottom: 10,
   borderBottom: `1px solid ${C.border}`
 }}>
-      <span style={{
-  fontFamily: F,
-  fontWeight: 900,
-  fontSize: 14,
-  color: C.ink,
-  letterSpacing: -0.5,
-  textTransform: "uppercase"
-}}>
-        AUTOPRISM
-        <span style={{
-  display: "inline-block",
-  width: 4,
-  height: 4,
-  borderRadius: "50%",
-  background: C.primary,
-  marginLeft: 1
-}} />
-      </span>
+      <img src={`${import.meta.env.BASE_URL}brand/autoprism-lockup.png`} alt="Autoprism" width={97} height={20} style={{ display: "block", width: 97, height: 20, imageRendering: "auto", flexShrink: 0 }} />
       <span style={{
   fontFamily: F,
   fontSize: 10,
@@ -11889,25 +11836,7 @@ export default function RelationshipManagerApp() {
   gap: 8,
   padding: "6px 10px 24px"
 }}>
-      <span style={{
-  fontFamily: F,
-  fontWeight: 900,
-  fontSize: 16,
-  color: C.ink,
-  letterSpacing: -0.8,
-  textTransform: "uppercase"
-}}>
-        AUTOPRISM
-        <span style={{
-  display: "inline-block",
-  width: 5,
-  height: 5,
-  borderRadius: "50%",
-  background: C.primary,
-  marginLeft: 1,
-  marginBottom: 8
-}} />
-      </span>
+      <img src={`${import.meta.env.BASE_URL}brand/autoprism-lockup.png`} alt="Autoprism" width={126} height={26} style={{ display: "block", width: 126, height: 26, imageRendering: "auto", flexShrink: 0 }} />
     </div>
     {NAV_ITEMS.map(t => {
   const groupActive = t.subs.length ? t.subs.some(x => x.key === activeTab) : activeTab === t.key;
