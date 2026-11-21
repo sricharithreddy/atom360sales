@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   ChevronDown, ChevronLeft, ChevronRight, FileText, IndianRupee, Landmark, MapPin, Menu, Package, Phone, Plus,
-  Settings, ShieldCheck, ShoppingBag, Store, Target, Upload, User,
+  Filter, Settings, ShieldCheck, ShoppingBag, Store, Target, Upload, User, UserX,
 } from "lucide-react";
 import { GROUP, ZONES, LOCATIONS, monthsOpen } from "../data/epicRiverLocations.js";
 import { stockFor, VARIANTS, COLOURS } from "../data/epicRiverInventory.js";
@@ -429,6 +429,215 @@ function splitOf(kind, scope) {
   return o;
 }
 
+/* ---------------- Leads → retail funnel and lost leads (sample data) ----------------
+   Generated per SE per day for the last 120 days (23 Jul – 19 Nov 2026). Per day and SE every
+   stage is a subset of the one before (Leads ≥ Attempted ≥ Contacted ≥ Interested ≥ Test ride ≥
+   Booking), so any date range keeps that order. November's Booking and Retailed per SE are the
+   Board's MTD numbers (SE_ROWS.book / .retail), dealt out over 1–19 Nov; earlier months use the
+   outlet's target × its plan factor. Retailed is invoiced from earlier bookings, so it is split
+   over the days on its own (it can run a little ahead of a short range's bookings).
+   Lost: per day, a share of the leads that stopped at each stage is closed as lost (never more
+   than stopped there), plus a few booking cancellations — so a lost lead counts in every stage
+   it reached and none beyond. For any range, each SE's counts are split by lead source with
+   capped integer splits (Σ sources = the SE, stage order kept per source), then each source's
+   lost leads by reason (weights by stage × source × outlet), and "Bought competitor" by brand.
+   Every split adds back exactly, so a parent is always Σ children in all three groupings. */
+const FN_START = Date.UTC(2026, 6, 23), FN_DAYS = 120, DMS = 864e5, FN_NP = FN_DAYS + 1;
+const fnIso = (i) => new Date(FN_START + i * DMS).toISOString().slice(0, 10);
+const fnIdx = (iso) => Math.round((Date.parse(iso + "T00:00:00Z") - FN_START) / DMS);
+const fnDay = (i, yr) => { const d = new Date(FN_START + i * DMS); return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}${yr ? " " + d.getUTCFullYear() : ""}`; };
+const FN_MIN = fnIso(0), FN_MAX = fnIso(FN_DAYS - 1);
+const FN_RANGES = { this: [fnIdx("2026-11-01"), FN_DAYS - 1], last: [fnIdx("2026-10-01"), fnIdx("2026-10-31")] };
+const STAGES = ["leads", "att", "con", "int", "td", "bk", "rt"];
+const LOST_AT = ["l0", "l1", "l2", "l3", "l4", "l5"];   // lost at: lead · attempted · contacted · interested · test ride · booking
+// cf: conversion tilt per stage · lt: tilt on being closed as lost · metro / town / flag: mix tilts.
+const FN_SRC = [
+  { name: "Walk-in", mix: 26, cf: 1.16, lt: 0.8, metro: 0.8, town: 1.35, exp: 1.2 },
+  { name: "Website", mix: 12, cf: 1.0, lt: 1.0, metro: 1.4, town: 0.85, flag: 1.15 },
+  { name: "Referral", mix: 9, cf: 1.14, lt: 0.8, metro: 1, town: 1.1 },
+  { name: "BikeDekho", mix: 8, cf: 0.97, lt: 1.0, metro: 1.3, town: 0.9 },
+  { name: "BikeWale", mix: 7, cf: 0.97, lt: 1.0, metro: 1.3, town: 0.9 },
+  { name: "Google Ad", mix: 10, cf: 0.94, lt: 1.05, metro: 1.5, town: 0.85 },
+  { name: "Facebook Ad", mix: 8, cf: 0.88, lt: 1.1, metro: 1.4, town: 0.9 },
+  { name: "Instagram Ad", mix: 7, cf: 0.88, lt: 1.1, metro: 1.6, town: 0.75 },
+  { name: "Justdial", mix: 6, cf: 0.82, lt: 1.25, metro: 0.85, town: 1.3 },
+  { name: "OLX", mix: 4, cf: 0.76, lt: 1.3, metro: 0.85, town: 1.3 },
+  { name: "Corporate/Fleet", mix: 3, cf: 1.08, lt: 0.85, metro: 1.3, town: 0.7, flag: 1.6 },
+];
+const LOST_REASONS = [
+  { key: "price", name: "Price / budget" }, { key: "comp", name: "Bought competitor" }, { key: "finr", name: "Finance rejected" },
+  { key: "chg", name: "Charging / range concern" }, { key: "wait", name: "Long delivery wait" }, { key: "nr", name: "Not reachable" },
+  { key: "post", name: "Postponed purchase" }, { key: "exch", name: "Low exchange value" }, { key: "oth", name: "Other" },
+];
+// Reason mix by the stage the lead was lost at (columns in LOST_REASONS order).
+const REASON_BY_STAGE = [
+  [10, 0, 0, 0, 0, 62, 16, 0, 8],       // never got past the lead
+  [0, 0, 0, 0, 0, 92, 0, 0, 5],         // attempted, never contacted
+  [24, 20, 10, 13, 3, 5, 16, 6, 3],     // contacted, not interested
+  [22, 23, 12, 12, 6, 0, 14, 7, 4],     // interested, no test ride
+  [18, 26, 24, 4, 10, 0, 8, 8, 2],      // test ride, no booking
+  [0, 15, 40, 0, 30, 0, 10, 0, 5],      // booking cancelled
+];
+const COMPETITORS = [
+  { name: "Ather", mix: 34 }, { name: "Ola Electric", mix: 24 }, { name: "TVS iQube", mix: 18 },
+  { name: "Bajaj Chetak", mix: 13 }, { name: "Hero Vida", mix: 6 }, { name: "Other", mix: 5 },
+];
+const NSRC = FN_SRC.length, NRSN = LOST_REASONS.length, NCMP = COMPETITORS.length;
+const FN_SERIES = STAGES.length + LOST_AT.length;                  // 13 daily series
+const FN_KEYS = [...STAGES, ...LOST_AT, ...LOST_REASONS.map(r => r.key), ...COMPETITORS.map((_, i) => "c" + i)];
+const NF = FN_KEYS.length;                                         // 28 fields per SE (and per SE × source)
+const R0 = STAGES.length + LOST_AT.length, C0 = R0 + NRSN;
+const NSE = SES.length;
+const FN_PREF = new Int32Array(FN_SERIES * NSE * FN_NP);
+(() => {
+  const months = [[2026, 7], [2026, 8], [2026, 9], [2026, 10], [2026, 11]];
+  const day = new Int32Array(FN_SERIES * FN_DAYS);
+  LOCS.forEach(l => {
+    const q = rngFor("fnl:" + l.id);
+    const metro = METROS.has(l.city);
+    const f = { a: rr(q, 0.95, 1.04), c: rr(q, 0.88, 1.1), i: rr(q, 0.88, 1.12), t: rr(q, 0.88, 1.12), b: rr(q, 0.9, 1.1), lost: rr(q, 0.85, 1.15) };
+    l.fnMix = FN_SRC.map(s => s.mix * (metro ? s.metro : s.town) * (l.format === "Flagship" ? s.flag || 1 : 1)
+      * (l.format === "Express" ? s.exp || 1 : 1) * rr(q, 0.8, 1.2));
+    // Reason weights per source × stage: source tilt, metro vs district tilt, outlet noise.
+    const on = LOST_REASONS.map(() => rr(q, 0.85, 1.15));
+    const locT = LOST_REASONS.map((r, k) => on[k] * (metro
+      ? ({ comp: 1.3, chg: 0.8, finr: 0.85 }[r.key] || 1)
+      : ({ comp: 0.85, chg: 1.3, finr: 1.3 }[r.key] || 1)));
+    l.fnRW = FN_SRC.map(s => {
+      const t = (r) => (s.name === "OLX" || s.name === "Justdial" ? ({ nr: 1.9 }[r] || 1)
+        : s.name === "Facebook Ad" || s.name === "Instagram Ad" ? ({ nr: 1.3 }[r] || 1)
+        : s.name === "Walk-in" || s.name === "Referral" ? ({ price: 1.35, comp: 1.35, nr: 0.4 }[r] || 1)
+        : s.name === "Corporate/Fleet" ? ({ finr: 0.5, price: 1.2 }[r] || 1) : 1);
+      return REASON_BY_STAGE.map(row => row.map((w, k) => w * locT[k] * t(LOST_REASONS[k].key)));
+    });
+    l.fnCW = COMPETITORS.map(c => c.mix * rr(q, 0.8, 1.2)
+      * (c.name === "Ather" ? (l.state === "Karnataka" || l.state === "Tamil Nadu" ? 1.5 : 1) * (metro ? 1.15 : 0.75) : 1)
+      * (c.name === "Ola Electric" && (l.state === "Telangana" || l.state === "Andhra Pradesh") ? 1.25 : 1)
+      * (c.name === "Bajaj Chetak" && l.state === "Maharashtra" ? 1.5 : 1)
+      * (c.name === "TVS iQube" && !metro ? 1.3 : 1));
+    // Retail per SE for the months before November (Nov is the Board's MTD, per SE).
+    const monthR = {};
+    months.forEach(([y, m]) => {
+      const mi = MI(y, m);
+      if (mi === NOW_MI) return;
+      const qm = rngFor(`fnm:${l.id}:${mi}`);
+      monthR[mi] = splitInt(Math.round(tgtM(l, mi) * l.factor * rr(qm, 0.9, 1.08)), l.ses.map(i => SES[i].skill * rr(qm, 0.85, 1.15)));
+    });
+    l.ses.forEach((si, k) => {
+      const s = SES[si];
+      day.fill(0);
+      const qs = rngFor("fns:" + s.id);
+      const pa = clamp(0.9 * f.a * rr(qs, 0.97, 1.03), 0.8, 0.97), pc = 0.72 * f.c * rr(qs, 0.92, 1.08),
+        pi = 0.45 * f.i * rr(qs, 0.9, 1.1), pt = 0.55 * f.t * rr(qs, 0.9, 1.1), pb = 0.45 * f.b * rr(qs, 0.9, 1.1);
+      const ql = [0.33, 0.42, 0.5, 0.45, 0.4].map(x => clamp(x * f.lost * rr(qs, 0.9, 1.1), 0, 0.95));
+      const qc = 0.04 * rr(qs, 0.6, 1.4);
+      months.forEach(([y, m]) => {
+        const mi = MI(y, m);
+        if (mi < l.openMi) return;                       // not open yet: no leads
+        const now = mi === NOW_MI;
+        const nd = now ? DAY : new Date(Date.UTC(y, m, 0)).getUTCDate();
+        const first = fnIdx(`${y}-${String(m).padStart(2, "0")}-01`);
+        const R = now ? SE_ROWS[si].retail : monthR[mi][k];
+        const B = now ? SE_ROWS[si].book : R + Math.round(R * s.bkr);
+        const r = rngFor(`fnd:${s.id}:${mi}`);
+        const sr = (x) => Math.floor(x + r());
+        const w = Array.from({ length: nd }, (_, d) => {
+          const wd = new Date(Date.UTC(y, m - 1, d + 1)).getUTCDay();
+          return (wd === 0 || wd === 6 ? 1.35 : 1) * rr(r, 0.6, 1.4);
+        });
+        const W = w.reduce((a, b) => a + b, 0);
+        const lam = B > 0 ? B / (pa * pc * pi * pt * pb) : 6;
+        const L = [], A = [], Cn = [], I = [], T = [];
+        for (let d = 0; d < nd; d++) {
+          L[d] = sr((lam * w[d] / W) * rr(r, 0.85, 1.15));
+          A[d] = Math.min(L[d], sr(L[d] * pa * rr(r, 0.95, 1.05)));
+          Cn[d] = Math.min(A[d], sr(A[d] * pc * rr(r, 0.9, 1.1)));
+          I[d] = Math.min(Cn[d], sr(Cn[d] * pi * rr(r, 0.9, 1.1)));
+          T[d] = Math.min(I[d], sr(I[d] * pt * rr(r, 0.9, 1.1)));
+        }
+        const gap = B - T.reduce((a, b) => a + b, 0);
+        if (gap > 0) { let d = 0; w.forEach((x, j) => { if (x > w[d]) d = j; }); L[d] += gap; A[d] += gap; Cn[d] += gap; I[d] += gap; T[d] += gap; }
+        const Bk = splitCap(B, T, T);
+        const Rt = splitInt(R, w.map(x => x * rr(r, 0.6, 1.4)));
+        for (let d = 0; d < nd; d++) {
+          const ix = first + d;
+          if (ix < 0 || ix >= FN_DAYS) continue;
+          const st = [L[d], A[d], Cn[d], I[d], T[d], Bk[d], Rt[d]];
+          st.forEach((v, j) => { day[j * FN_DAYS + ix] = v; });
+          for (let j = 0; j < 5; j++) { const drop = st[j] - st[j + 1]; day[(7 + j) * FN_DAYS + ix] = Math.min(drop, sr(drop * ql[j])); }
+          day[12 * FN_DAYS + ix] = Math.min(Bk[d], sr(Bk[d] * qc));
+        }
+      });
+      for (let j = 0; j < FN_SERIES; j++) {
+        const base = (j * NSE + si) * FN_NP;
+        for (let d = 0; d < FN_DAYS; d++) FN_PREF[base + d + 1] = FN_PREF[base + d] + day[j * FN_DAYS + d];
+      }
+    });
+  });
+})();
+// One date range → per SE × source (and per SE) the 28 fields. Cached per range.
+const FN_RANGE = new Map();
+function fnRange(a, b) {
+  const key = a + ":" + b;
+  let o = FN_RANGE.get(key);
+  if (o) return o;
+  const src = new Int32Array(NSE * NSRC * NF), all = new Int32Array(NSE * NF);
+  const tot = new Array(FN_SERIES);
+  for (let s = 0; s < NSE; s++) {
+    for (let j = 0; j < FN_SERIES; j++) { const base = (j * NSE + s) * FN_NP; tot[j] = FN_PREF[base + b + 1] - FN_PREF[base + a]; }
+    const l = SES[s].loc;
+    const st = [splitInt(tot[0], l.fnMix)];
+    for (let k = 1; k < 6; k++) st[k] = splitCap(tot[k], st[k - 1].map((p, j) => p * FN_SRC[j].cf), st[k - 1]);
+    st[6] = tot[6] <= tot[5] ? splitCap(tot[6], st[5], st[5]) : splitInt(tot[6], st[5].map((x, j) => x + l.fnMix[j] * 1e-3));
+    const lk = [];
+    for (let k = 0; k < 6; k++) {
+      const caps = k < 5 ? st[k].map((x, j) => x - st[k + 1][j]) : st[5];
+      lk[k] = splitCap(tot[7 + k], caps.map((c, j) => c * FN_SRC[j].lt), caps);
+    }
+    for (let j = 0; j < NSRC; j++) {
+      const off = (s * NSRC + j) * NF;
+      for (let k = 0; k < 7; k++) src[off + k] = st[k][j];
+      for (let k = 0; k < 6; k++) {
+        const n = lk[k][j];
+        src[off + 7 + k] = n;
+        if (n) splitInt(n, l.fnRW[j][k]).forEach((v, x) => { src[off + R0 + x] += v; });
+      }
+      const nc = src[off + R0 + 1];
+      if (nc) splitInt(nc, l.fnCW).forEach((v, x) => { src[off + C0 + x] = v; });
+      for (let x = 0; x < NF; x++) all[s * NF + x] += src[off + x];
+    }
+  }
+  o = { src, all };
+  FN_RANGE.set(key, o);
+  return o;
+}
+function fnDerive(o) {
+  o.lost = LOST_AT.reduce((x, k) => x + o[k], 0);
+  o.lostTD = o.l4 + o.l5;
+  return o;
+}
+// agg(t) for a tree node over a range: Σ over t.ses (one source's share when t.src is set).
+const FN_AGG = new Map();
+function fnAggFor(a, b) {
+  const key = a + ":" + b;
+  let f = FN_AGG.get(key);
+  if (f) return f;
+  const m = new Map();
+  f = (t) => {
+    let o = m.get(t.key);
+    if (o) return o;
+    const R = fnRange(a, b), v = new Array(NF).fill(0);
+    const ses = t.ses;
+    if (t.src != null) for (let i = 0; i < ses.length; i++) { const off = (ses[i] * NSRC + t.src) * NF; for (let x = 0; x < NF; x++) v[x] += R.src[off + x]; }
+    else for (let i = 0; i < ses.length; i++) { const off = ses[i] * NF; for (let x = 0; x < NF; x++) v[x] += R.all[off + x]; }
+    o = fnDerive(Object.fromEntries(FN_KEYS.map((k, x) => [k, v[x]])));
+    m.set(t.key, o);
+    return o;
+  };
+  FN_AGG.set(key, f);
+  return f;
+}
+
 /* ---------------- Dealer income at the Admin rates ----------------
    Linear in the summed fields, so per-SE income summed = income of the sums. */
 const DEFAULT_RATES = { ins: 15, pay: 1.5, file: 750, acc: 25, rc: 20 };
@@ -499,6 +708,23 @@ const LOC_ROOT = (() => {
     return mk("S:" + st, st, "STATE", sl, cities);
   });
   return mk("G", GROUP.name, "GROUP", LOCS, states);
+})();
+// Source tree (funnel / lost leads): group → lead source → State → City → Outlet, built lazily.
+// Every node below a source carries `src`, so its numbers are that source's share of its SEs.
+const SRC_ROOT = (() => {
+  const mk = (key, name, kind, src, locs, kf, extra) => ({
+    key, name, kind, src, locs, locIds: locs.map(l => l.id), ses: locs.flatMap(l => l.ses), hasKids: !!kf, _kf: kf,
+    kids() { return this._k || (this._k = this._kf()); }, ...extra,
+  });
+  const states = (j, pre) => [...new Set(LOCS.map(l => l.state))].map(st => {
+    const sl = LOCS.filter(l => l.state === st);
+    return mk(`${pre}S:${st}`, st, "STATE", j, sl, () => [...new Set(sl.map(l => l.city))].map(c => {
+      const cl = sl.filter(l => l.city === c);
+      return mk(`${pre}C:${st}:${c}`, c, "CITY", j, cl, () => cl.map(l => mk(`${pre}O:${l.id}`, l.locality, "OUTLET", j, [l], null, { loc: l })));
+    }));
+  });
+  const srcs = FN_SRC.map((s, j) => mk(`SRC${j}`, s.name, "SOURCE", j, LOCS, () => states(j, `SRC${j}:`), { subText: "Lead source · all outlets" }));
+  return mk("SRC", GROUP.name, "GROUP", null, LOCS, () => srcs, { subText: `Group · ${FN_SRC.length} sources` });
 })();
 
 /* ---------------- Custom fields (Admin) ---------------- */
@@ -593,12 +819,13 @@ function BackBar({ title, sub, onBack }) {
 const DEPTH_BG = ["rgba(59,75,232,0.07)", "#FFFFFF", "#F8F9FD", "#EEF0F7"];
 const LEVEL_TONE = {
   CEO: C.ink, ZH: C.primary, AM: C.purple, SM: C.ink, TL: C.teal, SE: C.ghost,
-  GROUP: C.ink, STATE: C.primary, CITY: C.purple, OUTLET: C.teal,
+  GROUP: C.ink, STATE: C.primary, CITY: C.purple, OUTLET: C.teal, SOURCE: C.warm,
 };
 const AVATAR_BG = { ...LEVEL_TONE, SE: C.sub };
 const LEGEND = {
   people: [["ZH", "ZH"], ["AM", "AM"], ["SM", "SM"], ["TL", "TL"], ["SE", "SE"]],
   locations: [["STATE", "State"], ["CITY", "City"], ["OUTLET", "Outlet"]],
+  source: [["SOURCE", "Source"], ["STATE", "State"], ["CITY", "City"], ["OUTLET", "Outlet"]],
 };
 const initials = (name) => name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 const shortName = (name) => { const [a, ...b] = name.split(" "); return b.length ? `${a} ${b[b.length - 1][0]}.` : a; };
@@ -613,6 +840,7 @@ function Avatar({ t, size }) {
   return <span style={box}>{txt}</span>;
 }
 function rowSub(t, parent) {
+  if (t.subText) return t.subText;
   if (t.node) {
     const n = t.node;
     const heads = t.hasKids ? ` · ${t.ses.length}` : "";
@@ -837,6 +1065,249 @@ const STOCK_COLS = [
   ) },
 ];
 
+/* ============================ LEADS TO RETAIL · LOST LEADS ============================
+   Manager's funnel pattern in the CEO look: period chips (This month / Last month / Custom), a
+   3-way grouping, and a table that scrolls sideways inside its card with a sticky name column;
+   the header and group row stay pinned while the table scrolls down. */
+const FN_NAME_W = 124;
+const OPAQUE_BG = ["#F1F2FD", "#FFFFFF", "#F8F9FD", "#EEF0F7"];   // DEPTH_BG on white, opaque for sticky cells
+const FN_MODES = [["people", "People"], ["locations", "Locations"], ["source", "Source"]];
+const FN_PERIODS = [["this", "This month"], ["last", "Last month"], ["custom", "Custom"]];
+const fnRootOf = (mode) => (mode === "people" ? PEOPLE_ROOT : mode === "locations" ? LOC_ROOT : SRC_ROOT);
+const pct1 = (x) => pctS(x, ok(x) && x < 0.1 ? 1 : 0);
+const stageCol = (key, label, prev, w = 56) => ({ key, label, w, sort: (a) => a[key],
+  cell: (a) => top2(nIN(a[key]), prev ? grey(pct1(div(a[key], a[prev]))) : null, C.ink, 12) });
+const FN_COLS = [
+  stageCol("leads", "Leads", null, 58),
+  stageCol("att", "Attempted", "leads"),
+  stageCol("con", "Contacted", "att"),
+  stageCol("int", "Interested", "con", 60),
+  stageCol("td", two("Test", "ride"), "int", 50),
+  stageCol("bk", "Booking", "td"),
+  { key: "rt", label: "Retailed", w: 60, sort: (a) => a.rt,
+    cell: (a) => top2(nIN(a.rt), <>{grey(pct1(div(a.rt, a.bk)))}{grey(`${pct1(div(a.rt, a.leads))} of leads`)}</>, C.ink, 12) },
+  { key: "lost", label: "Lost", w: 56, sort: (a) => a.lost,
+    cell: (a) => top2(nIN(a.lost), grey(`${pct1(div(a.lost, a.leads))} of leads`), C.ink, 12) },
+];
+const REASON_LABEL = { price: two("Price /", "budget"), comp: two("Bought", "competitor"), finr: two("Finance", "rejected"),
+  chg: two("Charging", "/ range"), wait: two("Delivery", "wait"), nr: two("Not", "reachable"), post: "Postponed",
+  exch: two("Low", "exchange"), oth: "Other" };
+const LN_COLS = [
+  { key: "lost", label: "Lost", w: 58, sort: (a) => a.lost,
+    cell: (a) => top2(nIN(a.lost), grey(`${pct1(div(a.lost, a.leads))} of leads`), C.ink, 12) },
+  ...LOST_REASONS.map(r => ({ key: r.key, label: REASON_LABEL[r.key], w: r.key === "comp" ? 62 : 56, sort: (a) => a[r.key],
+    cell: (a) => top2(nIN(a[r.key]), grey(pct1(div(a[r.key], a.lost))), C.ink, 12) })),
+];
+
+function FnHead({ cols, sort, onSort }) {
+  const h = { fontFamily: F, fontSize: 8.5, fontWeight: 800, color: C.sub, textTransform: "uppercase", letterSpacing: 0.1, lineHeight: 1.2 };
+  const btn = { background: "none", border: "none", padding: 0, margin: 0, cursor: "pointer", WebkitTapHighlightColor: "transparent", position: "relative" };
+  const arrow = (k) => sort.key === k
+    ? <span style={{ position: "absolute", left: 0, right: 0, top: "100%", paddingTop: 1, fontSize: 6.5, lineHeight: 1, color: C.primary, textAlign: "inherit" }}>{sort.dir === "desc" ? "▼" : "▲"}</span> : null;
+  return (
+    <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8, paddingTop: 2, borderBottom: `1.5px solid ${C.borderStrong}`, background: C.card }}>
+      <span style={{ width: FN_NAME_W, flexShrink: 0, position: "sticky", left: 0, zIndex: 2, background: C.card, alignSelf: "stretch", display: "flex", alignItems: "flex-end" }}>
+        <button type="button" data-testid="sort-name" data-sort={sort.key === "name" ? sort.dir : ""} onClick={() => onSort("name")}
+          style={{ ...h, ...btn, letterSpacing: 0.4, paddingLeft: 8, textAlign: "left" }}>Name{arrow("name")}</button>
+      </span>
+      {cols.map(c => (
+        <button key={c.key} type="button" data-testid={`sort-${c.key}`} data-sort={sort.key === c.key ? sort.dir : ""} onClick={() => onSort(c.key)}
+          style={{ ...h, ...btn, width: c.w, flexShrink: 0, textAlign: "center" }}>{c.label}{arrow(c.key)}</button>
+      ))}
+    </div>
+  );
+}
+function FnRow({ t, depth, expanded, onToggle, onOutlet, parent, cols, agg, cmp, testid, part }) {
+  const a = agg(t);
+  const open = expanded.has(t.key);
+  const isOutlet = t.kind === "OUTLET" && onOutlet;
+  const clickable = t.hasKids || isOutlet;
+  const bg = OPAQUE_BG[Math.min(depth, OPAQUE_BG.length - 1)];
+  const attrs = Object.fromEntries(Object.entries(a).map(([k, v]) => [`data-${k.toLowerCase()}`, v]));
+  const line = part === "kids" ? null : (
+    <div data-testid={`${testid}-row`} data-key={t.key} data-parent={parent ? parent.key : ""} data-depth={depth} data-kind={t.kind} data-name={t.name}
+      {...attrs} style={{ display: "flex", alignItems: "center", minHeight: 50, borderBottom: `1px solid ${C.border}`, background: bg }}>
+      <button type="button" data-testid={`${testid}-name`} disabled={!clickable} aria-expanded={t.hasKids ? open : undefined}
+        onClick={() => (t.hasKids ? onToggle(t.key) : isOutlet ? onOutlet(t.loc.id) : null)}
+        style={{ width: FN_NAME_W, flexShrink: 0, alignSelf: "stretch", position: "sticky", left: 0, zIndex: 1, background: bg,
+          borderTop: "none", borderRight: `1px solid ${C.border}`, borderBottom: "none", borderLeft: `3px solid ${LEVEL_TONE[t.kind]}`,
+          display: "flex", alignItems: "center", gap: 5, padding: "8px 4px 8px 4px", cursor: clickable ? "pointer" : "default",
+          textAlign: "left", WebkitTapHighlightColor: "transparent", boxSizing: "border-box" }}>
+        {t.hasKids
+          ? (open ? <ChevronDown size={11} color={C.faint} style={{ flexShrink: 0 }} /> : <ChevronRight size={11} color={C.faint} style={{ flexShrink: 0 }} />)
+          : isOutlet ? <ChevronRight size={11} color={C.primary} style={{ flexShrink: 0 }} />
+          : <span style={{ width: 11, flexShrink: 0 }} />}
+        <Avatar t={t} size={depth === 0 ? 24 : 21} />
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontFamily: F, fontSize: 12, fontWeight: depth === 0 ? 800 : 600, color: isOutlet ? C.primary : C.ink,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName(t)}</span>
+          <span style={{ display: "block", fontFamily: F, fontSize: 9.5, color: C.faint, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {rowSub(t, parent && parent.node ? shortName(parent.name).split(" ")[0] : null)}
+          </span>
+        </span>
+      </button>
+      {cols.map(c => <span key={c.key} style={{ width: c.w, flexShrink: 0, textAlign: "center" }}>{c.cell(a, t)}</span>)}
+    </div>
+  );
+  if (part === "line") return line;
+  const kids = open && t.hasKids ? [...t.kids()].sort(cmp) : [];
+  return (
+    <>
+      {line}
+      {kids.map(ch => <FnRow key={ch.key} t={ch} depth={depth + 1} expanded={expanded} onToggle={onToggle} onOutlet={onOutlet}
+        parent={t} cols={cols} agg={agg} cmp={cmp} testid={testid} />)}
+    </>
+  );
+}
+const dateInput = { width: "100%", boxSizing: "border-box", border: `1.5px solid ${C.borderStrong}`, borderRadius: 8, padding: "6px 7px",
+  fontFamily: F, fontSize: 12, color: C.ink, background: C.card, outline: "none", minWidth: 0 };
+function customRange(from, to) {
+  let a = fnIdx(from), b = fnIdx(to);
+  if (!Number.isFinite(a)) a = 0;
+  if (!Number.isFinite(b)) b = FN_DAYS - 1;
+  a = clamp(a, 0, FN_DAYS - 1); b = clamp(b, 0, FN_DAYS - 1);
+  return a <= b ? [a, b] : [b, a];
+}
+/* One card: grouping, period, summary boxes, the table. `after(g, rangeText)` renders below the card. */
+function RangeTreeCard({ title, Icon, testid, cols, hint, summary, after, open }) {
+  const [mode, setMode] = useState("people");
+  const [period, setPeriod] = useState("this");
+  const [from, setFrom] = useState("2026-10-01");
+  const [to, setTo] = useState("2026-10-15");
+  const [exP, toggleP] = useExpanded([PEOPLE_ROOT.key]);
+  const [exL, toggleL] = useExpanded([LOC_ROOT.key]);
+  const [exS, toggleS] = useExpanded([SRC_ROOT.key]);
+  const [a, b] = period === "custom" ? customRange(from, to) : FN_RANGES[period];
+  const agg = fnAggFor(a, b);
+  const [sort, onSort, cmp] = useSort(cols, agg, { key: cols[0].key, dir: "desc" });
+  const root = fnRootOf(mode);
+  const ex = mode === "people" ? exP : mode === "locations" ? exL : exS;
+  const toggle = mode === "people" ? toggleP : mode === "locations" ? toggleL : toggleS;
+  const g = agg(root);
+  const days = b - a + 1;
+  const rangeText = `${fnDay(a, fnDay(a, true).slice(-4) !== fnDay(b, true).slice(-4))} – ${fnDay(b, true)} · ${days} day${days === 1 ? "" : "s"}${period === "this" ? " · MTD" : ""}`;
+  const rp = { t: root, depth: 0, expanded: ex, onToggle: toggle, onOutlet: open, cols, agg, cmp, testid };
+  const minW = FN_NAME_W + cols.reduce((x, c) => x + c.w, 0);
+  return (
+    <>
+      <Card style={TABLE_CARD} data-testid={`${testid}-card`} data-mode={mode} data-period={period} data-range={`${fnIso(a)}..${fnIso(b)}`}>
+        <CardHead Icon={Icon} title={title} testid={`${testid}-title`}
+          right={<Seg value={mode} onChange={setMode} opts={FN_MODES} testid={`${testid}-mode`} />} hint={hint} />
+        <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", padding: "2px 4px 0" }}>
+          {FN_PERIODS.map(([k, label]) => {
+            const on = period === k;
+            return (
+              <button key={k} type="button" data-testid={`${testid}-period-${k}`} aria-pressed={on} onClick={() => setPeriod(k)} style={{
+                padding: "5px 10px", borderRadius: 8, cursor: "pointer", border: `1.5px solid ${on ? C.primary : C.border}`,
+                background: on ? C.primarySoft : C.card, color: on ? C.primary : C.sub, fontFamily: F, fontWeight: 700, fontSize: 11 }}>{label}</button>
+            );
+          })}
+        </div>
+        <div data-testid={`${testid}-range`} style={{ fontFamily: F, fontSize: 10.5, color: C.faint, padding: "5px 4px 8px" }}>{rangeText}</div>
+        {period === "custom" && (
+          <div data-testid={`${testid}-custom`} style={{ display: "flex", gap: 8, alignItems: "flex-end", margin: "0 4px 10px",
+            border: `1px solid ${C.border}`, borderRadius: 11, padding: 9 }}>
+            {[["From", from, setFrom, FN_MIN, to], ["To", to, setTo, from, FN_MAX]].map(([lab, v, set, mn, mx]) => (
+              <label key={lab} style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: "block", fontFamily: F, fontSize: 9.5, fontWeight: 800, color: C.faint, textTransform: "uppercase", marginBottom: 3 }}>{lab}</span>
+                <input type="date" data-testid={`${testid}-${lab.toLowerCase()}`} value={v} min={mn} max={mx}
+                  onChange={e => { if (e.target.value) set(e.target.value); }} style={dateInput} />
+              </label>
+            ))}
+          </div>
+        )}
+        {summary(g)}
+        <Legend items={LEGEND[mode]} />
+        <div data-testid={`${testid}-scroll`} style={{ overflow: "auto", maxHeight: 560, overscrollBehaviorX: "contain", borderRadius: 6 }}>
+          <div style={{ minWidth: minW }}>
+            <div data-testid={`${testid}-pinned`} style={{ position: "sticky", top: 0, zIndex: 3, background: C.card }}>
+              <FnHead cols={cols} sort={sort} onSort={onSort} />
+              <FnRow key={root.key} {...rp} part="line" />
+            </div>
+            <FnRow key={root.key + ":kids"} {...rp} part="kids" />
+          </div>
+        </div>
+      </Card>
+      {after && after(g, rangeText)}
+    </>
+  );
+}
+const FN_HINT = "Grey % = conversion from the stage before; Retailed also shows retail ÷ leads, Lost shows lost ÷ leads. Swipe the table for more columns; tap a header to sort.";
+function FunnelSection({ open }) {
+  return (
+    <RangeTreeCard title="Leads to Retail" Icon={Filter} testid="fn" cols={FN_COLS} open={open} hint={FN_HINT}
+      summary={(g) => (
+        <MetricGrid testid="fn-summary" style={{ padding: "2px 0 12px" }}>
+          <MetricBox span label="Leads" value={nIN(g.leads)} sub={`${nIN(g.td)} test rides · ${pct1(div(g.td, g.leads))} of leads`} testid="fn-sum-leads" />
+          <MetricBox label="Retailed" value={nIN(g.rt)} sub={`${pct1(div(g.rt, g.leads))} of leads`} testid="fn-sum-rt" />
+          <MetricBox label="Booking" value={nIN(g.bk)} sub={`${pct1(div(g.rt, g.bk))} to retail`} testid="fn-sum-bk" />
+        </MetricGrid>
+      )} />
+  );
+}
+const LN_HINT = "Leads closed as lost in the period, by reason (grey = % of lost). Swipe for every reason; tap a header to sort.";
+function LostSection({ open }) {
+  return (
+    <RangeTreeCard title="Lost leads" Icon={UserX} testid="ln" cols={LN_COLS} open={open} hint={LN_HINT}
+      summary={(g) => {
+        const top = LOST_REASONS.reduce((x, r) => (g[r.key] > g[x.key] ? r : x), LOST_REASONS[0]);
+        return (
+          <MetricGrid testid="ln-summary" style={{ padding: "2px 0 12px" }}>
+            <MetricBox span label="Lost leads" value={nIN(g.lost)} sub={`${pct1(div(g.lost, g.leads))} of ${nIN(g.leads)} leads`} testid="ln-sum-lost" />
+            <MetricBox label="Top reason" value={<span style={{ fontSize: 15 }}>{top.name}</span>} sub={`${pct1(div(g[top.key], g.lost))} of lost`} testid="ln-sum-top" />
+            <MetricBox label="Lost after test ride" value={nIN(g.lostTD)} sub={`${pct1(div(g.lostTD, g.lost))} of lost · ${nIN(g.l5)} cancelled bookings`} testid="ln-sum-td" />
+          </MetricGrid>
+        );
+      }}
+      after={(g, rangeText) => <CompetitorCard g={g} rangeText={rangeText} />} />
+  );
+}
+/* Lost to competitor: the Insurers / Finance-partners split style, for the group in the period. */
+const CMP_COLS = [
+  { key: "share", label: "Share", w: 48, sort: (r) => r.share },
+  { key: "n", label: "Leads", w: 52, align: "right", sort: (r) => r.n },
+];
+function CompetitorCard({ g, rangeText }) {
+  const [sort, setSort] = useState({ key: "share", dir: "desc" });
+  const N = g.comp;
+  const rows = COMPETITORS.map((c, i) => ({ key: c.name, name: c.name, n: g["c" + i], share: div(g["c" + i], N) }));
+  const col = CMP_COLS.find(c => c.key === sort.key);
+  const sgn = sort.dir === "asc" ? 1 : -1;
+  rows.sort((x, y) => (col ? sgn * ((col.sort(x) || 0) - (col.sort(y) || 0)) : sgn * x.name.localeCompare(y.name)) || x.name.localeCompare(y.name));
+  const cellW = (c) => ({ width: c.w, flexShrink: 0, textAlign: c.align || "center", paddingRight: c.align === "right" ? 4 : 0 });
+  const nameCell = (title, sub, bar, strong) => (
+    <span style={{ flex: 1, minWidth: 0, padding: "0 8px 0 6px" }}>
+      <span style={{ display: "block", fontFamily: F, fontSize: 12.5, fontWeight: strong ? 800 : 600, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</span>
+      {sub != null && <span style={{ display: "block", fontFamily: F, fontSize: 10, color: C.faint, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</span>}
+      {bar != null && (
+        <span style={{ display: "block", position: "relative", height: 3, borderRadius: 999, background: "#ECEEF4", marginTop: 5 }}>
+          <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: 999, background: C.primary, width: `${clamp((bar || 0) * 100, 0, 100)}%` }} />
+        </span>
+      )}
+    </span>
+  );
+  return (
+    <Card style={TABLE_CARD} data-testid="ln-competitor">
+      <CardHead Icon={UserX} title="Lost to competitor" testid="ln-competitor-title" hint={`Leads lost as "Bought competitor", by brand · ${rangeText}`} />
+      <TreeHead cols={CMP_COLS} sort={sort} onSort={(k) => setSort(x => nextSort(x, k))} />
+      <div data-testid="cmp-total" data-n={N} style={{ display: "flex", alignItems: "center", minHeight: 44, borderBottom: `1px solid ${C.border}`, background: DEPTH_BG[0], borderLeft: `3px solid ${C.ink}` }}>
+        {nameCell(GROUP.name, `${nIN(N)} leads bought a competitor · ${pct1(div(N, g.lost))} of lost`, null, true)}
+        <span style={cellW(CMP_COLS[0])}>{num(N ? "100%" : "—", true)}</span>
+        <span style={cellW(CMP_COLS[1])}>{num(nIN(N), true)}</span>
+      </div>
+      {rows.map(r => (
+        <div key={r.key} data-testid="cmp-row" data-name={r.name} data-n={r.n} data-share={r.share}
+          style={{ display: "flex", alignItems: "center", minHeight: 42, borderBottom: `1px solid ${C.border}`, borderLeft: "3px solid transparent" }}>
+          {nameCell(r.name, null, r.share)}
+          <span style={cellW(CMP_COLS[0])}>{num(pctS(r.share), true, 12)}</span>
+          <span style={cellW(CMP_COLS[1])}>{num(nIN(r.n), false, 12)}</span>
+        </div>
+      ))}
+      <div style={{ fontFamily: F, fontSize: 10, color: C.faint, padding: "8px 4px 0", lineHeight: 1.4 }}>Sample data</div>
+    </Card>
+  );
+}
+
 /* ============================ BOARD ============================ */
 /* `fi` (Finance screens): no legend, rows collapse single-child levels, sub-line "<kind> · N units",
    worst-first sorting, and the header + group row stay pinned while the table scrolls. */
@@ -872,8 +1343,8 @@ function TreeCard({ title, Icon, testid, hintPeople, hintLoc, cols, open, top, m
     </Card>
   );
 }
-/* The Board is one scrolling page: key numbers, Target achievement, then every dashboard as a
-   section (Insurance, Finance, Add-ons, Income per vehicle, Stock). The menu jumps to a section
+/* The Board is one scrolling page: key numbers, Target achievement, Leads to Retail, Lost leads,
+   then every dashboard as a section (Insurance, Finance, Add-ons, Income per vehicle, Stock). The menu jumps to a section
    instead of opening a separate screen. */
 const BOARD_SECTIONS = ["insurance", "finance", "addons", "income", "stock"];
 function BoardScreen({ open, rates }) {
@@ -893,6 +1364,12 @@ function BoardScreen({ open, rates }) {
         defSort={{ key: "r", dir: "desc" }}
         hintPeople="Tap a name to expand, a header to sort. Proj = month at today's pace."
         hintLoc="Tap a name to expand, an outlet to open it, a header to sort." />
+      <section id="sec-funnel" data-testid="sec-funnel" style={{ marginTop: 14, scrollMarginTop: 8 }}>
+        <FunnelSection open={open} />
+      </section>
+      <section id="sec-lost" data-testid="sec-lost" style={{ marginTop: 14, scrollMarginTop: 8 }}>
+        <LostSection open={open} />
+      </section>
       {BOARD_SECTIONS.map(k => (
         <section key={k} id={`sec-${k}`} data-testid={`sec-${k}`} style={{ marginTop: 14, scrollMarginTop: 8 }}>
           {k === "stock" ? <StockScreen open={open} embedded /> : <FinanceScreen which={k} open={open} rates={rates} embedded />}
@@ -1398,6 +1875,8 @@ function AdminLocationsScreen({ cfs, open }) {
 /* ============================ APP ============================ */
 const NAV = [
   { key: "board", label: "Board", Icon: Target, subs: [] },
+  { key: "funnel", label: "Leads to Retail", Icon: Filter, subs: [] },
+  { key: "lost", label: "Lost leads", Icon: UserX, subs: [] },
   { key: "finance", label: "Finance", Icon: IndianRupee, subs: Object.entries(FIN).map(([k, d]) => ({ key: "finance:" + k, label: d.label })) },
   { key: "stock", label: "Stock", Icon: Package, subs: [] },
   { key: "reports", label: "Reports", Icon: FileText, subs: [] },
@@ -1426,6 +1905,7 @@ export default function CEOApp() {
   const go = (key) => {
     setStack([]); setMenuOpen(false);
     const [b, sb] = String(key).split(":");
+    if (b === "funnel" || b === "lost") { setTab("board"); setJump({ id: b, t: Date.now() }); return; }
     if (b === "finance" || b === "stock") { setTab("board"); setJump({ id: b === "stock" ? "stock" : sb, t: Date.now() }); return; }
     setJump(null); setTab(key);
   };
