@@ -108,8 +108,109 @@ function makeLead(i) {
   };
 }
 
+
+/* ---- Call history with comments ----
+   Each lead carries `calls`: newest last. { at, by, connected, outcome, durationSec, comment }.
+   Connected calls by stage (so ≥ half the pool has 3+ connected calls with comments):
+   new 0–1 · attempted 0 (only unanswered attempts) · contacted 3–4 · interested 3–5 · test_ride 3–5 ·
+   booking 4–6 · retailed 4–7 · delivered 5–8 · lost 2–5. Comments don't repeat within a lead. Early calls are by the telecaller, later
+   ones by the SE (if assigned). */
+const CALL_COMMENTS = {
+  intro: [
+    "Introduced River Indie; customer enquired about range and storage.",
+    "Explained 43 L under-seat + 12 L glovebox; customer liked the utility angle.",
+    "Shared price sheet on WhatsApp; on-road ₹1.67 L for 750W.",
+    "Customer rides 25–30 km daily; Indie's 161 km IDC range is more than enough.",
+    "Asked about home charging — explained 750W portable charger, 0–80% in ~5 h.",
+  ],
+  qualify: [
+    "Budget around ₹1.6–1.7 L; open to EMI. Shared evfin scheme from 5.99%.",
+    "Has an old {bike} for exchange; asked for an estimate.",
+    "Comparing with {comp}; highlighted 14-inch wheels and storage.",
+    "Wants {colour}; checked stock at {store} — available.",
+    "Society parking has a socket; no charging concern.",
+    "Spouse will join for the test ride; prefers weekend slot.",
+  ],
+  testride: [
+    "Test ride done; liked stability on bad roads and Rush mode pickup.",
+    "Felt the seat height is comfortable; asked about pillion footrests.",
+    "Took a 5 km ride; asked about service intervals and River Care.",
+    "Compared ride quality with {comp}; preferred Indie's suspension.",
+  ],
+  close: [
+    "Discussed River Care Plus Two vs Plus Five; leaning towards Plus Two.",
+    "Finance documents collected; file logged with {lender}.",
+    "Exchange value of ₹{exch} accepted for the {bike}.",
+    "Token of ₹2,500 paid; booking confirmed for Indie {variant}.",
+    "Asked for side step and back rest to be fitted before delivery.",
+  ],
+  after: [
+    "Invoice shared; RTO registration in progress.",
+    "Delivery scheduled for Saturday 11 am at {store}.",
+    "Delivered; walked customer through the app and charging.",
+    "Post-delivery call: happy with the scooter, ~115 km real range so far.",
+    "Reminder for first free service at 1,000 km.",
+  ],
+  lost: [
+    "Customer says price is above budget even with EMI.",
+    "Customer has booked {comp}; closing the lead.",
+    "Finance not approved by lender; customer not ready to pay upfront.",
+    "Worried about charging in rented flat; postponing purchase.",
+    "Not reachable after multiple attempts; marking lost.",
+    "Exchange offer too low compared with local dealer; dropped out.",
+  ],
+};
+const NOT_CONNECTED = ["No answer", "Busy", "Switched off", "Call back later"];
+const CONNECTED_RANGE = { new: [0, 1], attempted: [0, 0], contacted: [3, 4], interested: [3, 5], test_ride: [3, 5],
+  booking: [4, 6], retailed: [4, 7], delivered: [5, 8], lost: [2, 5] };
+
+function buildCalls(l, i) {
+  const r = rng("calls:" + i);
+  const [lo, hi] = CONNECTED_RANGE[l.stage];
+  const nConn = lo + Math.floor(r() * (hi - lo + 1));
+  const nMiss = l.stage === "attempted" ? 1 + Math.floor(r() * 3) : Math.floor(r() * 3);
+  const fill = (t) => t.replace("{bike}", l.exchange ? l.exchange.bike : "petrol scooter").replace("{comp}", l.lostTo || pick(r, COMPETITORS))
+    .replace("{colour}", l.colour).replace("{store}", l.storeName).replace("{lender}", l.finance ? l.finance.lender : "evfin (Greaves Finance)")
+    .replace("{exch}", l.exchange ? l.exchange.value.toLocaleString("en-IN") : "18,000").replace("{variant}", l.variant);
+  // Which comment pool each connected call draws from, in order through the funnel.
+  const phases = ["intro", "qualify", "qualify", "testride", "close", "close", "after", "after"];
+  const conn = [];
+  const used = new Set();
+  for (let k = 0; k < nConn; k++) {
+    let ph = phases[Math.min(k, phases.length - 1)];
+    if (l.stage === "lost" && k === nConn - 1) ph = "lost";
+    if (["contacted", "interested"].includes(l.stage) && (ph === "testride" || ph === "close" || ph === "after")) ph = "qualify";
+    if (l.stage === "test_ride" && (ph === "close" || ph === "after")) ph = "testride";
+    if (l.stage === "booking" && ph === "after") ph = "close";
+    const pool = CALL_COMMENTS[ph].filter(t => !used.has(t));
+    const raw = pick(r, pool.length ? pool : CALL_COMMENTS[ph]); used.add(raw);
+    let text = fill(raw);
+    if (l.stage === "lost" && k === nConn - 1 && l.lostReason) {
+      const map = { "Not reachable": 4, "Price / budget": 0, "Bought competitor": 1, "Finance rejected": 2, "Charging / range concern": 3, "Low exchange value": 5 };
+      if (map[l.lostReason] != null) text = fill(CALL_COMMENTS.lost[map[l.lostReason]]);
+    }
+    conn.push({ connected: true, outcome: "Connected", comment: text, durationSec: 60 + Math.floor(r() * 420) });
+  }
+  const MISS_NOTE = { "No answer": "No answer; WhatsApp sent.", "Busy": "Busy; will call back in the evening.",
+    "Switched off": "Phone switched off; retry tomorrow.", "Call back later": "Asked to call back after 6 pm." };
+  const miss = Array.from({ length: nMiss }, () => { const o = pick(r, NOT_CONNECTED); return { connected: false, outcome: o, comment: MISS_NOTE[o], durationSec: 0 }; });
+  // Interleave: a missed attempt often precedes a connected one.
+  const seq = [];
+  let mi = 0;
+  conn.forEach((c, k) => { if (mi < miss.length && r() < 0.5) seq.push(miss[mi++]); seq.push(c); });
+  while (mi < miss.length) seq.push(miss[mi++]);
+  // Spread timestamps from createdAt to lastActivityAt.
+  const t0 = new Date(l.createdAt).getTime(), t1 = Math.max(t0 + 3600e3, new Date(l.lastActivityAt).getTime());
+  const telecallerCalls = Math.max(1, Math.ceil(seq.length * 0.4));
+  return seq.map((c, k) => {
+    const at = new Date(t0 + ((t1 - t0) * (k + 1)) / (seq.length + 1));
+    at.setHours(10 + ((k * 3 + i) % 9), (k * 17 + i) % 60, 0, 0);
+    return { ...c, at: at.toISOString(), by: l.se && k >= telecallerCalls ? l.se : TELECALLER };
+  });
+}
+
 /** The full pool (360 leads): ~62% Aundh, ~38% Shivaji Nagar; every stage well represented. */
-export const LEADS = Array.from({ length: 360 }, (_, i) => makeLead(i + 1));
+export const LEADS = Array.from({ length: 360 }, (_, i) => { const l = makeLead(i + 1); l.calls = buildCalls(l, i + 1); return l; });
 
 /** Leads for a login.
  *  telecaller → early-funnel + lost (≥ 100)       sales → Rahul Kumar's leads + unassigned Aundh walk-ins (≥ 100)
