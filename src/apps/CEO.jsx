@@ -749,7 +749,11 @@ function TreeCard({ title, Icon, testid, hintPeople, hintLoc, cols, open, top, m
     </Card>
   );
 }
-function BoardScreen({ open }) {
+/* The Board is one scrolling page: key numbers, Target achievement, then every dashboard as a
+   section (Insurance & Finance, Add-ons, Income per vehicle, Stock). The menu jumps to a section
+   instead of opening a separate screen. */
+const BOARD_SECTIONS = ["insfin", "addons", "income", "stock"];
+function BoardScreen({ open, rates }) {
   const [mode, setMode] = useState("people");
   const g = aggOf(PEOPLE_ROOT);
   return (
@@ -766,6 +770,11 @@ function BoardScreen({ open }) {
         defSort={{ key: "r", dir: "desc" }}
         hintPeople="Tap a name to expand, a header to sort. Proj = month at today's pace."
         hintLoc="Tap a name to expand, an outlet to open it, a header to sort." />
+      {BOARD_SECTIONS.map(k => (
+        <section key={k} id={`sec-${k}`} data-testid={`sec-${k}`} style={{ marginTop: 14, scrollMarginTop: 8 }}>
+          {k === "stock" ? <StockScreen open={open} embedded /> : <FinanceScreen which={k} open={open} rates={rates} embedded />}
+        </section>
+      ))}
     </div>
   );
 }
@@ -799,7 +808,7 @@ const FIN = {
     ],
   },
 };
-function FinanceScreen({ which, open, rates }) {
+function FinanceScreen({ which, open, rates, embedded }) {
   const d = FIN[which] || FIN.insfin;
   const [mode, setMode] = useState("people");
   const agg = aggWith(rates);           // cached per rate set, so the reference is stable
@@ -809,25 +818,29 @@ function FinanceScreen({ which, open, rates }) {
   const n = summary.length;
   const top = (
     <MetricGrid testid="fin-summary" style={{ padding: "6px 0 12px" }}>
-      {summary.map(([k, v, sub], i) => <MetricBox key={k} label={k} value={v} sub={sub} hero={i === 0} span={n % 2 === 1 && i === 0} />)}
+      {summary.map(([k, v, sub], i) => <MetricBox key={k} label={k} value={v} sub={sub} hero={!embedded && i === 0} span={n % 2 === 1 && i === 0} />)}
     </MetricGrid>
   );
+  const card = (
+      <TreeCard title={d.title} Icon={d.Icon} testid={`fin-${which}`} cols={cols} open={open} mode={mode} setMode={setMode} top={top}
+        defSort={{ key: "name", dir: "desc" }} hintPeople={d.hint} hintLoc={d.hint} agg={agg} fi />
+  );
+  if (embedded) return card;
   return (
     <div style={{ padding: "14px 14px 90px" }}>
       <PeriodLine />
-      <TreeCard title={d.title} Icon={d.Icon} testid={`fin-${which}`} cols={cols} open={open} mode={mode} setMode={setMode} top={top}
-        defSort={{ key: "name", dir: "desc" }} hintPeople={d.hint} hintLoc={d.hint} agg={agg} fi />
+      {card}
     </div>
   );
 }
 
 /* ============================ STOCK ============================ */
-function StockScreen({ open }) {
+function StockScreen({ open, embedded }) {
   const [ex, toggle] = useExpanded([LOC_ROOT.key]);
   const [sort, onSort, cmp] = useSort(STOCK_COLS, stockOf, { key: "u", dir: "desc" });
   return (
-    <div style={{ padding: "14px 14px 90px" }}>
-      <div style={{ fontFamily: F, fontSize: 11, color: C.faint, margin: "0 0 9px 4px" }}>Today · ex-showroom value</div>
+    <div style={embedded ? undefined : { padding: "14px 14px 90px" }}>
+      <div style={{ fontFamily: F, fontSize: 11, color: C.faint, margin: "0 0 9px 4px" }}>{embedded ? "Stock · today, ex-showroom value" : "Today · ex-showroom value"}</div>
       <Card style={TABLE_CARD}>
         <CardHead Icon={Package} title="Stock" testid="stock-title" hint="Tap a name to expand, a header to sort. 90+ days is aged stock." />
         <TreeHead cols={STOCK_COLS} sort={sort} onSort={onSort} />
@@ -1185,12 +1198,23 @@ export default function CEOApp() {
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
   const scrollRef = useRef(null);
-  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0; }, [tab]);
   const showToast = (m) => { setToast(m); clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(null), 2800); };
 
   const open = (id) => setStack(s => [...s, id]);
   const back = () => setStack(s => s.slice(0, -1));
-  const go = (key) => { setStack([]); setTab(key); setMenuOpen(false); };
+  const [jump, setJump] = useState(null);
+  const go = (key) => {
+    setStack([]); setMenuOpen(false);
+    const [b, sb] = String(key).split(":");
+    if (b === "finance" || b === "stock") { setTab("board"); setJump({ id: b === "stock" ? "stock" : sb, t: Date.now() }); return; }
+    setJump(null); setTab(key);
+  };
+  useEffect(() => {
+    if (!jump || !scrollRef.current) return;
+    const el = scrollRef.current.querySelector(`#sec-${jump.id}`);
+    if (el) scrollRef.current.scrollTo({ top: el.offsetTop - 8, behavior: "smooth" });
+  }, [jump]);
+  useEffect(() => { if (scrollRef.current && !jump) scrollRef.current.scrollTop = 0; }, [tab]);
   const [base, sub] = String(tab).split(":");
   const top = stack[stack.length - 1];
 
@@ -1215,7 +1239,7 @@ export default function CEOApp() {
 
       <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
         <div ref={scrollRef} style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden" }}>
-          {base === "board" && <BoardScreen open={open} />}
+          {base === "board" && <BoardScreen open={open} rates={rates} />}
           {base === "finance" && <FinanceScreen key={sub} which={sub} open={open} rates={rates} />}
           {base === "stock" && <StockScreen open={open} />}
           {base === "reports" && <ReportsScreen showToast={showToast} />}
