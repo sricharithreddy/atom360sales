@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
-  ChevronDown, ChevronLeft, ChevronRight, FileText, IndianRupee, MapPin, Menu, Package, Phone, Plus,
+  ChevronDown, ChevronLeft, ChevronRight, FileText, IndianRupee, Landmark, MapPin, Menu, Package, Phone, Plus,
   Settings, ShieldCheck, ShoppingBag, Store, Target, Upload, User,
 } from "lucide-react";
 import { GROUP, ZONES, LOCATIONS, monthsOpen } from "../data/epicRiverLocations.js";
@@ -310,6 +310,108 @@ function derive(a) {
 const AGG = new Map();
 const aggOf = (t) => { let a = AGG.get(t.key); if (!a) { a = derive(sumIdx(t.ses)); AGG.set(t.key, a); } return a; };
 const GROUP_AGG = derive(sumIdx(ALL_SE));
+
+/* ---------------- Insurer and finance-partner split (sample data) ----------------
+   ILLUSTRATIVE ONLY: these are typical dealer tie-ups for two-wheelers / EVs in South and West
+   India, not River's or Epic River's actual insurance or finance partners.
+   Each outlet ties up with 3–5 lenders, and with TATA AIG plus 1–3 other insurers; the group mix leans by state (Royal Sundaram in Tamil
+   Nadu, Go Digit in Karnataka / Telangana, Shriram in AP / TN districts, Ecofy in metros) and is
+   calibrated to the target group mix. Every SE's in-house policies (`ins`, `insPrem`) and in-house
+   loans (`fin`, `loanAmt`) are split across the outlet's companies as integers that add back
+   exactly, so any scope's split sums to that scope's policies / loans / ₹. Avg premium and avg
+   loan differ slightly by company (factor `f`) around the SE's own average. */
+// TATA AIG is the anchor insurer: every outlet ties up with it and it writes ≈ 72–88% of the
+// outlet's in-house policies (≈ 80% group); the other five share the rest by `mix` × state tilt.
+const INSURERS = [
+  { name: "TATA AIG", mix: 80, f: 1.01, anchor: [0.72, 0.88] },
+  { name: "ICICI Lombard", mix: 6.5, f: 1.02 }, { name: "Bajaj Allianz", mix: 5.1, f: 0.99 },
+  { name: "HDFC ERGO", mix: 4.2, f: 1.035 }, { name: "Go Digit", mix: 2.8, f: 0.965 },
+  { name: "Royal Sundaram", mix: 1.4, f: 0.98 },
+];
+const LENDERS = [
+  { name: "IDFC FIRST Bank", mix: 24, f: 1.0 }, { name: "HDFC Bank", mix: 18, f: 1.04 },
+  { name: "Bajaj Finance", mix: 17, f: 0.97 }, { name: "Shriram Finance", mix: 14, f: 0.955 },
+  { name: "L&T Finance", mix: 11, f: 1.01 }, { name: "AU Small Finance Bank", mix: 9, f: 0.98 },
+  { name: "Ecofy", mix: 7, f: 1.045 },
+];
+const METROS = new Set(["Hyderabad", "Secunderabad", "Bengaluru", "Chennai", "Mumbai", "Navi Mumbai", "Thane", "Pune"]);
+function partnerTilt(kind, name, l) {
+  const metro = METROS.has(l.city);
+  if (kind === "ins") {
+    if (name === "Royal Sundaram") return l.state === "Tamil Nadu" ? 3.4 : 0.55;
+    if (name === "Go Digit") return l.state === "Karnataka" || l.state === "Telangana" ? 1.9 : 0.7;
+    return 1;
+  }
+  if (name === "Shriram Finance") return (l.state === "Andhra Pradesh" || l.state === "Tamil Nadu") && !metro ? 2.2 : metro ? 0.45 : 0.9;
+  if (name === "Ecofy") return metro ? 2.0 : 0.4;
+  return 1;
+}
+const SPLIT_KINDS = { ins: { list: INSURERS, n: "ins", amt: "insPrem", unit: 10 }, fin: { list: LENDERS, n: "fin", amt: "loanAmt", unit: 1000 } };
+const SE_SPLIT = { ins: new Array(SES.length), fin: new Array(SES.length) };
+(() => {
+  Object.entries(SPLIT_KINDS).forEach(([kind, K]) => {
+    const target = K.list.map(c => c.mix);
+    let base = [...target];
+    const outletW = (l) => {
+      // Tie-ups: 3–5 companies (anchor + 1–3 others), drawn without replacement by (base × state
+      // tilt); then outlet weights. An anchor company takes a fixed share of the outlet.
+      const r = rngFor(`tie:${kind}:${l.id}`);
+      const a = K.list.findIndex(c => c.anchor);
+      const k = a >= 0 ? 1 + ri(r, 1, 3) : ri(r, 3, 5);
+      const pw = K.list.map((c, i) => (i === a ? 0 : base[i] * partnerTilt(kind, c.name, l)));
+      const pick = new Set();
+      if (a >= 0) pick.add(a);
+      while (pick.size < k) {
+        const free = pw.map((w, i) => (pick.has(i) ? 0 : w));
+        let x = r() * free.reduce((a, b) => a + b, 0), j = 0;
+        while (j < free.length - 1 && (x -= free[j]) > 0) j++;
+        if (free[j] === 0) j = free.findIndex(w => w > 0);
+        pick.add(j);
+      }
+      const w = pw.map((x, i) => (pick.has(i) && i !== a ? x * rr(r, 0.75, 1.3) : (r(), 0)));
+      if (a < 0) return w;
+      const t = rr(r, ...K.list[a].anchor), W = w.reduce((x, y) => x + y, 0);
+      return w.map((x, i) => (i === a ? t : ((1 - t) * x) / W));
+    };
+    // Calibrate the base weights so the expected group mix lands on the target mix.
+    for (let it = 0; it < 8; it++) {
+      const tot = K.list.map(() => 0);
+      LOCS.forEach(l => {
+        const w = outletW(l), W = w.reduce((a, b) => a + b, 0), n = sumIdx(l.ses)[K.n];
+        w.forEach((x, i) => { tot[i] += (n * x) / W; });
+      });
+      const T = tot.reduce((a, b) => a + b, 0), S = target.reduce((a, b) => a + b, 0);
+      base = base.map((b, i) => (K.list[i].anchor ? b : b * Math.pow(target[i] / S / (tot[i] / T || 1e-3), 0.8)));
+    }
+    LOCS.forEach(l => {
+      const w = outletW(l);
+      l.ses.forEach(i => {
+        const row = SE_ROWS[i], r = rngFor(`mix:${kind}:${SES[i].id}`);
+        const n = splitInt(row[K.n], w.map(x => x * (0.85 + 0.3 * r())));
+        const f = K.list.map(c => c.f * (0.99 + 0.02 * r()));
+        const raw = n.map((k, j) => k * f[j]), R = raw.reduce((a, b) => a + b, 0);
+        const amt = raw.map(v => (R ? Math.round((row[K.amt] * v) / R / K.unit) * K.unit : 0));
+        if (R) { let j = 0; n.forEach((k, m) => { if (k > n[j]) j = m; }); amt[j] += row[K.amt] - amt.reduce((a, b) => a + b, 0); }
+        SE_SPLIT[kind][i] = { n, amt };
+      });
+    });
+  });
+})();
+const SPLIT_AGG = new Map();
+// Σ over a scope's SEs → rows per company: { i, name, n, amt, share, avg }, plus totals.
+function splitOf(kind, scope) {
+  const ck = kind + ":" + scope.key;
+  let o = SPLIT_AGG.get(ck);
+  if (o) return o;
+  const list = SPLIT_KINDS[kind].list;
+  const n = list.map(() => 0), amt = list.map(() => 0);
+  scope.ses.forEach(i => { const s = SE_SPLIT[kind][i]; for (let j = 0; j < list.length; j++) { n[j] += s.n[j]; amt[j] += s.amt[j]; } });
+  const N = n.reduce((a, b) => a + b, 0), A = amt.reduce((a, b) => a + b, 0);
+  const rows = list.map((c, i) => ({ i, key: c.name, name: c.name, n: n[i], amt: amt[i], share: div(n[i], N), avg: div(amt[i], n[i]) })).filter(x => x.n > 0);
+  o = { rows, n: N, amt: A, avg: div(A, N) };
+  SPLIT_AGG.set(ck, o);
+  return o;
+}
 
 /* ---------------- Dealer income at the Admin rates ----------------
    Linear in the summed fields, so per-SE income summed = income of the sums. */
@@ -681,14 +783,19 @@ const grey = (v) => small(v, C.faint, 8.5);
 const rateCol = (key, label, w, f, subF, align) => ({ key, label, w, align, sort: (a) => a[f],
   cell: (a) => top2(pctS(a[f]), subF ? grey(subF(a)) : null, rateTone(a[f], G[f], a.retail)) });
 
-// Finance · Insurance & Finance.
-const INSFIN_COLS = [
-  rateCol("ins", "Ins %", 36, "insPct"),
-  { key: "prem", label: two("Avg", "premium"), w: 50, sort: (a) => a.premAvg,
+// Finance · Insurance.
+const INS_COLS = [
+  rateCol("ins", "Ins %", 42, "insPct"),
+  { key: "prem", label: two("Avg", "premium"), w: 58, sort: (a) => a.premAvg,
     cell: (a) => top2(rs(a.premAvg), null, rsTone(a.premAvg, G.premAvg, a.retail, a.ins)) },
-  rateCol("fin", "Fin %", 56, "finPct", (a) => `${pctS(a.finShare)} of loans`),
-  { key: "loan", label: two("Avg", "loan"), w: 50, align: "right", sort: (a) => a.loanAvg,
+  { key: "pol", label: "Policies", w: 54, align: "right", sort: (a) => a.ins, cell: (a) => top2(nIN(a.ins), null) },
+];
+// Finance · Finance.
+const FINC_COLS = [
+  rateCol("fin", "Fin %", 58, "finPct", (a) => `${pctS(a.finShare)} of loans`),
+  { key: "loan", label: two("Avg", "loan"), w: 54, sort: (a) => a.loanAvg,
     cell: (a) => top2(lakh(a.loanAvg), grey(`${pctS(a.ltv)} LTV`), rsTone(a.loanAvg, G.loanAvg, a.retail, a.fin)) },
+  { key: "loans", label: "Loans", w: 46, align: "right", sort: (a) => a.fin, cell: (a) => top2(nIN(a.fin), null) },
 ];
 // Finance · Add-ons (revenue, not margin).
 const ADDON_COLS = [
@@ -750,9 +857,9 @@ function TreeCard({ title, Icon, testid, hintPeople, hintLoc, cols, open, top, m
   );
 }
 /* The Board is one scrolling page: key numbers, Target achievement, then every dashboard as a
-   section (Insurance & Finance, Add-ons, Income per vehicle, Stock). The menu jumps to a section
+   section (Insurance, Finance, Add-ons, Income per vehicle, Stock). The menu jumps to a section
    instead of opening a separate screen. */
-const BOARD_SECTIONS = ["insfin", "addons", "income", "stock"];
+const BOARD_SECTIONS = ["insurance", "finance", "addons", "income", "stock"];
 function BoardScreen({ open, rates }) {
   const [mode, setMode] = useState("people");
   const g = aggOf(PEOPLE_ROOT);
@@ -782,13 +889,20 @@ function BoardScreen({ open, rates }) {
 /* ============================ FINANCE ============================ */
 const FI_HINT = "Month to date · green/red = 5 pts (rates) or 5% (₹) better/worse than group";
 const FIN = {
-  insfin: {
-    label: "Insurance & Finance", title: "Insurance & Finance", Icon: ShieldCheck, hint: FI_HINT, cols: () => INSFIN_COLS,
+  insurance: {
+    label: "Insurance", title: "Insurance", Icon: ShieldCheck, hint: FI_HINT, cols: () => INS_COLS, split: "ins",
     summary: (g) => [
       ["In-house insurance", pctS(g.insPct), `${nIN(g.ins)} of ${nIN(g.retail)} units`],
       ["Avg premium", rs(g.premAvg), "per in-house policy"],
+      ["Policies", nIN(g.ins), `${inr(g.insPrem)} premium`],
+    ],
+  },
+  finance: {
+    label: "Finance", title: "Finance", Icon: Landmark, hint: FI_HINT, cols: () => FINC_COLS, split: "fin",
+    summary: (g) => [
       ["In-house finance", pctS(g.finPct), `${pctS(g.finShare)} of loans`],
       ["Avg loan", lakh(g.loanAvg), `${pctS(g.ltv)} LTV`],
+      ["Loans", nIN(g.fin), `${inr(g.loanAmt)} disbursed`],
     ],
   },
   addons: {
@@ -809,7 +923,7 @@ const FIN = {
   },
 };
 function FinanceScreen({ which, open, rates, embedded }) {
-  const d = FIN[which] || FIN.insfin;
+  const d = FIN[which] || FIN.insurance;
   const [mode, setMode] = useState("people");
   const agg = aggWith(rates);           // cached per rate set, so the reference is stable
   const gi = agg(LOC_ROOT);             // the group, with income at these rates
@@ -825,12 +939,98 @@ function FinanceScreen({ which, open, rates, embedded }) {
       <TreeCard title={d.title} Icon={d.Icon} testid={`fin-${which}`} cols={cols} open={open} mode={mode} setMode={setMode} top={top}
         defSort={{ key: "name", dir: "desc" }} hintPeople={d.hint} hintLoc={d.hint} agg={agg} fi />
   );
-  if (embedded) return card;
+  const split = d.split ? <SplitCard kind={d.split} /> : null;
+  if (embedded) return <>{card}{split}</>;
   return (
     <div style={{ padding: "14px 14px 90px" }}>
       <PeriodLine />
       {card}
+      {split}
     </div>
+  );
+}
+
+/* ---------------- Company split: insurers / finance partners ----------------
+   Rows = company with a slim share bar, share of in-house policies / loans, count and average.
+   Scope = group, a state or a city (Locations order); the outlet page passes its outlet. */
+const SPLIT_DEF = {
+  ins: { title: "Insurers", Icon: ShieldCheck, count: "Policies", avgLabel: two("Avg", "premium"), avg: rs, word: "insurer",
+    hint: "Share of in-house policies by insurer. Tap a header to sort." },
+  fin: { title: "Finance partners", Icon: Landmark, count: "Loans", avgLabel: two("Avg", "loan"), avg: lakh, word: "lender",
+    hint: "Share of in-house loans by lender. Tap a header to sort." },
+};
+const SCOPES = (() => {
+  const out = [{ t: LOC_ROOT, label: LOC_ROOT.name }];
+  LOC_ROOT.kids().forEach(st => {
+    out.push({ t: st, label: st.name });
+    st.kids().forEach(c => out.push({ t: c, label: `\u00A0\u00A0${c.name}` }));
+  });
+  return out;
+})();
+const SCOPE_BY_KEY = Object.fromEntries(SCOPES.map(x => [x.t.key, x.t]));
+const SPLIT_COLS = (d) => [
+  { key: "share", label: "Share", w: 44, sort: (r) => r.share },
+  { key: "n", label: d.count, w: 52, sort: (r) => r.n },
+  { key: "avg", label: d.avgLabel, w: 56, align: "right", sort: (r) => r.avg },
+];
+function SplitCard({ kind, scope: fixed, compact }) {
+  const d = SPLIT_DEF[kind];
+  const [scopeKey, setScopeKey] = useState(LOC_ROOT.key);
+  const [sort, setSort] = useState({ key: "share", dir: "desc" });
+  const scope = fixed || SCOPE_BY_KEY[scopeKey];
+  const s = splitOf(kind, scope);
+  const cols = useMemo(() => SPLIT_COLS(d), [d]);
+  const col = cols.find(c => c.key === sort.key);
+  const sgn = sort.dir === "asc" ? 1 : -1;
+  const rows = [...s.rows].sort((x, y) => (col ? sgn * (col.sort(x) - col.sort(y)) : sgn * x.name.localeCompare(y.name))
+    || y.n - x.n || x.name.localeCompare(y.name));
+  const cellW = (c) => ({ width: c.w, flexShrink: 0, textAlign: c.align || "center", paddingRight: c.align === "right" ? 4 : 0 });
+  const avgTxt = (v) => <span style={{ fontFamily: F, fontSize: 11, fontWeight: 600, color: C.faint, whiteSpace: "nowrap" }}>{d.avg(v)}</span>;
+  const nameCell = (title, sub, bar, strong) => (
+    <span style={{ flex: 1, minWidth: 0, padding: "0 8px 0 6px" }}>
+      <span style={{ display: "block", fontFamily: F, fontSize: 12.5, fontWeight: strong ? 800 : 600, color: C.ink,
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</span>
+      {sub != null && <span style={{ display: "block", fontFamily: F, fontSize: 10, color: C.faint, marginTop: 1,
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</span>}
+      {bar != null && (
+        <span style={{ display: "block", position: "relative", height: 3, borderRadius: 999, background: "#ECEEF4", marginTop: 5 }}>
+          <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: 999, background: C.primary, width: `${clamp(bar * 100, 0, 100)}%` }} />
+        </span>
+      )}
+    </span>
+  );
+  return (
+    <Card style={TABLE_CARD} data-testid={`split-${kind}`} data-scope={scope.key}>
+      <CardHead Icon={d.Icon} title={d.title} testid={`split-${kind}-title`} hint={compact ? null : d.hint} />
+      {!fixed && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 4px 9px" }}>
+          <span style={{ fontFamily: F, fontSize: 11, color: C.faint }}>Showing:</span>
+          <select data-testid={`split-${kind}-scope`} aria-label={`${d.title} scope`} value={scopeKey} onChange={e => setScopeKey(e.target.value)}
+            style={{ minWidth: 0, maxWidth: 200, fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.ink, background: C.card,
+              border: `1.5px solid ${C.border}`, borderRadius: 8, padding: "3px 6px", cursor: "pointer", outline: "none" }}>
+            {SCOPES.map(x => <option key={x.t.key} value={x.t.key}>{x.label}</option>)}
+          </select>
+        </div>
+      )}
+      <TreeHead cols={cols} sort={sort} onSort={(k) => setSort(x => nextSort(x, k))} />
+      <div data-testid="split-total" data-n={s.n} data-amt={s.amt} style={{ display: "flex", alignItems: "center", minHeight: 44,
+        borderBottom: `1px solid ${C.border}`, background: DEPTH_BG[0], borderLeft: `3px solid ${C.ink}` }}>
+        {nameCell(fixed ? fixed.name : scope.name, `${nIN(s.n)} ${d.count.toLowerCase()} · ${s.rows.length} ${d.word}${s.rows.length === 1 ? "" : "s"}`, null, true)}
+        <span style={cellW(cols[0])}>{num(s.n ? "100%" : "—", true)}</span>
+        <span style={cellW(cols[1])}>{num(nIN(s.n), true)}</span>
+        <span style={cellW(cols[2])}>{avgTxt(s.avg)}</span>
+      </div>
+      {rows.map(r => (
+        <div key={r.key} data-testid="split-row" data-name={r.name} data-n={r.n} data-amt={r.amt} data-share={r.share}
+          style={{ display: "flex", alignItems: "center", minHeight: 42, borderBottom: `1px solid ${C.border}`, borderLeft: "3px solid transparent" }}>
+          {nameCell(r.name, null, r.share)}
+          <span style={cellW(cols[0])}>{num(pctS(r.share), true, 12)}</span>
+          <span style={cellW(cols[1])}>{num(nIN(r.n), false, 12)}</span>
+          <span style={cellW(cols[2])}>{avgTxt(r.avg)}</span>
+        </div>
+      ))}
+      <div style={{ fontFamily: F, fontSize: 10, color: C.faint, padding: "8px 4px 0" }}>Sample partner mix</div>
+    </Card>
   );
 }
 
@@ -905,6 +1105,7 @@ function OutletScreen({ id, onBack, rates }) {
   const [ex, toggle] = useExpanded([root.key]);
   const [sort, onSort, cmp] = useSort(BOARD_COLS, aggOf, { key: "r", dir: "desc" });
   const a = withIncome(derive(sumIdx(l.ses)), rates);
+  const outletScope = useMemo(() => ({ key: "O:" + l.id, name: l.locality, ses: l.ses }), [l]);
   const gi = aggWith(rates)(LOC_ROOT);
   // One colour on the glass: the green / red verdict is spelled out in the grey group line.
   const verdict = (tone) => (tone === C.green ? " · better" : tone === C.hot ? " · worse" : "");
@@ -931,14 +1132,16 @@ function OutletScreen({ id, onBack, rates }) {
         <CardHead Icon={IndianRupee} title="Finance" testid="outlet-fin"
           hint={`This outlet, ${nIN(a.retail)} units, with the group in grey. Better / worse = 5 pts or 5% vs group.`} />
         <MetricGrid style={{ marginTop: 4 }}>
-        {line("In-house insurance", pctS(a.insPct), rateTone(a.insPct, G.insPct, a.retail), pctS(G.insPct), `${nIN(a.ins)} policies`)}
-        {line("Avg premium", rs(a.premAvg), rsTone(a.premAvg, G.premAvg, a.retail, a.ins), rs(G.premAvg), "per in-house policy")}
+        {line("In-house insurance", pctS(a.insPct), rateTone(a.insPct, G.insPct, a.retail), pctS(G.insPct), `${nIN(a.ins)} of ${nIN(a.retail)} units`)}
+        {line("Avg premium", rs(a.premAvg), rsTone(a.premAvg, G.premAvg, a.retail, a.ins), rs(G.premAvg), `${nIN(a.ins)} policies · ${inr(a.insPrem)}`)}
         {line("In-house finance", pctS(a.finPct), rateTone(a.finPct, G.finPct, a.retail), pctS(G.finPct), `${pctS(a.finShare)} of loans · group ${pctS(G.finShare)}`)}
-        {line("Avg loan", lakh(a.loanAvg), rsTone(a.loanAvg, G.loanAvg, a.retail, a.fin), lakh(G.loanAvg), `${pctS(a.ltv)} LTV · group ${pctS(G.ltv)}`)}
+        {line("Avg loan", lakh(a.loanAvg), rsTone(a.loanAvg, G.loanAvg, a.retail, a.fin), lakh(G.loanAvg), `${nIN(a.fin)} loans · ${pctS(a.ltv)} LTV`)}
         {line("Add-ons ₹/scooter", rs(a.addPU), rsTone(a.addPU, G.addPU, a.retail), rs(G.addPU), "accessories + River Care")}
         {line("Income per scooter", rs(a.totPV), rsTone(a.totPV, gi.totPV, a.retail), rs(gi.totPV), "at Admin → Payout & margin rates")}
         </MetricGrid>
       </Card>
+      <SplitCard kind="ins" scope={outletScope} compact />
+      <SplitCard kind="fin" scope={outletScope} compact />
       <StockCard id={l.id} />
     </div>
   );
