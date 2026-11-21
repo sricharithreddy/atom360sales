@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   ChevronDown, ChevronLeft, ChevronRight, FileText, IndianRupee, Landmark, MapPin, Menu, Package, Phone, Plus,
-  Filter, Settings, ShieldCheck, ShoppingBag, Store, Target, Upload, User, UserX,
+  Filter, Palette, Settings, ShieldCheck, ShoppingBag, Store, Target, Upload, User, UserX,
 } from "lucide-react";
 import { GROUP, ZONES, LOCATIONS, monthsOpen } from "../data/epicRiverLocations.js";
 import { stockFor, VARIANTS, COLOURS } from "../data/epicRiverInventory.js";
@@ -715,6 +715,73 @@ function stockOf(t) {
   return o;
 }
 
+/* ---------------- Product mix: variant × care plan × colour (sample data) ----------------
+   Per SE, month to date. Variant: the SE's 750W units are the ones already behind `value`
+   (round(retail × SE mix)), the rest are 480W. Care plans: the SE's existing River Care counts
+   (`rc`, `p5`) are dealt across the two variants in proportion to units (exact integers, capped),
+   the rest of the units are on the Standard plan. Colour: each variant's units are split by the
+   outlet's colour preference — group target ≈ Blue 28 · White 24 · Grey 19 · Red 16 · Yellow 13,
+   metros lean White / Grey, districts Blue / Red, Spring Yellow higher in Tamil Nadu and the
+   Kerala-side towns — with the unbiased splitter, so Σ colours = Σ variants = retail everywhere. */
+const PM_COLOUR_TARGET = [28, 16, 13, 24, 19];   // COLOURS order: Blue, Red, Yellow, White, Grey
+const KERALA_SIDE = new Set(["Coimbatore", "Mangaluru", "Mysuru"]);
+function colourTilt(l, ci) {
+  const t = METRO_CITIES.has(l.city) ? [0.88, 0.85, 1, 1.18, 1.25][ci] : [1.12, 1.16, 1, 0.9, 0.84][ci];
+  const y = ci !== 2 ? 1 : KERALA_SIDE.has(l.city) ? 1.5 : l.state === "Tamil Nadu" ? 1.32 : 1;
+  return t * y;
+}
+const PM_KEYS = ["u", "v750", "v480", "p2a", "p5a", "p2b", "p5b", "k0", "k1", "k2", "k3", "k4",
+  "a0", "a1", "a2", "a3", "a4", "b0", "b1", "b2", "b3", "b4"];   // a/b = 750W / 480W units by colour
+const PM_ROWS = new Array(SES.length);
+(() => {
+  const noise = new Map(LOCS.map(l => { const q = rngFor("pmc:" + l.id); return [l.id, COLOURS.map(() => rr(q, 0.85, 1.15))]; }));
+  const outletW = (l, base) => base.map((b, ci) => b * colourTilt(l, ci) * noise.get(l.id)[ci]);
+  const S = PM_COLOUR_TARGET.reduce((a, b) => a + b, 0);
+  let base = [...PM_COLOUR_TARGET];
+  for (let it = 0; it < 24; it++) {
+    const tot = COLOURS.map(() => 0);
+    LOCS.forEach(l => { const w = outletW(l, base), W = w.reduce((a, b) => a + b, 0); w.forEach((x, ci) => { tot[ci] += (l.mtd * x) / W; }); });
+    const T = tot.reduce((a, b) => a + b, 0);
+    base = base.map((b, ci) => b * Math.pow(PM_COLOUR_TARGET[ci] / S / (tot[ci] / T || 1e-3), 0.6));
+  }
+  LOCS.forEach(l => { l.pmW = outletW(l, base); });
+  SES.forEach((s, i) => {
+    const row = SE_ROWS[i], r = rngFor("pm:" + s.id);
+    const v750 = Math.round(row.retail * s.mix), v480 = row.retail - v750;
+    const pl = splitCapR(row.rc, [v750, v480], [v750, v480], r);
+    const p5 = splitCapR(row.p5, pl, pl, r);
+    const ka = splitR(v750, s.loc.pmW, r), kb = splitR(v480, s.loc.pmW, r);
+    PM_ROWS[i] = { u: row.retail, v750, v480, p2a: pl[0] - p5[0], p5a: p5[0], p2b: pl[1] - p5[1], p5b: p5[1],
+      k0: ka[0] + kb[0], k1: ka[1] + kb[1], k2: ka[2] + kb[2], k3: ka[3] + kb[3], k4: ka[4] + kb[4],
+      ...Object.fromEntries(COLOURS.flatMap((_, ci) => [["a" + ci, ka[ci]], ["b" + ci, kb[ci]]])) };
+  });
+})();
+const PM_AGG = new Map();
+// Σ over a node's SEs; for a location node (or scope with locIds) also its stock by variant / colour.
+function pmOf(t) {
+  let o = PM_AGG.get(t.key);
+  if (o) return o;
+  o = {}; PM_KEYS.forEach(k => { o[k] = 0; });
+  t.ses.forEach(i => { const r = PM_ROWS[i]; PM_KEYS.forEach(k => { o[k] += r[k]; }); });
+  o.sh750 = div(o.v750, o.u); o.sh480 = div(o.v480, o.u);
+  o.p2 = o.p2a + o.p2b; o.p5 = o.p5a + o.p5b; o.plan = o.p2 + o.p5;
+  o.planPct = div(o.plan, o.u); o.p5Pct = div(o.p5, o.u);
+  COLOURS.forEach((_, ci) => { o["ks" + ci] = div(o["k" + ci], o.u); });
+  if (t.locIds) {
+    // s<v><c> / g<v><c>: stock / 90+ days aged units per variant (0 = 750W, 1 = 480W) × colour.
+    VARIANTS.forEach((_, vi) => COLOURS.forEach((_, ci) => { o[`s${vi}${ci}`] = 0; o[`g${vi}${ci}`] = 0; }));
+    t.locIds.forEach(id => stockFor(id).lines.forEach(l => {
+      const k = `${l.variant === "750W" ? 0 : 1}${COLOURS.indexOf(l.colour)}`;
+      o["s" + k] += l.units; o["g" + k] += l.buckets[3];
+    }));
+    o.s750 = COLOURS.reduce((x, _, ci) => x + o["s0" + ci], 0); o.s480 = COLOURS.reduce((x, _, ci) => x + o["s1" + ci], 0);
+    COLOURS.forEach((_, ci) => { o["sk" + ci] = o["s0" + ci] + o["s1" + ci]; });
+    o.stock = o.s750 + o.s480;
+  }
+  PM_AGG.set(t.key, o);
+  return o;
+}
+
 /* ---------------- The two trees ----------------
    A tree node: { key, name, kind, ses (SE indexes), locIds, kids() }. Children are built
    lazily and sorted by units retailed, biggest first. */
@@ -1164,7 +1231,7 @@ function FnHead({ cols, sort, onSort }) {
     </div>
   );
 }
-function FnRow({ t, depth, expanded, onToggle, onOutlet, parent, cols, agg, cmp, testid, part }) {
+function FnRow({ t, depth, expanded, onToggle, onOutlet, parent, cols, agg, cmp, testid, part, collapse }) {
   const a = agg(t);
   const open = expanded.has(t.key);
   const isOutlet = t.kind === "OUTLET" && onOutlet;
@@ -1197,12 +1264,12 @@ function FnRow({ t, depth, expanded, onToggle, onOutlet, parent, cols, agg, cmp,
     </div>
   );
   if (part === "line") return line;
-  const kids = open && t.hasKids ? [...t.kids()].sort(cmp) : [];
+  const kids = open && t.hasKids ? [...(collapse ? t.kids().map(collapsed) : t.kids())].sort(cmp) : [];
   return (
     <>
       {line}
       {kids.map(ch => <FnRow key={ch.key} t={ch} depth={depth + 1} expanded={expanded} onToggle={onToggle} onOutlet={onOutlet}
-        parent={t} cols={cols} agg={agg} cmp={cmp} testid={testid} />)}
+        parent={t} cols={cols} agg={agg} cmp={cmp} testid={testid} collapse={collapse} />)}
     </>
   );
 }
@@ -1391,7 +1458,8 @@ function TreeCard({ title, Icon, testid, hintPeople, hintLoc, cols, open, top, m
   );
 }
 /* The Board is one scrolling page: key numbers, Target achievement, Leads to Retail, Lost leads,
-   then every dashboard as a section (Insurance, Finance, Add-ons, Income per vehicle, Stock). The menu jumps to a section
+   then every dashboard as a section (Insurance, Finance, Add-ons, Income per vehicle, Stock, and last
+   Product mix & stock movement). The menu jumps to a section
    instead of opening a separate screen. */
 const BOARD_SECTIONS = ["insurance", "finance", "addons", "income", "stock"];
 function BoardScreen({ open, rates }) {
@@ -1422,6 +1490,9 @@ function BoardScreen({ open, rates }) {
           {k === "stock" ? <StockScreen open={open} embedded /> : <FinanceScreen which={k} open={open} rates={rates} embedded />}
         </section>
       ))}
+      <section id="sec-mix" data-testid="sec-mix" style={{ marginTop: 14, scrollMarginTop: 8 }}>
+        <ProductMixSection open={open} />
+      </section>
     </div>
   );
 }
@@ -1639,6 +1710,276 @@ function StockCard({ id }) {
   );
 }
 
+/* ============================ PRODUCT MIX & STOCK MOVEMENT ============================
+   Which variant / care plan / colour sells, set against the shared inventory. The movement card
+   (scope = Group / State / City; the outlet page passes its outlet) shows per variant or colour:
+   sold MTD, in stock today, sell-through = sold ÷ (sold + stock), stock cover = stock ÷ (sold ÷ 19)
+   days and 90+ days aged units — all from Σ stockFor over the scope's outlets. Below it, the sales
+   split table (People ⇄ Locations) with Variant | Colour column sets. */
+const AMBER_TXT = "#B45309";
+const GPM = pmOf(LOC_ROOT);
+const PM_VIEWS = [["variant", "Variant"], ["colour", "Colour"]];
+const pmShareCol = (key, label, n, sh, w, align) => ({ key, label, w, align, sort: (a) => a[sh],
+  cell: (a) => top2(nIN(a[n]), grey(pctS(a[sh])), rateTone(a[sh], GPM[sh], a.u), 12) });
+const pmUnitsCol = (w) => ({ key: "u", label: "Units", w, sort: (a) => a.u,
+  cell: (a) => top2(nIN(a.u), a.stock != null ? grey(`stock ${nIN(a.stock)}`) : null, C.ink, 12) });
+const PM_VAR_COLS = [
+  pmUnitsCol(48),
+  pmShareCol("a", "750W", "v750", "sh750", 46),
+  pmShareCol("b", "480W", "v480", "sh480", 46),
+  { key: "pl", label: two("With", "plan %"), w: 52, align: "right", sort: (a) => a.planPct,
+    cell: (a) => top2(pctS(a.planPct), grey(`P5 ${pctS(a.p5Pct)}`), rateTone(a.planPct, GPM.planPct, a.u), 12) },
+];
+const Dot = ({ c, size = 9 }) => <span style={{ display: "inline-block", width: size, height: size, borderRadius: "50%", flexShrink: 0,
+  background: SWATCH[c][1], border: `1px solid ${C.borderStrong}`, boxSizing: "border-box" }} />;
+const dotLabel = (c) => <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 3 }}><Dot c={c} />{SWATCH[c][0]}</span>;
+const PM_COL_COLS = [
+  pmUnitsCol(52),
+  ...COLOURS.map((c, ci) => pmShareCol("k" + ci, dotLabel(c), "k" + ci, "ks" + ci, 54)),
+];
+const PM_HINT_V = "MTD retail by charger variant (grey = % of units); With plan = Plus Two + Plus Five. Green/red = 5 pts vs group (≥ 20 units). Tap a header to sort.";
+const PM_HINT_C = "MTD retail by colour (grey = % of units). Green/red = 5 pts vs group (≥ 20 units). Swipe for every colour; tap a header to sort.";
+
+/* Movement rows for one scope aggregate. Variant view: 750W / 480W (stock is per variant), each
+   with its three care-plan combos as sold-only sub-rows. Colour view: the five colours. */
+const coverOf = (stock, sold) => (sold > 0 ? stock / (sold / DAY) : null);
+const SLOW_DAYS = 45, FAST_DAYS = 14, LOW_COVER_DAYS = 7;
+const isSlow = (sold, stock) => (sold > 0 ? coverOf(stock, sold) > SLOW_DAYS : stock > 0);
+function mvRow(key, name, sold, stock, aged, value, extra) {
+  return { key, name, n: sold, stock, aged, value, st: div(sold, sold + stock), cover: coverOf(stock, sold), ...extra };
+}
+function quantile(xs, q) {
+  const s = xs.filter(ok).sort((a, b) => a - b);
+  if (!s.length) return null;
+  const p = (s.length - 1) * q, i = Math.floor(p);
+  return i + 1 < s.length ? s[i] + (s[i + 1] - s[i]) * (p - i) : s[i];
+}
+function movementOf(a, view) {
+  let rows;
+  if (view === "variant") {
+    rows = VARIANTS.map((v, vi) => {
+      const [sold, stock, P] = vi === 0 ? [a.v750, a.s750, "a"] : [a.v480, a.s480, "b"];
+      const p2 = a["p2" + P], p5 = a["p5" + P];
+      const aged = COLOURS.reduce((x, _, ci) => x + a[`g${vi}${ci}`], 0);
+      return mvRow(v.key, v.key, sold, stock, aged, stock * v.exShowroom, { kind: "variant", kids: [
+        { key: v.key + ":std", name: `${v.key} · Standard`, n: sold - p2 - p5, kind: "plan" },
+        { key: v.key + ":p2", name: `${v.key} + Plus Two`, n: p2, kind: "plan" },
+        { key: v.key + ":p5", name: `${v.key} + Plus Five`, n: p5, kind: "plan" },
+      ] });
+    });
+  } else {
+    rows = COLOURS.map((c, ci) => mvRow(c, c, a["k" + ci], a["sk" + ci], a[`g0${ci}`] + a[`g1${ci}`],
+      a[`s0${ci}`] * VARIANTS[0].exShowroom + a[`s1${ci}`] * VARIANTS[1].exShowroom, { kind: "colour", dot: c }));
+  }
+  // Fast mover: under 14 days of cover at the MTD pace. Slow mover: over 45 days.
+  rows.forEach(r => {
+    r.flag = isSlow(r.n, r.stock) ? "slow" : r.n > 0 && r.cover < FAST_DAYS ? "fast" : null;
+  });
+  const aged = rows.reduce((x, r) => x + r.aged, 0);
+  return { rows, total: mvRow("total", "", a.u, a.stock, aged, rows.reduce((x, r) => x + r.value, 0)) };
+}
+// Variant × colour combos in the scope with cover > 45 days (or stock with no sales).
+function slowCombos(a) {
+  const out = { n: 0, units: 0, value: 0 };
+  VARIANTS.forEach((v, vi) => COLOURS.forEach((_, ci) => {
+    const sold = a[(vi === 0 ? "a" : "b") + ci], stock = a[`s${vi}${ci}`];
+    if (isSlow(sold, stock)) { out.n++; out.units += stock; out.value += stock * v.exShowroom; }
+  }));
+  return out;
+}
+const MOV_COLS = [
+  { key: "n", label: "Sold", w: 38, sort: (r) => r.n },
+  { key: "stock", label: "Stock", w: 40, sort: (r) => r.stock },
+  { key: "st", label: two("Sell-", "through"), w: 50, sort: (r) => r.st },
+  { key: "cover", label: two("Cover", "days"), w: 44, align: "right", sort: (r) => (r.n > 0 ? r.cover : r.stock > 0 ? 1e9 : null) },
+];
+function mvCmp(sort) {
+  const sgn = sort.dir === "asc" ? 1 : -1;
+  const col = MOV_COLS.find(c => c.key === sort.key);
+  return (x, y) => {
+    if (!col) return sgn * x.name.localeCompare(y.name);
+    const a = col.sort(x), b = col.sort(y);
+    if (!ok(a) || !ok(b)) return !ok(a) && !ok(b) ? x.name.localeCompare(y.name) : !ok(a) ? 1 : -1;
+    return sgn * (a - b) || y.n - x.n || x.name.localeCompare(y.name);
+  };
+}
+const Chip = ({ flag }) => flag ? (
+  <span data-testid="mv-chip" data-flag={flag} style={{ display: "inline-block", flexShrink: 0, fontFamily: F, fontSize: 8, fontWeight: 800, lineHeight: 1, letterSpacing: -0.1,
+    padding: "2px 4px", borderRadius: 999, whiteSpace: "nowrap",
+    color: flag === "fast" ? C.green : AMBER_TXT, background: flag === "fast" ? C.greenSoft : C.warmSoft }}>{flag === "fast" ? "Fast mover" : "Slow mover"}</span>
+) : null;
+function MovementTable({ a, view, sort, onSort, label }) {
+  const { rows, total } = movementOf(a, view);
+  const cmp = mvCmp(sort);
+  const sorted = [...rows].sort(cmp);
+  const cellW = (c) => ({ width: c.w, flexShrink: 0, textAlign: c.align || "center", paddingRight: c.align === "right" ? 4 : 0 });
+  const coverTxt = (r) => {
+    if (r.n === 0) return top2("—", r.stock > 0 ? grey("no sales") : null, C.faint, 12);
+    const tone = r.cover < LOW_COVER_DAYS ? C.hot : r.cover > SLOW_DAYS ? AMBER_TXT : C.ink;
+    return top2(nIN(r.cover), null, tone, 12);
+  };
+  const nameCell = (r, strong, sub, barW, indent, chip) => (
+    <span style={{ flex: 1, minWidth: 0, padding: `0 6px 0 ${indent ? 18 : 6}px` }}>
+      <span style={{ display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 4, rowGap: 2, minWidth: 0 }}>
+        {r.dot && <Dot c={r.dot} size={9} />}
+        <span style={{ fontFamily: F, fontSize: indent ? 11.5 : 12.5, fontWeight: strong ? 800 : indent ? 500 : 700, color: indent ? C.sub : C.ink,
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
+        {chip}
+      </span>
+      {sub != null && <span style={{ display: "block", fontFamily: F, fontSize: 9.5, color: C.faint, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</span>}
+      {barW != null && (
+        <span style={{ display: "block", position: "relative", height: 3, borderRadius: 999, background: "#ECEEF4", marginTop: 4 }}>
+          <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: 999, background: C.primary, width: `${clamp((barW || 0) * 100, 0, 100)}%` }} />
+        </span>
+      )}
+    </span>
+  );
+  const agedTxt = (n) => <span style={{ color: n > 0 ? C.hot : C.faint, fontWeight: n > 0 ? 700 : 400 }}>90+ aged {nIN(n)}</span>;
+  const row = (r) => (
+    <div key={r.key} data-testid="mv-row" data-kind={r.kind} data-name={r.name} data-n={r.n} data-stock={r.stock} data-st={r.st} data-cover={r.cover ?? ""}
+      data-aged={r.aged} data-flag={r.flag || ""} data-view={view}
+      style={{ display: "flex", alignItems: "center", minHeight: 46, borderBottom: `1px solid ${C.border}`, borderLeft: "3px solid transparent" }}>
+      {nameCell(r, false, <>{pctS(div(r.n, total.n))} of sold · {agedTxt(r.aged)}</>, div(r.n, total.n), false, <Chip flag={r.flag} />)}
+      <span style={cellW(MOV_COLS[0])}>{num(nIN(r.n), true, 12)}</span>
+      <span style={cellW(MOV_COLS[1])}>{num(nIN(r.stock), false, 12)}</span>
+      <span style={cellW(MOV_COLS[2])}>{num(pctS(r.st), true, 12)}</span>
+      <span style={cellW(MOV_COLS[3])}>{coverTxt(r)}</span>
+    </div>
+  );
+  const kidRow = (k, parent) => (
+    <div key={k.key} data-testid="mv-row" data-kind="plan" data-name={k.name} data-n={k.n} data-parent={parent.key}
+      style={{ display: "flex", alignItems: "center", minHeight: 36, borderBottom: `1px solid ${C.border}`, borderLeft: "3px solid transparent", background: "#FAFBFE" }}>
+      {nameCell(k, false, null, div(k.n, total.n), true)}
+      <span style={cellW(MOV_COLS[0])}>{num(nIN(k.n), false, 11.5)}</span>
+      <span style={{ ...cellW(MOV_COLS[1]), fontFamily: F, fontSize: 9, color: C.faint }}>{pctS(div(k.n, parent.n))}</span>
+      <span style={{ ...cellW(MOV_COLS[2]), fontFamily: F, fontSize: 9, color: C.ghost }}>of {parent.name}</span>
+      <span style={cellW(MOV_COLS[3])} />
+    </div>
+  );
+  return (
+    <div data-testid={`mv-${view}`}>
+      <TreeHead cols={MOV_COLS} sort={sort} onSort={onSort} />
+      <div data-testid="mv-total" data-view={view} data-n={total.n} data-stock={total.stock} data-st={total.st} data-cover={total.cover ?? ""} data-aged={total.aged}
+        style={{ display: "flex", alignItems: "center", minHeight: 46, borderBottom: `1px solid ${C.border}`, background: DEPTH_BG[0], borderLeft: `3px solid ${C.ink}` }}>
+        {nameCell({ name: label }, true, <>{nIN(total.stock)} in stock · {agedTxt(total.aged)}</>, null)}
+        <span style={cellW(MOV_COLS[0])}>{num(nIN(total.n), true)}</span>
+        <span style={cellW(MOV_COLS[1])}>{num(nIN(total.stock), true)}</span>
+        <span style={cellW(MOV_COLS[2])}>{num(pctS(total.st), true)}</span>
+        <span style={cellW(MOV_COLS[3])}>{coverTxt(total)}</span>
+      </div>
+      {sorted.map(r => (
+        <React.Fragment key={r.key}>
+          {row(r)}
+          {r.kids && [...r.kids].sort((x, y) => (sort.key === "name" ? 0 : y.n - x.n)).map(k => kidRow(k, r))}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+function MixSummary({ a }) {
+  const topV = a.v750 >= a.v480 ? ["750W", a.sh750] : ["480W", a.sh480];
+  const ci = COLOURS.reduce((x, _, i) => (a["k" + i] > a["k" + x] ? i : x), 0);
+  const slow = slowCombos(a);
+  return (
+    <MetricGrid testid="pm-summary" style={{ padding: "2px 0 12px" }}>
+      <MetricBox label="Top variant" value={topV[0]} sub={`${pctS(topV[1])} of retail`} testid="pm-sum-variant" />
+      <MetricBox label="Top colour" value={<span style={{ fontSize: 15 }}>{COLOURS[ci]}</span>} sub={`${pctS(a["ks" + ci])} of retail`} testid="pm-sum-colour" />
+      <MetricBox label="Care plan attach" value={pctS(a.planPct)} sub={`Plus Two ${nIN(a.p2)} · Plus Five ${nIN(a.p5)}`} testid="pm-sum-plan" />
+      <MetricBox label="Slow movers" value={nIN(slow.n)} after={`/ ${VARIANTS.length * COLOURS.length} combos`}
+        sub={`${nIN(slow.units)} units · ${inr(slow.value)} ex-showroom`} testid="pm-sum-slow" />
+    </MetricGrid>
+  );
+}
+const MV_HINT = "Sold MTD vs stock today. Sell-through = sold ÷ (sold + stock); cover = days of stock at the MTD pace. Fast mover: under 14 days of cover · Slow mover: over 45 days · red cover = under 7 days.";
+const MV_FOOT = "Month to date · stock as of today · 90+ aged = units in stock over 90 days";
+const selectStyle = { minWidth: 0, maxWidth: 150, fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.ink, background: C.card,
+  border: `1.5px solid ${C.border}`, borderRadius: 8, padding: "3px 6px", cursor: "pointer", outline: "none" };
+/* Board card (scope select + Variant | Colour) or, with `fixed`, the outlet page's compact card (both views). */
+function MixCard({ view, setView, fixed }) {
+  const [scopeKey, setScopeKey] = useState(LOC_ROOT.key);
+  const [sort, setSort] = useState({ key: "st", dir: "desc" });
+  const onSort = (k) => setSort(x => nextSort(x, k));
+  const scope = fixed || SCOPE_BY_KEY[scopeKey];
+  const a = pmOf(scope);
+  return (
+    <Card style={TABLE_CARD} data-testid={fixed ? "outlet-mix" : "pm-mix"} data-scope={scope.key} data-view={fixed ? "both" : view}>
+      <CardHead Icon={Package} title="Product mix & stock movement" testid={fixed ? "outlet-mix-title" : "pm-mix-title"}
+        hint={fixed ? "This outlet: sold MTD vs stock today. Fast mover: under 14 days of cover · Slow: over 45 days." : MV_HINT} />
+      {!fixed && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 4px 10px" }}>
+          <span style={{ fontFamily: F, fontSize: 11, color: C.faint }}>Showing:</span>
+          <select data-testid="pm-mix-scope" aria-label="Product mix scope" value={scopeKey} onChange={e => setScopeKey(e.target.value)} style={selectStyle}>
+            {SCOPES.map(x => <option key={x.t.key} value={x.t.key}>{x.label}</option>)}
+          </select>
+          <span style={{ flex: 1 }} />
+          <Seg value={view} onChange={setView} opts={PM_VIEWS} testid="pm-mix-view" />
+        </div>
+      )}
+      <MixSummary a={a} />
+      {fixed ? (
+        <>
+          <MovementTable a={a} view="variant" sort={sort} onSort={onSort} label="Variant" />
+          <div style={{ height: 10 }} />
+          <MovementTable a={a} view="colour" sort={sort} onSort={onSort} label="Colour" />
+        </>
+      ) : <MovementTable a={a} view={view} sort={sort} onSort={onSort} label={scope.name} />}
+      <div style={{ fontFamily: F, fontSize: 10, color: C.faint, padding: "8px 4px 0", lineHeight: 1.4 }}>{MV_FOOT}</div>
+    </Card>
+  );
+}
+/* Sales split table: People ⇄ Locations, Variant | Colour column sets (colour view scrolls sideways). */
+function PmTable({ view, setView, open }) {
+  const [mode, setMode] = useState("people");
+  const [exP, toggleP] = useExpanded([PEOPLE_ROOT.key]);
+  const [exL, toggleL] = useExpanded([LOC_ROOT.key]);
+  const [sortV, onSortV, cmpV] = useSort(PM_VAR_COLS, pmOf, { key: "u", dir: "desc" });
+  const [sortC, onSortC, cmpC] = useSort(PM_COL_COLS, pmOf, { key: "u", dir: "desc" });
+  const people = mode === "people";
+  const root = people ? PEOPLE_ROOT : LOC_ROOT;
+  const base = { t: root, depth: 0, expanded: people ? exP : exL, onToggle: people ? toggleP : toggleL, onOutlet: people ? undefined : open, agg: pmOf, collapse: true };
+  const minW = FN_NAME_W + PM_COL_COLS.reduce((x, c) => x + c.w, 0);
+  return (
+    <Card style={TABLE_CARD} data-testid="pm-card" data-mode={mode} data-view={view}>
+      <CardHead Icon={Palette} title="Sales by variant & colour" testid="pm-title"
+        right={<Seg value={mode} onChange={setMode} opts={MODES} testid="pm-mode" />} hint={view === "variant" ? PM_HINT_V : PM_HINT_C} />
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 4px 9px" }}>
+        <Seg value={view} onChange={setView} opts={PM_VIEWS} testid="pm-view" />
+        <span style={{ fontFamily: F, fontSize: 10.5, color: C.faint }}>MTD retail units{people ? "" : " · stock today"}</span>
+      </div>
+      <Legend items={LEGEND[mode]} />
+      {view === "variant" ? (
+        <>
+          <div data-testid="pm-pinned" style={{ position: "sticky", top: 0, zIndex: 3, background: C.card }}>
+            <TreeHead cols={PM_VAR_COLS} sort={sortV} onSort={onSortV} />
+            <TreeRow key={root.key} {...base} cols={PM_VAR_COLS} cmp={cmpV} part="line" />
+          </div>
+          <TreeRow key={root.key + ":kids"} {...base} cols={PM_VAR_COLS} cmp={cmpV} part="kids" />
+        </>
+      ) : (
+        <div data-testid="pm-scroll" style={{ overflow: "auto", maxHeight: 560, overscrollBehaviorX: "contain", borderRadius: 6 }}>
+          <div style={{ minWidth: minW }}>
+            <div data-testid="pm-pinned" style={{ position: "sticky", top: 0, zIndex: 3, background: C.card }}>
+              <FnHead cols={PM_COL_COLS} sort={sortC} onSort={onSortC} />
+              <FnRow key={root.key} {...base} cols={PM_COL_COLS} cmp={cmpC} testid="pm" part="line" />
+            </div>
+            <FnRow key={root.key + ":kids"} {...base} cols={PM_COL_COLS} cmp={cmpC} testid="pm" part="kids" />
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+function ProductMixSection({ open }) {
+  const [view, setView] = useState("variant");
+  return (
+    <>
+      <div style={{ fontFamily: F, fontSize: 11, color: C.faint, margin: "0 0 9px 4px" }}>Product mix · MTD sales vs stock today</div>
+      <MixCard view={view} setView={setView} />
+      <PmTable view={view} setView={setView} open={open} />
+    </>
+  );
+}
+
 /* ============================ OUTLET PAGE ============================ */
 function OutletScreen({ id, onBack, rates }) {
   const l = LOC_BY_ID[id];
@@ -1648,6 +1989,7 @@ function OutletScreen({ id, onBack, rates }) {
   const [sort, onSort, cmp] = useSort(BOARD_COLS, aggOf, { key: "r", dir: "desc" });
   const a = withIncome(derive(sumIdx(l.ses)), rates);
   const outletScope = useMemo(() => ({ key: "O:" + l.id, name: l.locality, ses: l.ses }), [l]);
+  const pmScope = useMemo(() => ({ key: "O:" + l.id, name: l.locality, ses: l.ses, locIds: [l.id] }), [l]);
   const gi = aggWith(rates)(LOC_ROOT);
   // One colour on the glass: the green / red verdict is spelled out in the grey group line.
   const verdict = (tone) => (tone === C.green ? " · better" : tone === C.hot ? " · worse" : "");
@@ -1686,6 +2028,7 @@ function OutletScreen({ id, onBack, rates }) {
       <SplitCard kind="ins" scope={outletScope} compact />
       <SplitCard kind="fin" scope={outletScope} compact />
       <StockCard id={l.id} />
+      <MixCard fixed={pmScope} />
     </div>
   );
 }
@@ -1928,7 +2271,9 @@ const NAV = [
   { key: "funnel", label: "Leads to Retail", Icon: Filter, subs: [] },
   { key: "lost", label: "Lost leads", Icon: UserX, subs: [] },
   { key: "finance", label: "Finance", Icon: IndianRupee, subs: Object.entries(FIN).map(([k, d]) => ({ key: "finance:" + k, label: d.label })) },
-  { key: "stock", label: "Stock", Icon: Package, subs: [] },
+  { key: "stock", label: "Stock", Icon: Package, subs: [
+    { key: "stock:inv", label: "Stock" }, { key: "stock:mix", label: "Product mix & movement" },
+  ]},
   { key: "reports", label: "Reports", Icon: FileText, subs: [] },
   { key: "admin", label: "Admin", Icon: Settings, subs: [
     { key: "admin:fields", label: "Fields" }, { key: "admin:locations", label: "Locations" },
@@ -1956,7 +2301,7 @@ export default function CEOApp() {
     setStack([]); setMenuOpen(false);
     const [b, sb] = String(key).split(":");
     if (b === "funnel" || b === "lost") { setTab("board"); setJump({ id: b, t: Date.now() }); return; }
-    if (b === "finance" || b === "stock") { setTab("board"); setJump({ id: b === "stock" ? "stock" : sb, t: Date.now() }); return; }
+    if (b === "finance" || b === "stock") { setTab("board"); setJump({ id: b === "stock" ? (sb === "mix" ? "mix" : "stock") : sb, t: Date.now() }); return; }
     setJump(null); setTab(key);
   };
   useEffect(() => {
