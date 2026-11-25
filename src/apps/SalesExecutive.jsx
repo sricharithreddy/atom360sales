@@ -8368,7 +8368,7 @@ function SEDashboardScreen({ leads, user }) {
   const lastM = funnelOf(history.filter(r => r.monthIdx === 1));
 
   const RANGES = [{ k: 1, l: "This month" }, { k: 3, l: "3 months" }, { k: 6, l: "6 months" }];
-  const DIMS = [{ k: "month", l: "By month" }, { k: "source", l: "By source" }, { k: "model", l: "By variant" }];
+  const DIMS = [{ k: "month", l: "By month" }, { k: "source", l: "By source" }, { k: "model", l: IS_HYUNDAI ? "By model" : "By variant" }];
 
   const drillRow = tableRows.find(r => r.label === drill);
 
