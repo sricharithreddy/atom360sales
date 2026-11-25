@@ -1,10 +1,20 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
 import { stockFor, unitsOf, PUNE_STORES, INVENTORY_AS_OF } from "../data/epicRiverInventory.js";
 import { MetricBox, MetricGrid } from "../ui/MetricGlass.jsx";
-import { LEADS as POOL_ALL, leadsFor, TELECALLER } from "../data/epicRiverLeads.js";
+import { LEADS as POOL_ALL, leadsFor, TELECALLER, STORE_NAMES } from "../data/epicRiverLeads.js";
+import { OEM, IS_HYUNDAI, VEHICLE, VEHICLES, Vehicle, Vehicles, testNoun, TestNoun, TestNounPlural, TEST_TITLE, DEALER, MODEL_NAMES, coloursOf, onRoadPrice } from "../oem/index.js";
 import {
-  AlertTriangle, BarChart3, Calendar, Camera, Bike as Car, Check, CheckCircle2, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, Clock, Copy, Download, Eye, FileText, Filter, GraduationCap, Headphones, Image, Link2, Lock, LogOut, Mail, MapPin, Menu, MessageSquare, Mic, MoreHorizontal, Navigation, Package, Pause, Pencil, Phone, Play, PlayCircle, Plus, Search, Settings, Sparkles, Square, Star, Store, Tag, TrendingUp, User, UserPlus, Users, Wind, X, Zap,
+  AlertTriangle, BarChart3, Calendar, Camera, Bike, Car as CarIcon, Check, CheckCircle2, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, Clock, Copy, Download, Eye, FileText, Filter, GraduationCap, Headphones, Image, Link2, Lock, LogOut, Mail, MapPin, Menu, MessageSquare, Mic, MoreHorizontal, Navigation, Package, Pause, Pencil, Phone, Play, PlayCircle, Plus, Search, Settings, Sparkles, Square, Star, Store, Tag, TrendingUp, User, UserPlus, Users, Wind, X, Zap,
 } from "lucide-react";
+
+/* ============================== OEM ==============================
+   One file serves both OEMs (src/oem): River (Epic River, Indie scooters) and Hyundai
+   (Autoprism Hyundai, cars). `hy(hyundai, river)` picks the active one's copy or sample data;
+   River content is kept exactly as it was. The two demo showrooms are L014 / L015 in both. */
+const hy = (h, r) => (IS_HYUNDAI ? h : r);
+const Car = IS_HYUNDAI ? CarIcon : Bike;          // the vehicle icon
+const BR1 = STORE_NAMES.L014;                      // "Aundh" / "Kondapur"
+const BR2 = STORE_NAMES.L015;                      // "Shivaji Nagar" / "Banjara Hills"
 
 /* ============================== TOKENS ============================== */
 const C = {
@@ -77,8 +87,10 @@ function exchangeBaseValue(year, odometer) {
   const km = parseInt(odometer, 10);
   if (!y || !km) return null;
   const age = Math.max(0, today.getFullYear() - y);
-  // Lakh. Pitched at a used petrol two-wheeler (Activa / Jupiter / Access class): a recent,
-  // low-km scooter fetches ~₹45k, an old high-km one bottoms out around ₹8–10k.
+  // Lakh. Hyundai: a used hatchback / compact SUV — a recent low-km car fetches ~₹6–7 L, an old
+  // high-km one bottoms out around ₹1 L. River: a used petrol two-wheeler (Activa / Jupiter /
+  // Access class): a recent, low-km scooter fetches ~₹45k, an old high-km one ~₹8–10k.
+  if (IS_HYUNDAI) return Math.max(0.8, 7.5 - age * 0.55 - (km / 10000) * 0.12);
   return Math.max(0.08, 0.6 - age * 0.05 - (km / 10000) * 0.02);
 }
 function exchangeRange(year, odometer, conditionKey, ownershipKey) {
@@ -111,7 +123,17 @@ const PAYMENT_SOURCES = [
 ];
 // Same palette used across the SE app's inventory — customer color preference, independent
 // of which model/variant they land on (the SE confirms actual stock availability later).
-const COLOR_OPTIONS = ["Monsoon Blue", "Summer Red", "Spring Yellow", "Winter White", "Storm Grey"];
+// Hyundai offers a different palette per model / variant, so this is the common core; pickers that
+// know the model use colourOptionsFor().
+const COLOR_OPTIONS = hy(
+  ["Atlas White", "Abyss Black", "Titan Grey", "Fiery Red", "Starry Night", "Typhoon Silver", "Hazel Blue", "Ranger Khaki", "Robust Emerald Pearl"],
+  ["Monsoon Blue", "Summer Red", "Spring Yellow", "Winter White", "Storm Grey"]);
+// Colours a model + variant actually comes in (River: all five on every variant).
+function colourOptionsFor(model, variant) {
+  if (!IS_HYUNDAI || !model) return COLOR_OPTIONS;
+  const list = coloursOf(model, variant || null).map(c => c.name);
+  return list.length ? list : COLOR_OPTIONS;
+}
 // Customer-stated contact preference. Not a nicety — DPDP purpose-limitation and TRAI's DND
 // framework both mean continuing to call/message someone who's restricted a channel is a real
 // compliance exposure, so this is treated as a hard restriction, not a soft suggestion.
@@ -123,24 +145,34 @@ const COMM_PREFS = [
 function commPrefMeta(key) { return COMM_PREFS.find(c => c.key === key) || null; }
 function channelBlocked(lead, channel) { return !!lead.commPref && lead.commPref !== channel; }
 // River sells one model — the Indie. Variants are charger (750W / 480W) × River Care plan.
-const MODELS = ["Indie"];
-// On-road prices in lakh (Maharashtra price sheet, Sep 2026, after PM E-DRIVE subsidy).
-const VARIANT_PRICES = {
+// Hyundai: every current model and variant from the catalogue (src/oem/hyundaiCatalogue.js).
+const MODELS = hy(MODEL_NAMES, ["Indie"]);
+// On-road prices in lakh. River: Maharashtra price sheet, Sep 2026, after PM E-DRIVE subsidy.
+// Hyundai: ex-showroom + Telangana road tax + insurance + registration (+ TCS) via onRoadPrice().
+const VARIANT_PRICES = hy(
+  Object.fromEntries(OEM.models.map(m => [m.name, Object.fromEntries(m.variants.map(v => [v.name, +(onRoadPrice(m.name, v.name).total / 1e5).toFixed(2)]))])),
+  {
   "Indie": { "750W": 1.67, "750W + Plus Two": 1.73, "750W + Plus Five": 1.77, "480W": 1.63, "480W + Plus Two": 1.69, "480W + Plus Five": 1.73 },
-};
-const MODEL_VARIANTS = {
+});
+const MODEL_VARIANTS = hy(
+  Object.fromEntries(OEM.models.map(m => [m.name, m.variants.map(v => v.name)])),
+  {
   "Indie": ["750W", "750W + Plus Two", "750W + Plus Five", "480W", "480W + Plus Two", "480W + Plus Five"],
-};
-// Ex-showroom (after subsidy) by charger, in rupees — what the quote builder starts from.
-// Insurance + RSA, RTO and the River Care plan are added on top as separate lines.
-const QUOTE_EX_SHOWROOM = { "Indie 750W": 154799, "Indie 480W": 150799 };
+});
+// Ex-showroom by "Model Variant", in rupees — what the quote builder starts from.
+// River: after subsidy, by charger; insurance + RSA, RTO and the River Care plan are added on top.
+const QUOTE_EX_SHOWROOM = hy(
+  Object.fromEntries(OEM.models.flatMap(m => m.variants.map(v => [`${m.name} ${v.name}`, v.exShowroom]))),
+  { "Indie 750W": 154799, "Indie 480W": 150799 });
 const YET_TO_DECIDE = "Yet to decide";
 
 // Price range per model (lakh, on-road). The Indie's variants carry their own price from
 // the price sheet; the range is only a fallback for anything not on it.
-const MODEL_PRICE_RANGE = {
+const MODEL_PRICE_RANGE = hy(
+  Object.fromEntries(Object.entries(VARIANT_PRICES).map(([m, vp]) => [m, [Math.min(...Object.values(vp)), Math.max(...Object.values(vp))]])),
+  {
   "Indie": [1.63, 1.77],
-};
+});
 function priceForVariant(model, variantIndex, totalVariants) {
   const exact = (VARIANT_PRICES[model] || {})[(MODEL_VARIANTS[model] || [])[variantIndex]];
   if (exact != null) return exact;
@@ -152,11 +184,15 @@ function priceForVariant(model, variantIndex, totalVariants) {
 // Discounts can be set at whichever level is broadest for the situation — a blanket offer on
 // the model, one slow variant, or just one unpopular colour sitting on the floor. The most
 // specific level that matches wins.
-const DISCOUNTS = {
+const DISCOUNTS = hy({
+  model: { "i20": 10000, "Aura": 15000 },
+  variant: { "Venue::HX6": 20000 },
+  color: { "Creta::S(O) IVT Petrol::Titan Grey": 25000 },
+}, {
   model: { "Indie": 1000 },
   variant: { "Indie::480W": 4000 },
   color: { "Indie::750W + Plus Five::Storm Grey": 2500 },
-};
+});
 function discountFor(model, variant, color) {
   if (DISCOUNTS.color[`${model}::${variant}::${color}`] != null) return DISCOUNTS.color[`${model}::${variant}::${color}`];
   if (DISCOUNTS.variant[`${model}::${variant}`] != null) return DISCOUNTS.variant[`${model}::${variant}`];
@@ -167,9 +203,10 @@ function discountFor(model, variant, color) {
 // Pushing discounted stock (which usually means it's not moving on its own) and clearing
 // demo/used units both carry a bonus on top, since that's the stock that most needs a nudge.
 function commissionFor(priceLakh, discountAmount, isUsed) {
-  const base = Math.round((priceLakh * 100000 * 0.003) / 100) * 100;
+  // Hyundai: roughly half a percent of a car's price, ₹500 bonus on demo / used units.
+  const base = Math.round((priceLakh * 100000 * hy(0.005, 0.003)) / 100) * 100;
   const discountBonus = discountAmount > 0 ? Math.round((discountAmount * 0.10) / 100) * 100 : 0;
-  const usedBonus = isUsed ? 100 : 0;
+  const usedBonus = isUsed ? hy(500, 100) : 0;
   return base + discountBonus + usedBonus;
 }
 
@@ -179,10 +216,10 @@ function commissionFor(priceLakh, discountAmount, isUsed) {
 // so `units` is that pool across Aundh + Shivaji Nagar (never sum it across plan-variants).
 // `free` takes off scooters already held for customers; status and waiting time follow `free`.
 function inventoryColorsFor(model, variant, priceLakh) {
-  return COLOR_OPTIONS.map(color => {
-    const byBranch = Object.fromEntries(Object.entries(PUNE_STORES).map(([b, id]) => [b, unitsOf(id, chargerOf(variant), color)]));
+  return colourOptionsFor(model, variant).map(color => {
+    const byBranch = Object.fromEntries(Object.entries(PUNE_STORES).map(([b, id]) => [b, unitsOf(id, chargerOf(variant), color, model)]));
     const units = Object.values(byBranch).reduce((a, b) => a + b, 0);
-    const free = units - seededHeldCount(variant, color);
+    const free = units - seededHeldCount(variant, color, model);
     const waitingDays = free >= 1 ? 0 : 7 * (WAITING_WEEKS[model] || 2);
     const status = free >= 4 ? "In Stock" : free >= 1 ? "Low Stock" : "In Transit";
     const discount = discountFor(model, variant, color);
@@ -215,7 +252,14 @@ function inventoryLookup(model, variant, color) {
 
 // Demo/used units — each is a specific, one-off scooter (not restockable stock), typically sold
 // off at a discount once it's done its time as a test-ride unit.
-const USED_INVENTORY = [
+const USED_INVENTORY = IS_HYUNDAI ? [
+  { id: 1, model: "Creta", variant: "SX Premium MT Petrol", color: "Atlas White", year: 2026, kmDriven: 3200, condition: "Excellent", originalPriceLakh: 18.4, discountLakh: 1.2, note: "Demo unit — 6 months old, single owner (dealership)." },
+  { id: 2, model: "Venue", variant: "HX8", color: "Dragon Red", year: 2026, kmDriven: 5100, condition: "Excellent", originalPriceLakh: 15.3, discountLakh: 0.9, note: "Demo unit — test-drive car, minor wear on seats." },
+  { id: 3, model: "Verna", variant: "HX6", color: "Starry Night", year: 2025, kmDriven: 8400, condition: "Good", originalPriceLakh: 16.2, discountLakh: 1.6, note: "Ex-showroom display unit, full service history." },
+  { id: 4, model: "Alcazar", variant: "Prestige", color: "Abyss Black", year: 2026, kmDriven: 4600, condition: "Excellent", originalPriceLakh: 20.3, discountLakh: 1.8, note: "Demo unit — management car, always serviced on time." },
+  { id: 5, model: "Exter", variant: "HX6", color: "Ranger Khaki", year: 2025, kmDriven: 9800, condition: "Good", originalPriceLakh: 9.3, discountLakh: 0.7, note: "Demo unit, ready for immediate delivery." },
+  { id: 6, model: "i20", variant: "Asta", color: "Fiery Red", year: 2025, kmDriven: 6200, condition: "Excellent", originalPriceLakh: 10.2, discountLakh: 0.8, note: "Showroom display unit, sunroof variant." },
+] : [
   { id: 1, model: "Indie", variant: "750W", color: "Monsoon Blue", year: 2026, kmDriven: 1200, condition: "Excellent", originalPriceLakh: 1.67, discountLakh: 0.12, note: "Demo unit — 4 months old, single owner (dealership)." },
   { id: 2, model: "Indie", variant: "750W + Plus Two", color: "Summer Red", year: 2026, kmDriven: 1850, condition: "Excellent", originalPriceLakh: 1.73, discountLakh: 0.14, note: "Demo unit — test-ride scooter, minor wear on seat." },
   { id: 3, model: "Indie", variant: "480W", color: "Winter White", year: 2025, kmDriven: 3400, condition: "Good", originalPriceLakh: 1.63, discountLakh: 0.18, note: "Ex-showroom display unit, full service history." },
@@ -241,7 +285,8 @@ function inventoryAvailabilityFor(model, variant) {
 // the structured {model: [variants]} shape, so the picker can pre-fill from old data.
 function parseModelString(full) {
   if (!full) return {};
-  for (const model of Object.keys(MODEL_VARIANTS)) {
+  // Longest name first, so "Creta Electric …" isn't read as a "Creta" variant.
+  for (const model of Object.keys(MODEL_VARIANTS).sort((a, b) => b.length - a.length)) {
     if (full === model) return { [model]: [] };
     if (full.startsWith(model + " ")) {
       const variant = full.slice(model.length + 1).trim();
@@ -303,22 +348,22 @@ function MissingBanner({ items }) {
 }
 
 const TEAM_ROSTER = [
-  { name: "Rahul Kumar",   branch: "Aundh",       role: "Sales Executive" },
-  { name: "Divya Pillai",  branch: "Aundh",       role: "Sales Executive" },
-  { name: "Arjun Nair",    branch: "Shivaji Nagar",       role: "Sales Executive" },
-  { name: "Meera Iyer",    branch: "Shivaji Nagar",       role: "Sales Executive" },
-  { name: "Kiran Bhat",    branch: "Aundh",       role: "Sales Executive" },
-  { name: "Anjali Reddy",  branch: "Aundh",       role: "Sales Executive" },
-  { name: "Vikram Singh",  branch: "Shivaji Nagar",       role: "Sales Executive" },
-  { name: "Neha Kulkarni", branch: "Shivaji Nagar",       role: "Sales Executive" },
-  { name: "Sunil Mathur",  branch: "Aundh",       role: "Team Leader" },
-  { name: "Priya Sharma",  branch: "Shivaji Nagar",       role: "Team Leader" },
+  { name: "Rahul Kumar",   branch: BR1,       role: "Sales Executive" },
+  { name: "Divya Pillai",  branch: BR1,       role: "Sales Executive" },
+  { name: "Arjun Nair",    branch: BR2,       role: "Sales Executive" },
+  { name: "Meera Iyer",    branch: BR2,       role: "Sales Executive" },
+  { name: "Kiran Bhat",    branch: BR1,       role: "Sales Executive" },
+  { name: "Anjali Reddy",  branch: BR1,       role: "Sales Executive" },
+  { name: "Vikram Singh",  branch: BR2,       role: "Sales Executive" },
+  { name: "Neha Kulkarni", branch: BR2,       role: "Sales Executive" },
+  { name: "Sunil Mathur",  branch: BR1,       role: "Team Leader" },
+  { name: "Priya Sharma",  branch: BR2,       role: "Team Leader" },
 ];
 const ROLE_COLOR_2 = { "Sales Executive": C.primary, "Team Leader": C.purple, "Manager": C.teal };
 const SOURCE_COLOR = {
   "Website": C.cold, "Facebook Ad": C.purple, "Google": C.cold, "OLX": C.warm, "Referral": C.green,
   "Instagram Ad": C.purple, "YouTube Ad": C.purple, "SMS Campaign": C.cold, "Email Campaign": C.cold,
-  "BikeDekho": C.warm, "BikeWale": C.warm, "Justdial": C.warm,
+  ...hy({ "Hyundai Click to Buy": C.cold, "CarDekho": C.warm, "CarWale": C.warm }, { "BikeDekho": C.warm, "BikeWale": C.warm }), "Justdial": C.warm,
   "Employee Referral": C.green, "Corporate Tie-up": C.green, "Walk-in": C.green, "Others": C.faint,
 };
 const SOURCE_OPTIONS = Object.keys(SOURCE_COLOR);
@@ -334,7 +379,7 @@ const STAGE_FILTER_OPTIONS = [
   { key: "dormant",         label: "Dormant — Needs Reactivation" },
   { key: "missed_followup", label: "Missed Follow-up" },
   { key: "stage:Contacted", label: "Contacted" },
-  { key: "stage:Test Drive",label: "Test Ride" },
+  { key: "stage:Test Drive",label: TEST_TITLE },
   { key: "stage:Opportunity",label: "Opportunity" },
   { key: "stage:Booking",   label: "Booking" },
   { key: "stage:Retailed",  label: "Retailed" },
@@ -388,16 +433,16 @@ const TRACK_STATUS_META = {
   complete:   { label: "Complete",   color: C.green, soft: C.greenSoft },
 };
 const EXTRA_DISPOSITION_LABELS = {
-  car_blocked: "Scooter Blocked",
+  car_blocked: `${Vehicle} Blocked`,
   connected: "Connected", no_answer: "No Answer", busy: "Busy",
   wrong_number: "Wrong Number", switched_off: "Switched Off",
-  callback: "Call Back Later", test_drive_scheduled: "Test Ride Scheduled", quote_sent: "Quote Sent",
+  callback: "Call Back Later", test_drive_scheduled: `${TEST_TITLE} Scheduled`, quote_sent: "Quote Sent",
 };
 const NOT_INTERESTED_REASONS = [
   "Bought elsewhere", "Postponed purchase", "Budget constraint",
   "Preferred competitor model", "Not the decision maker", "Just browsing", "Other",
 ];
-const EXCHANGE_DECLINE_REASONS = ["Valuation too low", "Selling privately", "Keeping the old two-wheeler", "Other"];
+const EXCHANGE_DECLINE_REASONS = ["Valuation too low", "Selling privately", hy("Keeping the old car", "Keeping the old two-wheeler"), "Other"];
 const FINANCE_DECLINE_REASONS  = ["Paying cash", "Own bank tie-up", "Rate too high", "Other"];
 const BOOKING_CANCELLATION_REASONS = [
   "Better deal elsewhere", "Financial difficulty", "Delivery delay",
@@ -407,8 +452,8 @@ const FEEDBACK_PENDING_ITEMS = [
   "RC / registration", "Insurance copy", "Accessories fitment",
   "Extended warranty papers", "Free service coupons", "Number plate",
 ];
-// Official River accessory prices (fitment ₹118 extra per job).
-const ACCESSORY_OPTIONS = [
+// River: official River accessory prices (fitment ₹118 extra per job). Hyundai: OEM.accessories.
+const ACCESSORY_OPTIONS = IS_HYUNDAI ? OEM.accessories : [
   { key: "side_step", label: "Side Step", amount: 1449 },
   { key: "grab_rail", label: "Tubular Grab Rail", amount: 1199 },
   { key: "back_rest", label: "Back Rest", amount: 2199 },
@@ -428,14 +473,17 @@ const ACCESSORY_OPTIONS = [
   { key: "helmet_open", label: "Open Face Helmet", amount: 1499 },
   { key: "helmet_full", label: "Full-face Helmet", amount: 1999 },
 ];
-const DISCOUNT_LIMIT = 2500;
-// Periodic service pack (3 years) — dealer add-on, separate from the River Care warranty plans.
-const CARE_PACKAGE_AMOUNT = 1999;
-// River Care "Plus Two": battery/vehicle warranty extended to 5 years.
-const EXTENDED_WARRANTY_AMOUNT = 5899;
+const DISCOUNT_LIMIT = hy(25000, 2500);
+// River: periodic service pack (3 years) — dealer add-on, separate from the River Care warranty plans.
+// Hyundai: Shield of Trust (3-yr scheduled-maintenance package).
+const CARE_PACKAGE_AMOUNT = hy(OEM.protectionPlans.find(p => p.key === "sot")?.price, 1999);
+const CARE_PACKAGE_LABEL = hy("Shield of Trust (3-yr maintenance)", "Service Pack (3yr)");
+// River Care "Plus Two": battery/vehicle warranty extended to 5 years. Hyundai: extended warranty to 5 yrs.
+const EXTENDED_WARRANTY_AMOUNT = hy(OEM.protectionPlans.find(p => p.key === "ew5")?.price, 5899);
+const EXTENDED_WARRANTY_LABEL = hy("Extended Warranty (5 yr)", "River Care Plus Two (5 yr warranty)");
 const COLD_UNASSIGNED_DAYS = 3;
 
-const CALL_QUEUE = [
+const RIVER_CALL_QUEUE = [
   {
     id: 1, name: "Colonel Vikram Bhatt (Retd.)", phone: "+91 9000000007", altPhone: "", email: "",
     model: "Indie", variant: "750W + Plus Five", source: "Referral", customerType: "CSD / Defence",
@@ -634,8 +682,44 @@ const CALL_QUEUE = [
     callHistory: [{ id: "seed14", date: dh(-20, 17), disposition: "connected", recordingDuration: "2:14", note: "Fleet enquiry for last-mile delivery riders, budget approval pending at their end." }],
   },
 ];
+// Hyundai versions of the same 14 scripted leads: same people, stages and timings; cars, car
+// exchanges and car-loan amounts instead. `note` replaces both the context line and the seeded call note.
+const HY_CALL_QUEUE = {
+  1:  { model: "Alcazar", variant: "Signature", exchange: { model: "Maruti Suzuki Swift", variant: "VXi", odometer: "48000" } },
+  2:  { model: "Creta", variant: "SX Premium IVT Petrol", bookingAmount: "25000", colorInterest: ["Titan Grey"],
+        exchange: { model: "Maruti Suzuki Dzire", variant: "ZXi", odometer: "62000" }, finance: { loanAmount: "12" } },
+  3:  { model: "Verna", variant: "HX6", exchange: { model: "Maruti Suzuki Swift", variant: "VXi", odometer: "54000" },
+        note: "Confirmed budget and wants exchange for her old Swift. Ready to test drive — needs an SE assigned." },
+  4:  { model: "Creta", variant: "King Turbo DCT", exchange: { model: "Hyundai Grand i10", variant: "Sportz", odometer: "58000" }, finance: { loanAmount: "10" },
+        note: "Wants a showroom visit this Saturday. Has an old Grand i10 to exchange, 2017 model." },
+  5:  { model: "Venue", variant: "HX8", source: "CarDekho" },
+  6:  { model: "i20", variant: "Asta (O) iVT" },
+  7:  { model: "Exter", variant: "HX6 Knight AMT", note: "Picked up but was driving, asked to call back tomorrow evening." },
+  8:  { model: "Creta", variant: "EX(O) MT Petrol", finance: { loanAmount: "9" },
+        note: "Comparing with the Kia Seltos. Wants best possible discount before deciding." },
+  9:  { model: "Creta Electric", variant: "Premium 42kWh",
+        note: "EV enquiry — lives in a gated community, asked what a home wallbox charger installation costs." },
+  10: { model: "Venue", variant: "HX6T" },
+  11: { model: "Alcazar", variant: "Prestige" },
+  12: { model: "Verna", variant: "HX4", source: "CarWale" },
+  13: { model: "Grand i10 Nios", variant: "Sportz AMT" },
+  14: { model: "Aura", variant: "S / Corporate", note: "Corporate enquiry for staff pool cars, budget approval pending at their end." },
+};
+const toBranch = (b) => (b === "Aundh" ? BR1 : b === "Shivaji Nagar" ? BR2 : b);
+const CALL_QUEUE = IS_HYUNDAI ? RIVER_CALL_QUEUE.map(l => {
+  const { exchange, finance, note, ...rest } = HY_CALL_QUEUE[l.id] || {};
+  return {
+    ...l, ...rest,
+    location: toBranch(l.location),
+    assignedSE: l.assignedSE ? { ...l.assignedSE, branch: toBranch(l.assignedSE.branch) } : null,
+    exchange: l.exchange ? { ...l.exchange, ...exchange } : null,
+    finance: l.finance ? { ...l.finance, ...finance } : null,
+    sourceContext: note || l.sourceContext,
+    callHistory: l.callHistory.map(c => (note ? { ...c, note } : c)),
+  };
+}) : RIVER_CALL_QUEUE;
 
-// ============================== SHARED SAMPLE LEADS (Epic River pool) ==============================
+// ============================== SHARED SAMPLE LEADS (shared OEM pool) ==============================
 // The 14 hand-written leads above drive the scripted demo moments. Everything below adds the
 // telecaller's slice of the shared Epic River pool (src/data/epicRiverLeads.js) — her early-funnel
 // and lost leads, plus the retailed / delivered customers she makes post-delivery feedback calls
@@ -682,15 +766,18 @@ function mapPoolLead(p) {
     callHistory.push({
       id: `${p.id}-td`, date: td, disposition: "test_drive_scheduled", by: seName || ME.name,
       testDriveDate: isoDate(td), testDriveSlot: slot, testDriveMode: "showroom",
-      note: `Test ride at ${p.storeName} showroom, ${fmtDate(td)} ${slot}.`,
+      note: `${TestNoun} at ${p.storeName} showroom, ${fmtDate(td)} ${slot}.`,
     });
     callHistory.sort((a, b) => a.date - b.date);
   }
   const lastBySE = seName ? [...callHistory].reverse().find(c => c.by === seName) : null;
   const lastActivity = poolDate(p.lastActivityAt);
   const exchange = p.exchange ? {
-    model: p.exchange.bike, variant: "STD", year: String(p.exchange.year),
-    odometer: String(Math.min(95000, (2026 - p.exchange.year) * 6000 + (h % 9) * 1000)),
+    model: p.exchange.vehicle || p.exchange.bike, variant: "STD", year: String(p.exchange.year),
+    // A car runs ~11,000 km a year, a scooter ~6,000.
+    odometer: String(IS_HYUNDAI
+      ? Math.min(160000, (2026 - p.exchange.year) * 11000 + (h % 9) * 1500)
+      : Math.min(95000, (2026 - p.exchange.year) * 6000 + (h % 9) * 1000)),
     condition: EXCHANGE_GRADES[h % EXCHANGE_GRADES.length], photos: idx >= 3 ? 2 + (h % 3) : 0,
     appraisalScheduled: idx >= 3, appraisedValue: idx >= 4 ? (p.exchange.value / 1e5).toFixed(2) : null,
     ...(idx >= 5 && !lost ? { customerAccepted: "yes" } : {}),
@@ -707,7 +794,7 @@ function mapPoolLead(p) {
   return {
     id: Number(p.id.slice(3)), erId: p.id, name: p.name, phone: p.phone, altPhone: "",
     email: h % 3 === 0 ? `${first.toLowerCase()}.${rest.join("").replace(/[^A-Za-z]/g, "").toLowerCase()}@gmail.com` : "",
-    model: "Indie", variant: p.variant, source: POOL_SOURCE[p.source] || p.source,
+    model: p.model || "Indie", variant: p.variant, source: POOL_SOURCE[p.source] || p.source,
     customerType: p.source === "Corporate/Fleet" ? "Fleet" : FEMALE_FIRST.has(first) ? "Female" : "Male",
     location: p.storeName, locality: p.locality,
     sourceContext: `${p.locality} · ${p.note}`,
@@ -719,7 +806,7 @@ function mapPoolLead(p) {
     bestCallTime: "", followUpDate: lost ? null : poolDate(p.followUpAt),
     signals: [...(exchange ? ["exchange"] : []), ...(finance ? ["finance_needed"] : [])],
     exchange, finance,
-    modelInterest: idx >= 2 ? { Indie: [p.variant] } : null,
+    modelInterest: idx >= 2 ? { [p.model || "Indie"]: [p.variant] } : null,
     colorInterest: idx >= 2 ? [p.colour] : null,
     commPref: h % 17 === 0 ? "whatsapp" : null,
     targetDeliveryDate,
@@ -775,7 +862,12 @@ function VoiceNoteField({ value, onChange, recording, onRecordingChange, placeho
     setState("processing");
     // Stand-in for server-side transcription + summarisation.
     setTimeout(() => {
-      const samples = [
+      const samples = IS_HYUNDAI ? [
+        { summary: "Wants the on-road price in writing; comparing with the Kia Seltos.", transcript: "He asked me to send the full on-road price on WhatsApp. Said he's also looking at the Kia Seltos and wants to compare before deciding." },
+        { summary: "Bringing spouse Saturday; keen on the Creta automatic.", transcript: "He wants to bring his wife this Saturday to see the car. Seemed keen on the Creta IVT automatic, asked how much luggage fits in the boot." },
+        { summary: "Exchange for 2017 Swift; wants valuation first.", transcript: "He has a 2017 Maruti Swift he wants to exchange. Asked what valuation we'd give before he commits to anything." },
+        { summary: "Budget tight this month; revisit after salary credit.", transcript: "Said his budget is a bit tight this month. Asked me to check back after his salary comes in." },
+      ] : [
         { summary: "Wants the on-road price in writing; comparing with Ather Rizta.", transcript: "He asked me to send the full on-road price on WhatsApp. Said he's also looking at the Ather Rizta and wants to compare before deciding." },
         { summary: "Bringing spouse Saturday; keen on the 750W with Plus Five.", transcript: "He wants to bring his wife this Saturday to see the scooter. Seemed keen on the 750W with the Plus Five plan, asked how much fits under the seat." },
         { summary: "Exchange for 2017 Activa; wants valuation first.", transcript: "He has a 2017 Activa he wants to exchange. Asked what valuation we'd give before he commits to anything." },
@@ -1058,7 +1150,10 @@ function leadMatchesStageFilterKey(lead, key) {
     return leadLane(lead) === key;
   }
 
+// The stage key stays "Test Drive" in both OEMs; show it as the OEM's word ("Test Ride" for River).
+const stageText = (s) => (s === "Test Drive" ? TEST_TITLE : s);
 function stageStatusLabel(lead) {
+    if (lead.stage === "Test Drive") return TEST_TITLE;
     if (lead.stage === "Booking") return "Booking Amount Received";
     if (lead.stage === "Retailed") return "Retailed \u2014 Awaiting Delivery";
     if (lead.stage === "Delivered") return "Vehicle Delivered";
@@ -1160,11 +1255,23 @@ function financeTrackStatus(lead) {
     return "in_progress";
   }
 
-function computeQuoteBreakup(exShowroom, discountRupees, accessoriesRupees, includeInsurance, includeWarranty, includeCare) {
-    // EVs are road-tax exempt in Maharashtra, so RTO is registration + smart card only
-    // (~₹1,060 on the Indie); insurance + RSA is ~₹10,889 on the 750W price sheet.
-    const rto = Math.round(exShowroom * 0.00685);
-    const insurance = includeInsurance ? Math.round(exShowroom * 0.07034) : 0;
+// First-year insurance + RSA for an ex-showroom price. River: ~₹10,889 on the 750W price sheet.
+// Hyundai: OEM.priceSheet.insurancePct (≈3.2% of ex-showroom, demo assumption).
+function insuranceFor(exShowroom) {
+    return Math.round(exShowroom * hy(OEM.priceSheet.insurancePct, 0.07034));
+  }
+// RTO line. River: EVs are road-tax exempt in Maharashtra, so RTO is registration + smart card only
+// (~₹1,060 on the Indie). Hyundai: Telangana life tax by ex-showroom slab + registration
+// (OEM.priceSheet; electric models exempt).
+function rtoFor(exShowroom, fuel) {
+    if (!IS_HYUNDAI) return Math.round(exShowroom * 0.00685);
+    const ps = OEM.priceSheet;
+    const rate = fuel === "Electric" ? ps.evRoadTax : ps.roadTaxSlabs.find(([upTo]) => exShowroom <= upTo)[1];
+    return Math.round(exShowroom * rate) + ps.registration;
+  }
+function computeQuoteBreakup(exShowroom, discountRupees, accessoriesRupees, includeInsurance, includeWarranty, includeCare, fuel) {
+    const rto = rtoFor(exShowroom, fuel);
+    const insurance = includeInsurance ? insuranceFor(exShowroom) : 0;
     const warranty = includeWarranty ? EXTENDED_WARRANTY_AMOUNT : 0;
     const care = includeCare ? CARE_PACKAGE_AMOUNT : 0;
     const tcs = exShowroom > 1e6 ? Math.round(exShowroom * 0.01) : 0;
@@ -1208,7 +1315,7 @@ function generateActivitySummary(lead) {
     const daysSinceLast = Math.round((today - last.date) / 864e5);
     const lastLabel = DISPOSITIONS.find((d2) => d2.key === last.disposition)?.label || last.disposition;
     const signalLabels = lead.signals.map((s) => SIGNAL_META[s]?.label).filter(Boolean);
-    const line1 = `${history.length} attempts so far, ${connectedCount} connected \u2014 currently ${lead.stage.toLowerCase()} stage${lead.assignedSE ? `, with ${lead.assignedSE.name}` : ", unassigned"}.`;
+    const line1 = `${history.length} attempts so far, ${connectedCount} connected \u2014 currently ${stageText(lead.stage).toLowerCase()} stage${lead.assignedSE ? `, with ${lead.assignedSE.name}` : ", unassigned"}.`;
     const line2 = signalLabels.length ? `Confirmed so far: ${signalLabels.join(", ")}.` : `No firm signals confirmed yet.`;
     const line3 = `Last attempt ${daysSinceLast === 0 ? "today" : daysSinceLast + "d ago"} \u2014 ${lastLabel}.`;
     return [line1, line2, line3];
@@ -1237,7 +1344,7 @@ function autoAssignSE(lead, allLeads) {
         loadMap[l.assignedSE.name] = (loadMap[l.assignedSE.name] || 0) + 1;
       }
     });
-    const sameBranch = sePool.filter((se) => se.branch === (lead.location || "Aundh").split(" ")[0] || (lead.location || "").includes(se.branch));
+    const sameBranch = sePool.filter((se) => se.branch === (lead.location || BR1).split(" ")[0] || (lead.location || "").includes(se.branch));
     const pool = sameBranch.length > 0 ? sameBranch : sePool;
     const sorted = [...pool].sort((a, b) => (loadMap[a.name] || 0) - (loadMap[b.name] || 0));
     return sorted[0] || sePool[0];
@@ -2911,11 +3018,11 @@ function ExchangeEditPanel({ lead, onUpdateLead }) {
   width: "48%"
 }}>
       <div style={labelStyle}>
-        Two-wheeler Model
+        {hy("Car Model", "Two-wheeler Model")}
       </div>
       <input value={model} onChange={e => setModel(e.target.value)} onBlur={() => save({
   model
-})} placeholder="e.g. Honda Activa 5G" style={fieldStyle} />
+})} placeholder={hy("e.g. Maruti Suzuki Swift", "e.g. Honda Activa 5G")} style={fieldStyle} />
     </div>
     <div style={{
   width: "48%"
@@ -2925,7 +3032,7 @@ function ExchangeEditPanel({ lead, onUpdateLead }) {
       </div>
       <input value={variant} onChange={e => setVariant(e.target.value)} onBlur={() => save({
   variant
-})} placeholder="e.g. DLX" style={fieldStyle} />
+})} placeholder={hy("e.g. VXi", "e.g. DLX")} style={fieldStyle} />
     </div>
     <div style={{
   width: "48%"
@@ -2945,7 +3052,7 @@ function ExchangeEditPanel({ lead, onUpdateLead }) {
       </div>
       <input value={odometer} onChange={e => setOdometer(e.target.value)} onBlur={() => save({
   odometer
-})} placeholder="e.g. 25000" style={fieldStyle} />
+})} placeholder={hy("e.g. 45000", "e.g. 25000")} style={fieldStyle} />
     </div>
   </div>
   <div style={labelStyle}>
@@ -3024,7 +3131,7 @@ function FinanceEditPanel({ lead, onUpdateLead }) {
       </div>
       <input type="number" min="0" value={loanAmount} onChange={e => setLoanAmount(e.target.value)} onBlur={() => save({
   loanAmount
-})} placeholder="e.g. 1.2" style={fieldStyle} />
+})} placeholder={hy("e.g. 10", "e.g. 1.2")} style={fieldStyle} />
     </div>
     <div style={{
   width: "48%"
@@ -3592,9 +3699,9 @@ function QualificationCallForm({ lead, onSave, onCancel, channel, allLeads, show
   color: C.sub,
   marginBottom: 4
 }}>
-        Two-wheeler Model
+        {hy("Car Model", "Two-wheeler Model")}
       </div>
-      <input value={exchangeModel} onChange={e => setExchangeModel(e.target.value)} placeholder="e.g. Honda Activa 5G" style={{
+      <input value={exchangeModel} onChange={e => setExchangeModel(e.target.value)} placeholder={hy("e.g. Maruti Suzuki Swift", "e.g. Honda Activa 5G")} style={{
   width: "100%",
   border: `1px solid ${C.borderStrong}`,
   borderRadius: 8,
@@ -3618,7 +3725,7 @@ function QualificationCallForm({ lead, onSave, onCancel, channel, allLeads, show
 }}>
         Variant
       </div>
-      <input value={exchangeVariant} onChange={e => setExchangeVariant(e.target.value)} placeholder="e.g. DLX" style={{
+      <input value={exchangeVariant} onChange={e => setExchangeVariant(e.target.value)} placeholder={hy("e.g. VXi", "e.g. DLX")} style={{
   width: "100%",
   border: `1px solid ${C.borderStrong}`,
   borderRadius: 8,
@@ -3666,7 +3773,7 @@ function QualificationCallForm({ lead, onSave, onCancel, channel, allLeads, show
 }}>
         Odometer (km)
       </div>
-      <input value={exchangeOdometer} onChange={e => setExchangeOdometer(e.target.value)} placeholder="e.g. 25000" style={{
+      <input value={exchangeOdometer} onChange={e => setExchangeOdometer(e.target.value)} placeholder={hy("e.g. 45000", "e.g. 25000")} style={{
   width: "100%",
   border: `1px solid ${C.borderStrong}`,
   borderRadius: 8,
@@ -3697,7 +3804,7 @@ function QualificationCallForm({ lead, onSave, onCancel, channel, allLeads, show
 }}>
     Registered City
   </div>
-  <input value={exchangeRegisteredCity} onChange={e => setExchangeRegisteredCity(e.target.value)} placeholder="e.g. Pune" style={{
+  <input value={exchangeRegisteredCity} onChange={e => setExchangeRegisteredCity(e.target.value)} placeholder={hy("e.g. Hyderabad", "e.g. Pune")} style={{
   width: "100%",
   border: `1px solid ${C.borderStrong}`,
   borderRadius: 8,
@@ -3990,7 +4097,7 @@ function QualificationCallForm({ lead, onSave, onCancel, channel, allLeads, show
 }}>
         Loan Amount (₹ L)
       </div>
-      <input type="number" min="0" value={financeLoanAmount} onChange={e => setFinanceLoanAmount(e.target.value)} placeholder="e.g. 1.2" style={{
+      <input type="number" min="0" value={financeLoanAmount} onChange={e => setFinanceLoanAmount(e.target.value)} placeholder={hy("e.g. 10", "e.g. 1.2")} style={{
   width: "100%",
   border: `1px solid ${C.borderStrong}`,
   borderRadius: 8,
@@ -4121,7 +4228,7 @@ function QualificationCallForm({ lead, onSave, onCancel, channel, allLeads, show
   <div style={{
   marginBottom: 14
 }}>
-    {[["assign", "Qualified \u2014 assign to SE", CheckCircle2, C.green], ["test_drive", "Wants a test ride", Car, C.teal], ["discount", "Asked for a discount", Tag, C.warm], ["callback", "Keep qualifying \u2014 call back later", Clock, C.warm], ["close", "Not interested \u2014 close", X, C.hot]].map(([key, label, Icon, color]) => <button onClick={() => setDecision(key)} style={{
+    {[["assign", "Qualified \u2014 assign to SE", CheckCircle2, C.green], ["test_drive", `Wants a ${testNoun}`, Car, C.teal], ["discount", "Asked for a discount", Tag, C.warm], ["callback", "Keep qualifying \u2014 call back later", Clock, C.warm], ["close", "Not interested \u2014 close", X, C.hot]].map(([key, label, Icon, color]) => <button onClick={() => setDecision(key)} style={{
   display: "flex",
   alignItems: "center",
   gap: 8,
@@ -4167,7 +4274,7 @@ function QualificationCallForm({ lead, onSave, onCancel, channel, allLeads, show
   color: C.teal,
   marginBottom: 10
 }}>
-    Test Ride Details
+    {TEST_TITLE} Details
   </div>
   <div style={{
   display: "flex",
@@ -4498,7 +4605,7 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
       ["book", "Ready to book!", CheckCircle2, C.green],
       ["reactivate_same", `Still interested \u2014 send back to ${lead.assignedSE?.name || "SE"}`, CheckCircle2, C.green],
       ["reassign", lead.assignedSE ? "Still interested \u2014 reassign to a different SE" : "Still interested \u2014 assign an SE", UserPlus, C.cold],
-      ["test_drive", "Wants a test ride", Car, C.teal],
+      ["test_drive", `Wants a ${testNoun}`, Car, C.teal],
       ["discount", "Asked for a discount", Tag, C.warm],
       ["callback", "Interested but not ready \u2014 call back later", Clock, C.warm],
       ["lost", "Not interested \u2014 mark as lost", X, C.hot]
@@ -4642,9 +4749,9 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
   color: C.sub,
   marginBottom: 4
 }}>
-        Two-wheeler Model
+        {hy("Car Model", "Two-wheeler Model")}
       </div>
-      <input value={exchangeModel} onChange={e => setExchangeModel(e.target.value)} placeholder="e.g. Honda Activa 5G" style={{
+      <input value={exchangeModel} onChange={e => setExchangeModel(e.target.value)} placeholder={hy("e.g. Maruti Suzuki Swift", "e.g. Honda Activa 5G")} style={{
   width: "100%",
   border: `1px solid ${C.borderStrong}`,
   borderRadius: 8,
@@ -4668,7 +4775,7 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
 }}>
         Variant
       </div>
-      <input value={exchangeVariant} onChange={e => setExchangeVariant(e.target.value)} placeholder="e.g. DLX" style={{
+      <input value={exchangeVariant} onChange={e => setExchangeVariant(e.target.value)} placeholder={hy("e.g. VXi", "e.g. DLX")} style={{
   width: "100%",
   border: `1px solid ${C.borderStrong}`,
   borderRadius: 8,
@@ -4716,7 +4823,7 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
 }}>
         Odometer (km)
       </div>
-      <input value={exchangeOdometer} onChange={e => setExchangeOdometer(e.target.value)} placeholder="e.g. 25000" style={{
+      <input value={exchangeOdometer} onChange={e => setExchangeOdometer(e.target.value)} placeholder={hy("e.g. 45000", "e.g. 25000")} style={{
   width: "100%",
   border: `1px solid ${C.borderStrong}`,
   borderRadius: 8,
@@ -4747,7 +4854,7 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
 }}>
     Registered City
   </div>
-  <input value={exchangeRegisteredCity} onChange={e => setExchangeRegisteredCity(e.target.value)} placeholder="e.g. Pune" style={{
+  <input value={exchangeRegisteredCity} onChange={e => setExchangeRegisteredCity(e.target.value)} placeholder={hy("e.g. Hyderabad", "e.g. Pune")} style={{
   width: "100%",
   border: `1px solid ${C.borderStrong}`,
   borderRadius: 8,
@@ -5040,7 +5147,7 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
 }}>
         Loan Amount (₹ L)
       </div>
-      <input type="number" min="0" value={financeLoanAmount} onChange={e => setFinanceLoanAmount(e.target.value)} placeholder="e.g. 1.2" style={{
+      <input type="number" min="0" value={financeLoanAmount} onChange={e => setFinanceLoanAmount(e.target.value)} placeholder={hy("e.g. 10", "e.g. 1.2")} style={{
   width: "100%",
   border: `1px solid ${C.borderStrong}`,
   borderRadius: 8,
@@ -5277,7 +5384,7 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
 }}>
     Booking Amount (₹) *
   </div>
-  <input type="number" min="0" value={bookingAmount} onChange={e => setBookingAmount(e.target.value)} placeholder="e.g. 2500" style={{
+  <input type="number" min="0" value={bookingAmount} onChange={e => setBookingAmount(e.target.value)} placeholder={hy("e.g. 21000", "e.g. 2500")} style={{
   width: "100%",
   border: `1px solid ${C.borderStrong}`,
   borderRadius: 8,
@@ -5368,7 +5475,7 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
   color: C.teal,
   marginBottom: 10
 }}>
-    Test Ride Details
+    {TEST_TITLE} Details
     {lead.assignedSE ? ` \u2014 ${lead.assignedSE.name}` : ""}
   </div>
   <div style={{
@@ -5540,7 +5647,7 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
 }}>
     Colour
   </div>
-  <DropdownChecklist options={COLOR_OPTIONS.map(c => ({
+  <DropdownChecklist options={colourOptionsFor(deliveryModel, deliveryVariant).map(c => ({
   key: c,
   label: c
 }))} selected={deliveryColor ? [deliveryColor] : []} onToggle={key => setDeliveryColor(c => c === key ? "" : key)} multi={false} placeholder="Select colour…" />
@@ -5588,7 +5695,7 @@ function ReactivationCallForm({ lead, onSave, onCancel, channel, allLeads, showT
   color: C.faint,
   marginTop: 2
 }}>
-    {Object.entries(availability.byBranch).map(([b, n]) => `${b} ${n}`).join(" · ")} · stock is by charger; the River Care plan is added at booking
+    {Object.entries(availability.byBranch).map(([b, n]) => `${b} ${n}`).join(" · ")}{hy(" · stock by variant and colour; extended warranty and accessories are added at booking", " · stock is by charger; the River Care plan is added at booking")}
   </div>
 </> : <span style={{
   fontFamily: F,
@@ -5832,7 +5939,7 @@ function TestDriveForm({ onSave, onCancel, allLeads, excludeLeadId, showToast, c
     const [attempted, setAttempted] = useState(false);
     const missingList = (() => {
       const m = [];
-      if (!mode) m.push("test ride mode");
+      if (!mode) m.push(`${testNoun} mode`);
       if (!date) m.push("date");
       if (!slot) m.push("time slot");
       if (mode === "location" && !locationText.trim()) m.push("customer's location");
@@ -5854,7 +5961,7 @@ function TestDriveForm({ onSave, onCancel, allLeads, excludeLeadId, showToast, c
   letterSpacing: 0.6,
   marginBottom: 10
 }}>
-    Schedule Test Ride
+    Schedule {TEST_TITLE}
   </div>
   <div style={{
   display: "flex",
@@ -5991,15 +6098,20 @@ function TestDriveForm({ onSave, onCancel, allLeads, excludeLeadId, showToast, c
   fontSize: 12.5,
   cursor: canSubmit ? "pointer" : "default"
 }}>
-      Schedule Test Ride
+      Schedule {TEST_TITLE}
     </button>
   </div>
 </div>;
   }
 
-function QuoteForm({ model, onSave, onCancel }) {
-    const variantOptions = Object.keys(QUOTE_EX_SHOWROOM);
-    const [variant, setVariant] = useState(() => model && QUOTE_EX_SHOWROOM[model] !== void 0 ? model : variantOptions[0]);
+function QuoteForm({ model, leadVariant, onSave, onCancel }) {
+    // Hyundai: the lead's model's variants (the full catalogue is 100+ lines), starting on the
+    // variant the customer asked about. River: both Indie chargers.
+    const variantOptions = IS_HYUNDAI && MODEL_VARIANTS[model]
+      ? MODEL_VARIANTS[model].map(v => `${model} ${v}`)
+      : Object.keys(QUOTE_EX_SHOWROOM);
+    const [variant, setVariant] = useState(() => IS_HYUNDAI && QUOTE_EX_SHOWROOM[`${model} ${leadVariant}`] !== void 0 ? `${model} ${leadVariant}`
+      : model && QUOTE_EX_SHOWROOM[model] !== void 0 ? model : variantOptions[0]);
     const [selectedAccessories, setSelectedAccessories] = useState([]);
     const [includeInsurance, setIncludeInsurance] = useState(true);
     const [includeWarranty, setIncludeWarranty] = useState(true);
@@ -6011,7 +6123,8 @@ function QuoteForm({ model, onSave, onCancel }) {
       const a = ACCESSORY_OPTIONS.find((x) => x.key === key);
       return sum + (a?.amount || 0);
     }, 0);
-    const breakup = computeQuoteBreakup(exShowroomNum, parseInt(discount) || 0, accessoriesTotal, includeInsurance, includeWarranty, includeCare);
+    const quoteFuel = IS_HYUNDAI ? OEM.models.flatMap(m => m.variants.map(v => [`${m.name} ${v.name}`, v.fuel])).find(([k]) => k === variant)?.[1] : null;
+    const breakup = computeQuoteBreakup(exShowroomNum, parseInt(discount) || 0, accessoriesTotal, includeInsurance, includeWarranty, includeCare, quoteFuel);
     const toggleAccessory = (key) => setSelectedAccessories((s) => s.includes(key) ? s.filter((x) => x !== key) : [...s, key]);
     const discountOverLimit = (parseInt(discount) || 0) > DISCOUNT_LIMIT;
     const canSubmit = !!variant && !discountOverLimit;
@@ -6127,18 +6240,18 @@ function QuoteForm({ model, onSave, onCancel }) {
   checked: includeInsurance,
   onToggle: () => setIncludeInsurance(v => !v),
   label: "Insurance + RSA (1st year)",
-  amount: breakup.insurance || Math.round(exShowroomNum * 0.07034),
+  amount: breakup.insurance || insuranceFor(exShowroomNum),
   hint: "Untick for non-dealer insurance"
 }, {
   checked: includeWarranty,
   onToggle: () => setIncludeWarranty(v => !v),
-  label: "River Care Plus Two (5 yr warranty)",
+  label: EXTENDED_WARRANTY_LABEL,
   amount: EXTENDED_WARRANTY_AMOUNT,
   hint: null
 }, {
   checked: includeCare,
   onToggle: () => setIncludeCare(v => !v),
-  label: "Service Pack (3yr)",
+  label: CARE_PACKAGE_LABEL,
   amount: CARE_PACKAGE_AMOUNT,
   hint: null
 }].map((item, i) => <button onClick={item.onToggle} style={{
@@ -6227,7 +6340,7 @@ function QuoteForm({ model, onSave, onCancel }) {
 }}>
     Discount (₹)
   </div>
-  <input type="number" min="0" step="500" value={discount} onChange={e => setDiscount(e.target.value)} placeholder="e.g. 1500" style={{
+  <input type="number" min="0" step="500" value={discount} onChange={e => setDiscount(e.target.value)} placeholder={hy("e.g. 15000", "e.g. 1500")} style={{
   width: "100%",
   border: `1.5px solid ${discountOverLimit ? C.hot : C.borderStrong}`,
   borderRadius: 9,
@@ -6703,7 +6816,7 @@ function AddLeadForm({ onSave, onCancel, customSources, onAddCustomSource }) {
 }}>
       Location
     </div>
-    <input value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Aundh" style={inputStyle} />
+    <input value={location} onChange={e => setLocation(e.target.value)} placeholder={`e.g. ${BR1}`} style={inputStyle} />
     <div style={dividedSectionHeadingStyle}>
       Customer Type
     </div>
@@ -6791,9 +6904,9 @@ function AddLeadForm({ onSave, onCancel, customSources, onAddCustomSource }) {
   color: C.sub,
   marginBottom: 4
 }}>
-        Two-wheeler Model
+        {hy("Car Model", "Two-wheeler Model")}
       </div>
-      <input value={exchangeModel} onChange={e => setExchangeModel(e.target.value)} placeholder="e.g. Honda Activa 5G" style={smallFieldStyle} />
+      <input value={exchangeModel} onChange={e => setExchangeModel(e.target.value)} placeholder={hy("e.g. Maruti Suzuki Swift", "e.g. Honda Activa 5G")} style={smallFieldStyle} />
     </div>
     <div style={{
   width: "48%"
@@ -6806,7 +6919,7 @@ function AddLeadForm({ onSave, onCancel, customSources, onAddCustomSource }) {
 }}>
         Variant
       </div>
-      <input value={exchangeVariant} onChange={e => setExchangeVariant(e.target.value)} placeholder="e.g. DLX" style={smallFieldStyle} />
+      <input value={exchangeVariant} onChange={e => setExchangeVariant(e.target.value)} placeholder={hy("e.g. VXi", "e.g. DLX")} style={smallFieldStyle} />
     </div>
     <div style={{
   width: "48%"
@@ -6832,7 +6945,7 @@ function AddLeadForm({ onSave, onCancel, customSources, onAddCustomSource }) {
 }}>
         Odometer (km)
       </div>
-      <input value={exchangeOdometer} onChange={e => setExchangeOdometer(e.target.value)} placeholder="e.g. 25000" style={smallFieldStyle} />
+      <input value={exchangeOdometer} onChange={e => setExchangeOdometer(e.target.value)} placeholder={hy("e.g. 45000", "e.g. 25000")} style={smallFieldStyle} />
     </div>
   </div>
   <div style={{
@@ -6852,7 +6965,7 @@ function AddLeadForm({ onSave, onCancel, customSources, onAddCustomSource }) {
 }}>
     Registered City
   </div>
-  <input value={exchangeRegisteredCity} onChange={e => setExchangeRegisteredCity(e.target.value)} placeholder="e.g. Pune" style={{
+  <input value={exchangeRegisteredCity} onChange={e => setExchangeRegisteredCity(e.target.value)} placeholder={hy("e.g. Hyderabad", "e.g. Pune")} style={{
   width: "100%",
   border: `1px solid ${C.borderStrong}`,
   borderRadius: 8,
@@ -6956,7 +7069,7 @@ function AddLeadForm({ onSave, onCancel, customSources, onAddCustomSource }) {
 }}>
         Loan Amount (₹ L)
       </div>
-      <input type="number" min="0" value={financeLoanAmount} onChange={e => setFinanceLoanAmount(e.target.value)} placeholder="e.g. 1.2" style={smallFieldStyle} />
+      <input type="number" min="0" value={financeLoanAmount} onChange={e => setFinanceLoanAmount(e.target.value)} placeholder={hy("e.g. 10", "e.g. 1.2")} style={smallFieldStyle} />
     </div>
     <div style={{
   width: "48%"
@@ -7177,7 +7290,7 @@ function LeadRow({ lead, onUpdateLead, showToast, focusMode, allLeads }) {
             testDriveDate: entry.testDriveDate,
             testDriveSlot: entry.testDriveSlot,
             testDriveMode: entry.testDriveMode,
-            note: `Test ride scheduled ${entry.testDriveDate}, ${entry.testDriveSlot} \u2014 ${modeLabel}${locationPart}.${dlNote}`
+            note: `${TestNoun} scheduled ${entry.testDriveDate}, ${entry.testDriveSlot} \u2014 ${modeLabel}${locationPart}.${dlNote}`
           }];
         }
         onUpdateLead({
@@ -7340,11 +7453,11 @@ function LeadRow({ lead, onUpdateLead, showToast, focusMode, allLeads }) {
           testDriveDate: entry.date,
           testDriveSlot: entry.slot,
           testDriveMode: entry.mode,
-          note: `Test ride scheduled ${entry.date}, ${entry.slot} \u2014 ${modeLabel}${locationPart}. ${entry.note}`.trim() + dlNote
+          note: `${TestNoun} scheduled ${entry.date}, ${entry.slot} \u2014 ${modeLabel}${locationPart}. ${entry.note}`.trim() + dlNote
         }],
         drivingLicense: entry.dlVia ? { done: true, via: entry.dlVia } : lead.drivingLicense
       });
-      showToast(`\u2705 Test ride scheduled \u2014 ${lead.assignedSE.name} notified`);
+      showToast(`\u2705 ${TestNoun} scheduled \u2014 ${lead.assignedSE.name} notified`);
       setAction(null);
     };
     const handleQuote = (entry) => {
@@ -7693,7 +7806,7 @@ function LeadRow({ lead, onUpdateLead, showToast, focusMode, allLeads }) {
   color: C.teal,
   fontWeight: 600
 }}>
-    Test Ride Scheduled
+    {TEST_TITLE} Scheduled
     {(() => {
   const raw = mostRecentTestDrive(lead).testDriveDate;
   const d2 = raw ? new Date(raw) : null;
@@ -7968,7 +8081,7 @@ function LeadRow({ lead, onUpdateLead, showToast, focusMode, allLeads }) {
   setAction("whatsapp_pick");
 }} />
   {lead.assignedSE ? <>
-  {lead.stage === "Booking" ? <QuickAction icon={FileText} label="Mark as Retailed" tone="soft" onClick={() => setAction("retail")} /> : lead.stage === "Retailed" ? <QuickAction icon={CheckCircle2} label="Mark Delivered" tone="soft" onClick={() => setAction("deliver")} /> : <QuickAction icon={Car} label="Test Ride" tone="soft" onClick={() => setAction("testdrive")} />}
+  {lead.stage === "Booking" ? <QuickAction icon={FileText} label="Mark as Retailed" tone="soft" onClick={() => setAction("retail")} /> : lead.stage === "Retailed" ? <QuickAction icon={CheckCircle2} label="Mark Delivered" tone="soft" onClick={() => setAction("deliver")} /> : <QuickAction icon={Car} label={TEST_TITLE} tone="soft" onClick={() => setAction("testdrive")} />}
   <QuickAction icon={FileText} label="Quote" tone="soft" onClick={() => setAction("quote")} />
 </> : null}
 </div>}
@@ -8063,18 +8176,19 @@ function LeadRow({ lead, onUpdateLead, showToast, focusMode, allLeads }) {
       const HONORIFICS = ["mr","mrs","ms","dr","col","colonel","capt","captain","maj","major","shri","smt","prof"];
       const parts = (lead.name || "there").replace(/[().]/g, "").split(" ").filter(Boolean);
       const first = parts.find(w => !HONORIFICS.includes(w.toLowerCase())) || parts[0] || "there";
-      const model = lead.modelInterest || lead.model || "the scooter you enquired about";
+      // modelInterest is a { model: [variants] } map — say it in words, not "[object Object]".
+      const model = (lead.modelInterest && modelInterestSummary(lead.modelInterest)) || lead.model || `the ${VEHICLE} you enquired about`;
       // Openers written for a telecaller: qualifying and re-engaging, not closing.
       const OPENERS = [
         { id: "intro", label: "Introduce yourself", note: "First contact after an enquiry",
           Icon: MessageSquare, color: C.teal,
-          text: `Hi ${first}, this is ${"Priya"} from Epic River. You enquired about the ${model} — is now a good time to talk for two minutes?` },
+          text: `Hi ${first}, this is ${"Priya"} from ${DEALER}. You enquired about the ${model} — is now a good time to talk for two minutes?` },
         { id: "reengage", label: "Gentle check-in", note: "Re-open a conversation that went quiet",
           Icon: Clock, color: C.purple,
           text: `Hi ${first}, checking in about the ${model}. Are you still looking, or has the plan changed? Either way is fine — just want to stop bothering you if it's the latter.` },
         { id: "slot", label: "Offer a showroom visit", note: "Move them to the sales team",
           Icon: Car, color: C.warm,
-          text: `Hi ${first}, we have the ${model} available for a test ride this week. Would a weekday evening or a weekend morning suit you better?` },
+          text: `Hi ${first}, we have the ${model} available for a ${testNoun} this week. Would a weekday evening or a weekend morning suit you better?` },
       ];
       const openWA = (text) => {
         try { window.open(`https://wa.me/${digits}?text=${encodeURIComponent(text || "")}`, "_blank", "noopener"); } catch (e) {}
@@ -8138,7 +8252,7 @@ function LeadRow({ lead, onUpdateLead, showToast, focusMode, allLeads }) {
   {action === "testdrive" && <TestDriveForm onSave={handleTestDrive} onCancel={() => setAction(null)} allLeads={allLeads} excludeLeadId={lead.id} showToast={showToast} customerName={lead.name} />}
   {action === "retail" && <RetailForm onSave={handleRetail} onCancel={() => setAction(null)} />}
   {action === "deliver" && <DeliveryForm onSave={handleMarkDelivered} onCancel={() => setAction(null)} />}
-  {action === "quote" && <QuoteForm model={lead.model} onSave={handleQuote} onCancel={() => setAction(null)} />}
+  {action === "quote" && <QuoteForm model={lead.model} leadVariant={lead.variant} onSave={handleQuote} onCancel={() => setAction(null)} />}
   {action === "quote_share" && lastQuote && <QuoteShareScreen lead={lead} quote={lastQuote} onMediumUsed={medium => logQuoteMedium(medium, lastQuote)} onDone={() => setAction(null)} />}
 </div>;
   }
@@ -8289,7 +8403,7 @@ function QuoteShareScreen({ lead, quote, onMediumUsed, onDone }) {
       "",
       `On-Road Total: ${formatINR(quote.total)}`,
       "",
-      "\u2014 Epic River"
+      `\u2014 ${DEALER}`
     ].join("\n");
     const phoneDigits = (lead.phone || "").replace(/\D/g, "");
     const waLink = `https://wa.me/${phoneDigits}?text=${encodeURIComponent(summaryText)}`;
@@ -8518,9 +8632,9 @@ const NAV_ITEMS = [
     { key: "activity",       label: "Recent Activity" },
   ]},
   { key: "inventory", label: "Inventory", Icon: Car, subs: [
-    { key: "inventory:new",      label: "New Scooters" },
+    { key: "inventory:new",      label: `New ${Vehicles}` },
     { key: "inventory:preowned", label: "Pre-Owned" },
-    { key: "inventory:demo",     label: "Demo Scooters" },
+    { key: "inventory:demo",     label: `Demo ${Vehicles}` },
   ]},
   { key: "performance", label: "Performance", Icon: BarChart3, subs: [
     { key: "dashboard", label: "Dashboard" },
@@ -8826,14 +8940,18 @@ function PostDeliveryScreen({ leads, onUpdateLead, showToast }) {
    and whether they can hold it. So the source of truth here is individual units, each with
    a VIN, chassis and motor number, and every count on screen is derived from them. */
 
-// Every River is electric — the whole line-up gets the EV detail block.
-const EV_MODELS = ["Indie"];
+// Every River is electric — the whole line-up gets the EV detail block. Hyundai: the models whose
+// variants are all electric (Creta Electric, Ioniq 5).
+const EV_MODELS = hy(OEM.models.filter(m => m.variants.every(v => v.fuel === "Electric")).map(m => m.name), ["Indie"]);
 const isEV = (model) => EV_MODELS.includes(model);
 
 // Waiting period when nothing is in stock or in transit for a combination. Real dealerships
 // quote these off the OEM allocation cycle; here they're per-model so a rep can still give
 // the customer an honest answer instead of "let me check".
-const WAITING_WEEKS = { "Indie": 2 };
+const WAITING_WEEKS = hy({
+  "Creta": 6, "Creta Electric": 8, "Creta N Line": 6, "Alcazar": 6, "Venue": 4, "Venue N Line": 4, "Verna": 4,
+  "Exter": 3, "i20": 3, "i20 N Line": 4, "Grand i10 Nios": 2, "Aura": 2, "Ioniq 5": 10, "Prime HB": 3, "Prime SD": 3,
+}, { "Indie": 2 });
 
 const UNIT_STATUS = {
   in_stock:   { label: "In Stock",   color: C.green,  soft: C.greenSoft },
@@ -8855,8 +8973,17 @@ const UNIT_STATUS = {
 const STOCK_AS_OF = new Date(INVENTORY_AS_OF + "T00:00:00");
 const AGE_RANGES = [[2, 30], [31, 60], [61, 90], [91, 150]];
 const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const SEEDED_HOLD_COMBOS = ["480W|Spring Yellow", "480W|Storm Grey"];
-const SEEDED_HOLDERS = [
+// Keys are charger|colour for River and model|variant|colour for Hyundai (see holdKey). Hyundai:
+// every Venue HX10 Dragon Red is held (the waitlist's plain case); every Creta SX MT Petrol Titan Grey
+// is held and one more is on its way to Kondapur.
+const holdKey = (model, variant, color) => (IS_HYUNDAI ? `${model}|${variant}|${color}` : `${chargerOf(variant)}|${color}`);
+const SEEDED_HOLD_COMBOS = hy(["Venue|HX10|Dragon Red", "Creta|SX MT Petrol|Titan Grey"], ["480W|Spring Yellow", "480W|Storm Grey"]);
+const SEEDED_HOLDERS = IS_HYUNDAI ? [
+  { name: "Kavya Reddy", phone: "+91 98480 41107", by: "Rahul Kumar", ago: 3 },
+  { name: "Omkar Rao", phone: "+91 98490 22874", by: "Divya Pillai", ago: 6 },
+  { name: "Sneha Varma", phone: "+91 97010 10592", by: "Arjun Nair", ago: 2 },
+  { name: "Imran Hussain", phone: "+91 99630 66418", by: "Rahul Kumar", ago: 8 },
+] : [
   { name: "Kavya Deshmukh", phone: "+91 98220 41107", by: "Rahul Kumar", ago: 3 },
   { name: "Omkar Joshi", phone: "+91 98903 22874", by: "Divya Pillai", ago: 6 },
   { name: "Snehal Patil", phone: "+91 97644 10592", by: "Arjun Nair", ago: 2 },
@@ -8870,30 +8997,43 @@ const SEEDED_HOLDERS = [
   { name: "Shruti Apte", phone: "+91 90960 48857", by: "Divya Pillai", ago: 3 },
   { name: "Harsh Wagh", phone: "+91 98605 12490", by: "Arjun Nair", ago: 6 },
 ];
-const SEEDED_TRANSIT = [{ variant: "480W", color: "Storm Grey", branch: "Aundh", etaDays: 4 }];
+const SEEDED_TRANSIT = hy([{ model: "Creta", variant: "SX MT Petrol", color: "Titan Grey", branch: BR1, etaDays: 6 }],
+  [{ variant: "480W", color: "Storm Grey", branch: "Aundh", etaDays: 4 }]);
 // Plan-variants ("750W + Plus Two") all draw on their charger's physical pool.
 function chargerOf(variant) { return String(variant || "").split(" + ")[0]; }
 function withCharger(variant, charger) { return [charger, ...String(variant || "").split(" + ").slice(1)].join(" + "); }
 // Seeded holds per charger × colour (both stores) — what's physically there but already spoken for.
-function seededHeldCount(variant, color) {
-  if (!SEEDED_HOLD_COMBOS.includes(`${chargerOf(variant)}|${color}`)) return 0;
-  return Object.values(PUNE_STORES).reduce((n, id) => n + unitsOf(id, chargerOf(variant), color), 0);
+function seededHeldCount(variant, color, model) {
+  if (!SEEDED_HOLD_COMBOS.includes(holdKey(model, variant, color))) return 0;
+  return Object.values(PUNE_STORES).reduce((n, id) => n + unitsOf(id, chargerOf(variant), color, model), 0);
+}
+// EV block for a new unit. River: every Indie (charger by variant). Hyundai: Creta Electric / Ioniq 5.
+function evSpecFor(model, variant) {
+  if (!isEV(model)) return null;
+  if (!IS_HYUNDAI) return {
+    batteryKwh: 4,
+    rangeKm: 161,
+    charger: variant === "480W" ? "480W portable · 0–100% ~8 h" : "750W portable · 0–80% ~5 h",
+    batteryWarranty: "5 yrs (standard; River Care plan added at booking)",
+  };
+  if (model === "Ioniq 5") return { batteryKwh: 72.6, rangeKm: 631, charger: "11 kW AC wallbox · DC 10–80% ~18 min", batteryWarranty: "8 yrs / 1,60,000 km" };
+  const lr = /51\.4|LR|Lounge/.test(variant);
+  return { batteryKwh: lr ? 51.4 : 42, rangeKm: lr ? 473 : 390, charger: "11 kW AC wallbox · DC 10–80% ~58 min", batteryWarranty: "8 yrs / 1,60,000 km" };
 }
 
 function buildInventoryUnits() {
   const units = [];
   let seq = 0;
   let holder = 0;
-  const model = "Indie";
-  const ev = isEV(model);
-  const make = (variant, color, branch, extra) => {
+  const make = (model, variant, color, branch, extra) => {
+    const ev = isEV(model);
     seq += 1;
     const h = hashStr(model + variant + color + branch + seq);
     return {
       id: `U${seq}`,
       category: "new",
       model, variant, color, branch,
-      vin: `MD9RIV${String(h % 900 + 100)}${model.slice(0, 2).toUpperCase()}${String(seq).padStart(5, "0")}`,
+      vin: `${hy("MALC", "MD9RIV")}${String(h % 900 + 100)}${model.slice(0, 2).toUpperCase()}${String(seq).padStart(5, "0")}`,
       chassis: `CH${String(h % 90000 + 10000)}${seq}`,
       engineNo: ev ? null : `EN${String((h * 7) % 90000 + 10000)}${seq}`,
       motorNo: ev ? `MT${String((h * 7) % 90000 + 10000)}${seq}` : null,
@@ -8902,28 +9042,24 @@ function buildInventoryUnits() {
       daysInStock: null,
       mfgMonth: null,
       priceLakh: (VARIANT_PRICES[model] || {})[variant] || null,
-      ev: ev ? {
-        batteryKwh: 4,
-        rangeKm: 161,
-        charger: variant === "480W" ? "480W portable · 0–100% ~8 h" : "750W portable · 0–80% ~5 h",
-        batteryWarranty: "5 yrs (standard; River Care plan added at booking)",
-      } : null,
+      ev: evSpecFor(model, variant),
       blockedFor: null,
       ...extra,
     };
   };
   Object.entries(PUNE_STORES).forEach(([branch, locId]) => {
     stockFor(locId).lines.forEach(line => {
-      const held = SEEDED_HOLD_COMBOS.includes(`${line.variant}|${line.colour}`);
+      const lineModel = line.model ?? "Indie";
+      const held = SEEDED_HOLD_COMBOS.includes(holdKey(lineModel, line.variant, line.colour));
       line.buckets.forEach((n, b) => {
         const [lo, hi] = AGE_RANGES[b];
         for (let k = 0; k < n; k++) {
-          const days = lo + hashStr(locId + line.variant + line.colour + b + k) % (hi - lo + 1);
+          const days = lo + hashStr(locId + (line.key || line.variant) + line.colour + b + k) % (hi - lo + 1);
           // Built ~3–6 weeks before it reached the branch.
           const built = new Date(STOCK_AS_OF);
           built.setDate(built.getDate() - days - 20 - (days % 22));
           const who = held ? SEEDED_HOLDERS[holder++ % SEEDED_HOLDERS.length] : null;
-          units.push(make(line.variant, line.colour, branch, {
+          units.push(make(lineModel, line.variant, line.colour, branch, {
             daysInStock: days,
             mfgMonth: `${MONTHS_SHORT[built.getMonth()]} ${built.getFullYear()}`,
             blockedFor: who ? { leadId: null, name: who.name, phone: who.phone, at: d(-who.ago), by: who.by } : null,
@@ -8932,7 +9068,7 @@ function buildInventoryUnits() {
       });
     });
   });
-  SEEDED_TRANSIT.forEach(t => units.push(make(t.variant, t.color, t.branch, {
+  SEEDED_TRANSIT.forEach(t => units.push(make(t.model || "Indie", t.variant, t.color, t.branch, {
     status: "in_transit", etaDays: t.etaDays, mfgMonth: `${MONTHS_SHORT[STOCK_AS_OF.getMonth()]} ${STOCK_AS_OF.getFullYear()}`,
   })));
   return units;
@@ -8940,7 +9076,28 @@ function buildInventoryUnits() {
 
 // Demo and used scooters are a much smaller, hand-listed set — they're individual assets, not
 // allocations off a production line, so they carry odometer and ownership instead of ETA.
-const DEMO_USED_UNITS = [
+const DEMO_USED_UNITS = IS_HYUNDAI ? [
+  { id: "D1", category: "demo", model: "Creta", variant: "SX Premium IVT Petrol", color: "Atlas White",
+    vin: "MALCDEMO00001", chassis: "CHD10001", engineNo: "END10001", status: "in_stock",
+    branch: BR1, odometer: "4,120 km", mfgMonth: "Jun 2026", priceLakh: 18.4, ev: null, blockedFor: null },
+  { id: "D2", category: "demo", model: "Creta Electric", variant: "Premium 42kWh", color: "Ocean Blue",
+    vin: "MALCDEMO00002", chassis: "CHD10002", engineNo: null, motorNo: "MTD10002", status: "in_stock",
+    branch: BR2, odometer: "2,860 km", mfgMonth: "Jul 2026", priceLakh: 20.9,
+    ev: { batteryKwh: 42, rangeKm: 390, charger: "11 kW AC wallbox · DC 10–80% ~58 min", batteryWarranty: "8 yrs / 1,60,000 km" }, blockedFor: null },
+  { id: "D3", category: "demo", model: "Venue", variant: "HX8", color: "Dragon Red",
+    vin: "MALCDEMO00003", chassis: "CHD10003", engineNo: "END10003", status: "in_stock",
+    branch: BR1, odometer: "6,540 km", mfgMonth: "Nov 2025", priceLakh: 14.6, ev: null, blockedFor: null },
+
+  { id: "P1", category: "used", model: "Creta", variant: "SX MT Petrol", color: "Abyss Black",
+    vin: "MALCUSED00001", chassis: "CHU10001", engineNo: "ENU10001", status: "in_stock",
+    branch: BR1, odometer: "38,200 km", mfgMonth: "2022", owners: 1, priceLakh: 13.4, ev: null, blockedFor: null },
+  { id: "P2", category: "used", model: "i20", variant: "Asta", color: "Titan Grey",
+    vin: "MALCUSED00002", chassis: "CHU10002", engineNo: "ENU10002", status: "in_stock",
+    branch: BR2, odometer: "51,700 km", mfgMonth: "2021", owners: 2, priceLakh: 7.1, ev: null, blockedFor: null },
+  { id: "P3", category: "used", model: "Verna", variant: "HX6", color: "Atlas White",
+    vin: "MALCUSED00003", chassis: "CHU10003", engineNo: "ENU10003", status: "in_stock",
+    branch: BR2, odometer: "22,400 km", mfgMonth: "2023", owners: 1, priceLakh: 12.8, ev: null, blockedFor: null },
+] : [
   { id: "D1", category: "demo", model: "Indie", variant: "750W", color: "Monsoon Blue",
     vin: "MD9RIVDEMO0001", chassis: "CHD10001", engineNo: null, motorNo: "MTD10001", status: "in_stock",
     branch: "Aundh", odometer: "1,850 km", mfgMonth: "Jun 2026", priceLakh: 1.59,
@@ -9025,7 +9182,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
       <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} onClick={onClose} />
       <div style={{ position: "relative", background: C.card, borderRadius: "18px 18px 0 0", maxHeight: "88vh", overflowY: "auto", padding: 16 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-          <span style={{ fontFamily: F, fontSize: 16, fontWeight: 800, color: C.ink }}>{waitlistMode ? "Add to waitlist" : "Block this scooter"}</span>
+          <span style={{ fontFamily: F, fontSize: 16, fontWeight: 800, color: C.ink }}>{waitlistMode ? "Add to waitlist" : `Block this ${VEHICLE}`}</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><X size={18} color={C.sub} /></button>
         </div>
         <div style={{ fontFamily: F, fontSize: 11.5, color: C.sub, marginBottom: 14 }}>
@@ -9071,7 +9228,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
               <div style={{ display: "flex", gap: 8, background: C.hotSoft, border: `1px solid ${C.hot}55`, borderRadius: 10, padding: 11, marginBottom: 10 }}>
                 <AlertTriangle size={14} color={C.hot} style={{ flexShrink: 0, marginTop: 1 }} />
                 <div style={{ fontFamily: F, fontSize: 11.5, color: C.hot, lineHeight: 1.4 }}>
-                  <strong>Booking amount not received.</strong> A scooter can only be held once the booking is paid — otherwise it sits blocked while another customer could have taken it.
+                  <strong>Booking amount not received.</strong> A {VEHICLE} can only be held once the booking is paid — otherwise it sits blocked while another customer could have taken it.
                 </div>
               </div>
             )}
@@ -9081,7 +9238,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
                 <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                   <AlertTriangle size={14} color={C.warm} style={{ flexShrink: 0, marginTop: 1 }} />
                   <div style={{ fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.warm }}>
-                    This scooter doesn't match what {picked.name.split(" ")[0]} booked
+                    This {VEHICLE} doesn't match what {picked.name.split(" ")[0]} booked
                   </div>
                 </div>
                 {mismatches.map(m => (
@@ -9094,7 +9251,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
                 ))}
                 <div style={{ paddingLeft: 22, marginTop: 10 }}>
                   <div style={{ fontFamily: F, fontSize: 11, fontWeight: 700, color: C.warm, marginBottom: 7 }}>
-                    Is this scooter finalised, replacing the one that was booked?
+                    Is this {VEHICLE} finalised, replacing the one that was booked?
                   </div>
                   <div style={{ display: "flex", gap: 7 }}>
                     <button onClick={() => setResolution("finalise")} style={{
@@ -9103,7 +9260,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
                       background: resolution === "finalise" ? C.greenSoft : C.card,
                       color: resolution === "finalise" ? C.green : C.sub,
                       fontFamily: F, fontWeight: 700, fontSize: 11.5,
-                    }}>Yes — finalise this scooter</button>
+                    }}>Yes — finalise this {VEHICLE}</button>
                     <button onClick={() => setResolution("wrong_car")} style={{
                       flex: 1, padding: "8px 0", borderRadius: 8, cursor: "pointer",
                       border: `1.5px solid ${resolution === "wrong_car" ? C.hot : C.borderStrong}`,
@@ -9125,7 +9282,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
                     <div style={{ display: "flex", gap: 7, marginTop: 9, background: C.hotSoft, borderRadius: 8, padding: "8px 10px" }}>
                       <AlertTriangle size={13} color={C.hot} style={{ flexShrink: 0, marginTop: 1 }} />
                       <span style={{ fontFamily: F, fontSize: 10.5, color: C.hot, lineHeight: 1.4 }}>
-                        Then this isn't the right scooter. Close this and pick the {picked.variant || picked.model}
+                        Then this isn't the right {VEHICLE}. Close this and pick the {picked.variant || picked.model}
                         {picked.colorInterest?.length ? ` in ${picked.colorInterest.join(" or ")}` : ""} the customer actually booked.
                       </span>
                     </div>
@@ -9145,10 +9302,10 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
           }}>
           {!picked ? "Select a customer"
             : !bookingPaid ? "Booking amount required"
-            : mismatches.length && resolution === "wrong_car" ? "Pick the booked scooter instead"
+            : mismatches.length && resolution === "wrong_car" ? `Pick the booked ${VEHICLE} instead`
             : mismatches.length && !resolution ? "Answer the question above"
             : waitlistMode ? "Add to waitlist" : mismatches.length ? "Block & update booking"
-            : "Block this scooter"}
+            : `Block this ${VEHICLE}`}
         </button>
       </div>
     </div>
@@ -9192,7 +9349,7 @@ function UnitRow({ unit, onBlock, onRelease, onArrived }) {
               ["Manufactured", unit.mfgMonth],
               ["Location", unit.branch],
               unit.daysInStock != null ? ["In stock", `${unit.daysInStock} days`] : null,
-              unit.priceLakh ? ["On-road (MH)", `₹${unit.priceLakh} L`] : null,
+              unit.priceLakh ? [hy("On-road (TG)", "On-road (MH)"), `₹${unit.priceLakh} L`] : null,
             ].filter(Boolean).map(([k, v]) => (
               <div key={k} style={{ display: "flex", gap: 8, marginBottom: 4 }}>
                 <span style={{ fontFamily: F, fontSize: 10.5, color: C.faint, width: 92, flexShrink: 0 }}>{k}</span>
@@ -9206,7 +9363,7 @@ function UnitRow({ unit, onBlock, onRelease, onArrived }) {
               <div style={{ fontFamily: F, fontSize: 9.5, fontWeight: 800, color: C.teal, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Electric vehicle</div>
               {[
                 ["Battery", `${unit.ev.batteryKwh} kWh`],
-                ["IDC range", `${unit.ev.rangeKm} km`],
+                [hy("ARAI range", "IDC range"), `${unit.ev.rangeKm} km`],
                 ["Charger", unit.ev.charger],
                 ["Battery warranty", unit.ev.batteryWarranty],
               ].map(([k, v]) => (
@@ -9268,7 +9425,13 @@ function UnitRow({ unit, onBlock, onRelease, onArrived }) {
    in exchange) are NOT rendered through the model→variant→colour tree the way new stock is.
    Every used unit is a unique asset with its own history, so each gets its own card. */
 
-const INSPECTION_AREAS = [
+const INSPECTION_AREAS = IS_HYUNDAI ? [
+  { key: "engine",    label: "Engine & transmission", Icon: Settings },
+  { key: "ac",        label: "Air conditioning",      Icon: Wind },
+  { key: "steering",  label: "Steering, suspension & brakes", Icon: Navigation },
+  { key: "exterior",  label: "Exterior & tyres",      Icon: Car },
+  { key: "interior",  label: "Interior & electricals", Icon: Sparkles },
+] : [
   { key: "engine",    label: "Motor / engine & drive", Icon: Settings },
   { key: "ac",        label: "Battery & charging",     Icon: Zap },
   { key: "steering",  label: "Handlebar, suspension & brakes", Icon: Navigation },
@@ -9293,7 +9456,101 @@ const READINESS = {
   photos:       { label: "Photos pending", color: C.cold,   soft: C.coldSoft },
 };
 
-const USED_STOCK = [
+// Hyundai: demo cars (4 per showroom, as in the shared inventory) and used cars, mostly exchange intakes.
+const HY_DOCS_OK = { rc: true, insurance: true, noc: true, service: true, duplicate: true };
+const HY_USED_STOCK = [
+  { id: "D1", kind: "demo", brand: "Hyundai", model: "Creta", variant: "SX Premium IVT Petrol", year: 2026, color: "Atlas White",
+    vin: "MALCDEMO00001", chassis: "CHD10001", engineNo: "END10001",
+    regNo: "TS07 DM 0011", regCity: "Hyderabad", odometer: 4120, fuel: "Petrol", transmission: "Automatic (IVT)", owners: 1, branch: BR1,
+    cost: { purchase: 1720000, refurb: 12000 }, ask: 1840000, floor: 1780000, daysInStock: 41, enquiries: 4, testDrives: 11, readiness: "retail_ready",
+    inspection: { engine: 5, ac: 5, steering: 5, exterior: 4.5, interior: 4.5 }, defects: ["Light wear on the front seat bolster from test drives"],
+    docs: HY_DOCS_OK, insuranceTill: "Jan 2028", photos: 24, highlights: ["Dealership demo", "Full service history", "Under warranty", "Non-accidental"], blockedFor: null },
+  { id: "D2", kind: "demo", brand: "Hyundai", model: "Creta Electric", variant: "Premium 42kWh", year: 2026, color: "Ocean Blue",
+    vin: "MALCDEMO00002", chassis: "CHD10002", engineNo: null, motorNo: "MTD10002",
+    regNo: "TS09 DM 0022", regCity: "Hyderabad", odometer: 2860, fuel: "Electric", transmission: "Automatic", owners: 1, branch: BR2,
+    cost: { purchase: 1960000, refurb: 8000 }, ask: 2090000, floor: 2030000, daysInStock: 27, enquiries: 7, testDrives: 14, readiness: "retail_ready",
+    inspection: { engine: 5, ac: 5, steering: 5, exterior: 5, interior: 5 }, defects: [],
+    docs: HY_DOCS_OK, insuranceTill: "Feb 2028", photos: 26, highlights: ["Dealership demo", "Battery health 99%", "Under warranty", "Non-accidental"],
+    ev: { batteryKwh: 42, rangeKm: 390, charger: "11 kW AC wallbox · DC 10–80% ~58 min", batteryWarranty: "8 yrs / 1,60,000 km" }, blockedFor: null },
+  { id: "D3", kind: "demo", brand: "Hyundai", model: "Venue", variant: "HX8", year: 2025, color: "Dragon Red",
+    vin: "MALCDEMO00003", chassis: "CHD10003", engineNo: "END10003",
+    regNo: "TS07 DM 0033", regCity: "Hyderabad", odometer: 6540, fuel: "Petrol", transmission: "Automatic (DCT)", owners: 1, branch: BR1,
+    cost: { purchase: 1340000, refurb: 18000 }, ask: 1460000, floor: 1400000, daysInStock: 88, enquiries: 2, testDrives: 9, readiness: "retail_ready",
+    inspection: { engine: 4.5, ac: 5, steering: 4.5, exterior: 4, interior: 4 }, defects: ["Minor stone chips on bonnet", "Rear parcel tray scuffed"],
+    docs: HY_DOCS_OK, insuranceTill: "Jun 2027", photos: 19, highlights: ["Dealership demo", "Full service history", "Under warranty"], blockedFor: null },
+  { id: "D4", kind: "demo", brand: "Hyundai", model: "Exter", variant: "HX6 AMT", year: 2026, color: "Ranger Khaki",
+    vin: "MALCDEMO00004", chassis: "CHD10004", engineNo: "END10004",
+    regNo: "TS07 DM 5106", regCity: "Hyderabad", odometer: 3300, fuel: "Petrol", transmission: "Automatic (AMT)", owners: 1, branch: BR1,
+    cost: { purchase: 880000, refurb: 6000 }, ask: 945000, floor: 915000, daysInStock: 30, enquiries: 3, testDrives: 8, readiness: "retail_ready",
+    inspection: { engine: 5, ac: 5, steering: 5, exterior: 4.5, interior: 5 }, defects: ["Small scuff on rear bumper"],
+    docs: HY_DOCS_OK, insuranceTill: "Mar 2028", photos: 22, highlights: ["Dealership demo", "Under warranty", "Non-accidental"], blockedFor: null },
+  { id: "D5", kind: "demo", brand: "Hyundai", model: "Verna", variant: "HX8", year: 2026, color: "Starry Night",
+    vin: "MALCDEMO00005", chassis: "CHD10005", engineNo: "END10005",
+    regNo: "TS09 DM 2287", regCity: "Hyderabad", odometer: 1450, fuel: "Petrol", transmission: "Automatic (DCT)", owners: 1, branch: BR2,
+    cost: { purchase: 1780000, refurb: 0 }, ask: 1890000, floor: 1840000, daysInStock: 12, enquiries: 5, testDrives: 4, readiness: "retail_ready",
+    inspection: { engine: 5, ac: 5, steering: 5, exterior: 5, interior: 5 }, defects: [],
+    docs: HY_DOCS_OK, insuranceTill: "May 2028", photos: 24, highlights: ["Dealership demo", "Nearly new", "Under warranty", "Non-accidental"], blockedFor: null },
+  { id: "D6", kind: "demo", brand: "Hyundai", model: "i20", variant: "Asta (O) iVT", year: 2026, color: "Polar White",
+    vin: "MALCDEMO00006", chassis: "CHD10006", engineNo: "END10006",
+    regNo: "TS09 DM 3141", regCity: "Hyderabad", odometer: 2950, fuel: "Petrol", transmission: "Automatic (IVT)", owners: 1, branch: BR2,
+    cost: { purchase: 1110000, refurb: 4000 }, ask: 1190000, floor: 1150000, daysInStock: 22, enquiries: 4, testDrives: 7, readiness: "retail_ready",
+    inspection: { engine: 5, ac: 5, steering: 5, exterior: 4.5, interior: 5 }, defects: [],
+    docs: HY_DOCS_OK, insuranceTill: "Apr 2028", photos: 20, highlights: ["Dealership demo", "Under warranty", "Non-accidental"], blockedFor: null },
+  { id: "D7", kind: "demo", brand: "Hyundai", model: "Alcazar", variant: "Prestige", year: 2026, color: "Abyss Black",
+    vin: "MALCDEMO00007", chassis: "CHD10007", engineNo: "END10007",
+    regNo: "TS07 DM 7720", regCity: "Hyderabad", odometer: 5200, fuel: "Petrol", transmission: "Automatic (DCT)", owners: 1, branch: BR1,
+    cost: { purchase: 1880000, refurb: 9000 }, ask: 2010000, floor: 1950000, daysInStock: 47, enquiries: 3, testDrives: 10, readiness: "retail_ready",
+    inspection: { engine: 5, ac: 5, steering: 4.5, exterior: 4.5, interior: 4.5 }, defects: ["Third-row seat fabric lightly marked"],
+    docs: HY_DOCS_OK, insuranceTill: "Dec 2027", photos: 23, highlights: ["Dealership demo", "6/7-seater", "Under warranty"], blockedFor: null },
+  { id: "D8", kind: "demo", brand: "Hyundai", model: "Grand i10 Nios", variant: "Asta AMT", year: 2026, color: "Aqua Teal",
+    vin: "MALCDEMO00008", chassis: "CHD10008", engineNo: "END10008",
+    regNo: "TS09 DM 8812", regCity: "Hyderabad", odometer: 3900, fuel: "Petrol", transmission: "Automatic (AMT)", owners: 1, branch: BR2,
+    cost: { purchase: 830000, refurb: 3000 }, ask: 885000, floor: 860000, daysInStock: 35, enquiries: 2, testDrives: 6, readiness: "photos",
+    inspection: { engine: 5, ac: 4.5, steering: 5, exterior: 4.5, interior: 4.5 }, defects: [],
+    docs: HY_DOCS_OK, insuranceTill: "Feb 2028", photos: 8, highlights: ["Dealership demo", "Under warranty"], blockedFor: null },
+  { id: "P1", kind: "used", brand: "Hyundai", model: "Creta", variant: "SX MT Petrol", year: 2022, color: "Abyss Black",
+    vin: "MALCUSED00001", chassis: "CHU10001", engineNo: "ENU10001",
+    regNo: "TS09 EA 4471", regCity: "Hyderabad", odometer: 38200, fuel: "Petrol", transmission: "Manual", owners: 1, branch: BR1,
+    // Money the customer never sees.
+    cost: { purchase: 1080000, refurb: 46000 }, ask: 1340000, floor: 1265000, daysInStock: 18, enquiries: 6, testDrives: 2, readiness: "retail_ready",
+    inspection: { engine: 4.5, ac: 5, steering: 4, exterior: 4, interior: 4.5 }, defects: ["Minor scuff on rear bumper", "Both front tyres at ~40% tread"],
+    docs: HY_DOCS_OK, insuranceTill: "Mar 2027", photos: 21, highlights: ["Single owner", "Full service history", "Non-accidental", "Original paint"], blockedFor: null },
+  { id: "P2", kind: "used", brand: "Maruti Suzuki", model: "Swift", variant: "VXi", year: 2019, color: "Pearl Arctic White",
+    vin: "MA3USED00002", chassis: "CHU10002", engineNo: "ENU10002",
+    regNo: "TS08 FB 9902", regCity: "Hyderabad", odometer: 61700, fuel: "Petrol", transmission: "Manual", owners: 2, branch: BR2,
+    cost: { purchase: 395000, refurb: 28000 }, ask: 499000, floor: 468000, daysInStock: 63, enquiries: 2, testDrives: 0, readiness: "retail_ready",
+    inspection: { engine: 4, ac: 3.5, steering: 4, exterior: 3.5, interior: 4 }, defects: ["AC cooling weak — gas top-up done, monitor", "Windscreen chip, passenger side", "Alloy kerb rash x2"],
+    docs: { rc: true, insurance: true, noc: true, service: false, duplicate: false }, insuranceTill: "Nov 2026", photos: 18,
+    highlights: ["Exchange intake", "Accident-free", "New battery"], blockedFor: null },
+  { id: "P3", kind: "used", brand: "Hyundai", model: "Verna", variant: "HX6", year: 2024, color: "Atlas White",
+    vin: "MALCUSED00003", chassis: "CHU10003", engineNo: "ENU10003",
+    regNo: "TS10 GC 1188", regCity: "Hyderabad", odometer: 22400, fuel: "Petrol", transmission: "Automatic (IVT)", owners: 1, branch: BR1,
+    cost: { purchase: 1040000, refurb: 22000 }, ask: 1280000, floor: 1195000, daysInStock: 6, enquiries: 9, testDrives: 4, readiness: "photos",
+    inspection: { engine: 5, ac: 5, steering: 4.5, exterior: 4.5, interior: 5 }, defects: [],
+    docs: HY_DOCS_OK, insuranceTill: "Aug 2027", photos: 6, highlights: ["Single owner", "Under warranty till 2027", "Full service history", "Non-accidental"], blockedFor: null },
+  { id: "P5", kind: "used", brand: "Maruti Suzuki", model: "Baleno", variant: "Zeta", year: 2021, color: "Grandeur Grey",
+    vin: "MA3USED00005", chassis: "CHU10005", engineNo: "ENU10005",
+    regNo: "TS08 JK 5521", regCity: "Hyderabad", odometer: 44300, fuel: "Petrol", transmission: "Manual", owners: 1, branch: BR2,
+    cost: { purchase: 585000, refurb: 29000 }, ask: 725000, floor: 678000, daysInStock: 31, enquiries: 3, testDrives: 1, readiness: "retail_ready",
+    inspection: { engine: 4, ac: 4.5, steering: 4, exterior: 4, interior: 4 }, defects: ["Rear bumper repainted"],
+    docs: HY_DOCS_OK, insuranceTill: "Sep 2026", photos: 17, highlights: ["Single owner", "Exchange intake", "Full service history"], blockedFor: null },
+  { id: "P6", kind: "used", brand: "Tata", model: "Nexon", variant: "XZ+", year: 2022, color: "Daytona Grey",
+    vin: "MAT6USED00006", chassis: "CHU10006", engineNo: "ENU10006",
+    regNo: "TS10 LM 7734", regCity: "Hyderabad", odometer: 33900, fuel: "Petrol", transmission: "Manual", owners: 1, branch: BR1,
+    cost: { purchase: 790000, refurb: 34000 }, ask: 965000, floor: 902000, daysInStock: 12, enquiries: 5, testDrives: 2, readiness: "photos",
+    inspection: { engine: 4.5, ac: 4, steering: 4, exterior: 4, interior: 4.5 }, defects: ["Front left alloy kerb rash"],
+    docs: { rc: true, insurance: true, noc: true, service: false, duplicate: true }, insuranceTill: "Dec 2026", photos: 9,
+    highlights: ["Single owner", "Exchange intake", "5-star safety"], blockedFor: null },
+  { id: "P4", kind: "used", brand: "Hyundai", model: "Venue", variant: "HX6T", year: 2020, color: "Fiery Red",
+    vin: "MALCUSED00004", chassis: "CHU10004", engineNo: "ENU10004",
+    regNo: "AP16 HD 3390", regCity: "Vijayawada", odometer: 74800, fuel: "Petrol", transmission: "Manual", owners: 2, branch: BR2,
+    cost: { purchase: 520000, refurb: 71000 }, ask: 690000, floor: 640000, daysInStock: 104, enquiries: 1, testDrives: 0, readiness: "docs_pending",
+    inspection: { engine: 3.5, ac: 4, steering: 3, exterior: 3, interior: 3.5 },
+    defects: ["Clutch nearing replacement", "Rear-left door repainted", "Suspension noise over bumps", "Other-state registration — NOC pending"],
+    docs: { rc: true, insurance: false, noc: false, service: false, duplicate: true }, insuranceTill: "Expired", photos: 14,
+    highlights: ["Priced to move"], blockedFor: null },
+];
+const USED_STOCK = IS_HYUNDAI ? HY_USED_STOCK : [
   {
     id: "D1", kind: "demo", brand: "River",
     model: "Indie", variant: "750W", year: 2026, color: "Monsoon Blue",
@@ -9510,7 +9767,7 @@ function ScoreStars({ score, size = 11 }) {
 // Photo strip. Real listings carry 15–25 shots; what a rep needs to know at a glance is
 // whether the set is complete enough to send to a customer.
 function PhotoStrip({ unit, onAddPhotos }) {
-  const cats = ["Body", "Seat & storage", "Tyres", "Motor / engine", "Damage"];
+  const cats = hy(["Exterior", "Interior", "Tyres", "Engine bay", "Damage"], ["Body", "Seat & storage", "Tyres", "Motor / engine", "Damage"]);
   const enough = unit.photos >= 15;
   return (
     <div>
@@ -9805,7 +10062,7 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
                     <span style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ display: "block", fontFamily: F, fontSize: 12, fontWeight: 700, color: C.ink }}>{l.name}</span>
                       <span style={{ display: "block", fontFamily: F, fontSize: 10, color: C.faint }}>
-                        {l.stage} · {l.phone}
+                        {stageText(l.stage)} · {l.phone}
                       </span>
                     </span>
                     <button onClick={() => showToast && showToast(`Shared ${unit.year} ${unit.model} with ${l.name.split(" ")[0]}`)}
@@ -9834,10 +10091,10 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
               </>
             ) : (
               <>
-                <button onClick={() => showToast && showToast("Test ride request sent to the branch")}
+                <button onClick={() => showToast && showToast(`${TestNoun} request sent to the branch`)}
                   style={{ flex: 1, background: C.card, border: `1.5px solid ${C.borderStrong}`, borderRadius: 9,
                     padding: "10px 0", cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.sub }}>
-                  Book test ride
+                  Book {testNoun}
                 </button>
                 <button onClick={() => onBlock(unit)} style={{
                   flex: 1, background: C.primary, border: "none", borderRadius: 9, padding: "10px 0",
@@ -9870,7 +10127,7 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
 const DECLINE_REASONS = [
   {
     key: "car_issue",
-    label: "Issue with this specific scooter",
+    label: `Issue with this specific ${VEHICLE}`,
     hint: "Damage, higher odometer on the transit unit, wrong build month",
     outcome: "Position kept — the customer stays first in line for the next arrival.",
   },
@@ -9973,7 +10230,7 @@ function AllotmentBanner({ allotment, onAccept, onDecline }) {
         <CheckCircle2 size={15} color={C.green} style={{ flexShrink: 0, marginTop: 1 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: F, fontSize: 12, fontWeight: 800, color: C.green }}>
-            Scooter arrived — auto-allotted to {allotment.name}
+            {Vehicle} arrived — auto-allotted to {allotment.name}
           </div>
           <div style={{ fontFamily: F, fontSize: 10.5, color: C.sub, marginTop: 3, lineHeight: 1.45 }}>
             {allotment.model} {allotment.variant} · {allotment.color} · VIN {allotment.vin}
@@ -9987,7 +10244,7 @@ function AllotmentBanner({ allotment, onAccept, onDecline }) {
         <button onClick={() => onDecline(allotment)} style={{
           flex: 1, background: C.card, border: `1.5px solid ${C.borderStrong}`, borderRadius: 9,
           padding: "9px 0", cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.sub,
-        }}>Decline this scooter</button>
+        }}>Decline this {VEHICLE}</button>
         <button onClick={() => onAccept(allotment)} style={{
           flex: 1.3, background: C.green, border: "none", borderRadius: 9, padding: "9px 0",
           cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 800, color: "#fff",
@@ -10037,7 +10294,7 @@ function DeclineAllotmentSheet({ allotment, onClose, onConfirm }) {
           <div style={{ display: "flex", gap: 7, background: C.bg, borderRadius: 9, padding: "10px 11px", marginTop: 4 }}>
             <AlertTriangle size={13} color={C.sub} style={{ flexShrink: 0, marginTop: 1 }} />
             <span style={{ fontFamily: F, fontSize: 10.5, color: C.sub, lineHeight: 1.45 }}>
-              <strong>What happens: </strong>{picked.outcome} The scooter goes back to available stock either way.
+              <strong>What happens: </strong>{picked.outcome} The {VEHICLE} goes back to available stock either way.
             </span>
           </div>
         )}
@@ -10108,7 +10365,22 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
   const [openVariant, setOpenVariant] = useState(null);
   const [openColor, setOpenColor] = useState(null);
   const [blockingUnit, setBlockingUnit] = useState(null);
-  const [waitlist, setWaitlist] = useState([
+  const [waitlist, setWaitlist] = useState(IS_HYUNDAI ? [
+    // Hyundai: every Venue HX10 Dragon Red is held (SEEDED_HOLD_COMBOS) — nothing free.
+    { id: "w1", model: "Venue", variant: "HX10", color: "Dragon Red",
+      leadId: 3, name: "Ajay Pillai", phone: "+91 9000000003",
+      by: "Divya Pillai", at: d(-9), status: "waiting" },
+    { id: "w2", model: "Venue", variant: "HX10", color: "Dragon Red",
+      leadId: 5, name: "Sunita Gupta", phone: "+91 9000000005",
+      by: "Rahul Kumar", at: d(-4), status: "waiting" },
+    // Creta SX MT Petrol Titan Grey — all held, one more in transit to Kondapur (SEEDED_TRANSIT).
+    { id: "w3", model: "Creta", variant: "SX MT Petrol", color: "Titan Grey",
+      leadId: 4, name: "Meena Rao", phone: "+91 9000000004",
+      by: "Rahul Kumar", at: d(-6), status: "waiting" },
+    { id: "w4", model: "Creta", variant: "SX MT Petrol", color: "Titan Grey",
+      leadId: 6, name: "Rahul Mehta", phone: "+91 9000000001",
+      by: "Rahul Kumar", at: d(-2), status: "waiting" },
+  ] : [
     // Seeded so the queue mechanic is visible without having to build one up first. Every
     // 480W Spring Yellow at both stores is already held (see SEEDED_HOLD_COMBOS) — nothing free.
     { id: "w1", model: "Indie", variant: "480W", color: "Spring Yellow",
@@ -10173,7 +10445,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
         ? { ...w, status: "allotted", vin: unit.vin, unitId: unit.id } : w));
       showToast(`🚗 Arrived — auto-allotted to ${first.name.split(" ")[0]}`);
     } else {
-      showToast("🛵 Scooter arrived — added to available stock");
+      showToast(`${hy("🚗", "🛵")} ${Vehicle} arrived — added to available stock`);
     }
   };
 
@@ -10181,7 +10453,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
     setUnits(us => us.map(u => u.id === a.unitId
       ? { ...u, blockedFor: { ...u.blockedFor, pending: false } } : u));
     setWaitlist(ws => ws.filter(w => w.id !== a.id));
-    showToast(`✅ ${a.name.split(" ")[0]} confirmed — scooter held`);
+    showToast(`✅ ${a.name.split(" ")[0]} confirmed — ${VEHICLE} held`);
   };
 
   // Declining always frees the scooter. What differs is what happens to the queue place.
@@ -10198,7 +10470,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
     const unit = units.find(u => u.id === a.unitId);
     if (unit) setTimeout(() => releaseAndCascade(unit, "Declined"), 0);
     showToast(reason === "car_issue"
-      ? `Scooter released — ${a.name.split(" ")[0]} keeps position 1`
+      ? `${Vehicle} released — ${a.name.split(" ")[0]} keeps position 1`
       : reason === "changed_colour"
         ? `Removed from this queue — add ${a.name.split(" ")[0]} to the right colour`
         : `${a.name.split(" ")[0]} removed from the waitlist`);
@@ -10237,7 +10509,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
     // customer, and whoever picks the file up next needs to see which scooter was held and why.
     const changed = mismatches.length > 0 && resolution === "finalise";
     const note = changed
-      ? `Scooter finalised — ${unit.model} ${unit.variant} in ${unit.color} (VIN ${unit.vin}) blocked. Booking updated from ${mismatches.map(m => `${m.field}: ${m.booked} → ${m.unit}`).join(", ")}. Customer confirmed the change. Blocked by ${currentUser?.name || "an SE"}.`
+      ? `${Vehicle} finalised — ${unit.model} ${unit.variant} in ${unit.color} (VIN ${unit.vin}) blocked. Booking updated from ${mismatches.map(m => `${m.field}: ${m.booked} → ${m.unit}`).join(", ")}. Customer confirmed the change. Blocked by ${currentUser?.name || "an SE"}.`
       : `${unit.model} ${unit.variant} in ${unit.color} (VIN ${unit.vin}) blocked for this customer by ${currentUser?.name || "an SE"}.`;
 
     if (onUpdateLead) {
@@ -10287,10 +10559,10 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
     return next;
   };
 
-  const doRelease = (unit) => releaseAndCascade(unit, "Scooter released");
+  const doRelease = (unit) => releaseAndCascade(unit, `${Vehicle} released`);
 
   const CATEGORIES = [
-    { key: "new",  label: "New Scooters" },
+    { key: "new",  label: `New ${Vehicles}` },
     { key: "used", label: "Pre-owned" },
   ];
 
@@ -10354,7 +10626,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
         <div style={{ display: "flex", gap: 7, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 9, padding: "8px 10px", marginBottom: 10 }}>
           <AlertTriangle size={13} color={C.faint} style={{ flexShrink: 0, marginTop: 1 }} />
           <span style={{ fontFamily: F, fontSize: 10.5, color: C.sub, lineHeight: 1.4 }}>
-            Availability and waiting periods only. The assigned Sales Executive allocates a specific scooter.
+            Availability and waiting periods only. The assigned Sales Executive allocates a specific {VEHICLE}.
           </span>
         </div>
       )}
@@ -10437,14 +10709,14 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
           {shown.length === 0 && (
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12,
               padding: 22, textAlign: "center", fontFamily: F, fontSize: 12.5, color: C.sub }}>
-              No pre-owned two-wheelers match these filters.
+              No pre-owned {VEHICLES} match these filters.
             </div>
           )}
 
           {shown.map(u => (
             <UsedCarCard key={u.id} unit={u} leads={leads} currentUser={currentUser}
               showToast={showToast}
-              onBlock={canAllocate ? setBlockingUnit : () => showToast && showToast("Only a Sales Executive can hold a scooter")}
+              onBlock={canAllocate ? setBlockingUnit : () => showToast && showToast(`Only a Sales Executive can hold a ${VEHICLE}`)}
               onRelease={doRelease} onAddPhotos={setAddingPhotos} />
           ))}
         </>
@@ -10481,7 +10753,8 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
             {mOpen && (
               <div style={{ padding: "0 14px 10px" }}>
                 <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, lineHeight: 1.4, padding: "0 0 8px" }}>
-                  Stock is held by charger. River Care Plus Two / Plus Five is added at booking — every plan draws on the same 750W or 480W scooters below.
+                  {hy("Stock is held by variant and colour across both showrooms. Extended warranty, Shield of Trust and accessories are added at booking.",
+                    "Stock is held by charger. River Care Plus Two / Plus Five is added at booking — every plan draws on the same 750W or 480W scooters below.")}
                 </div>
                 {variants.map(variant => {
                   const vUnits = mUnits.filter(u => u.variant === variant);
@@ -10491,7 +10764,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, canAlloc
                   // case the waitlist exists for, so it has to be visible to queue against.
                   const stockedColors = [...new Set(vUnits.map(u => u.color))];
                   const colors = canAllocate
-                    ? [...new Set([...stockedColors, ...COLOR_OPTIONS])]
+                    ? [...new Set([...stockedColors, ...colourOptionsFor(model, variant)])]
                     : stockedColors;
                   return (
                     <div key={variant} style={{ borderTop: `1px solid ${C.border}` }}>
@@ -10847,7 +11120,7 @@ function StatTile({ label, value, sub, delta, accent }) {
    knowledge to sound credible for ninety seconds. The comparison cards are the part
    that matters most in practice — "why not the Rizta" is the question that ends calls. */
 
-const OBJECTIONS = [
+const RIVER_OBJECTIONS = [
   {
     id: "price",
     trigger: "It's too expensive",
@@ -10892,13 +11165,70 @@ const OBJECTIONS = [
   },
 ];
 
+// Hyundai wording for the objections that are about the product (same ids, same order).
+const HY_OBJECTIONS = {
+  price: { say: "I understand. Can I ask what figure you're comparing it against? Sometimes we're looking at ex-showroom on one side and on-road on the other, which makes a ₹1–2 lakh difference on paper that isn't really there." },
+  competitor: {
+    trigger: "I'm also looking at the Kia Seltos / Tata Nexon",
+    say: "That's a fair shortlist, it's a good car. The two things owners tell us matter after a couple of years are service reach and resale — can I show you how the two compare on both?",
+  },
+  family: {
+    say: "That makes sense, it's a family car. Would a weekend test drive work, so everyone can see it together? That usually settles it faster than photos.",
+    avoid: "Don't keep selling to someone who can't say yes. Get the group in front of the car.",
+  },
+};
+const OBJECTIONS = IS_HYUNDAI ? RIVER_OBJECTIONS.map(o => ({ ...o, ...HY_OBJECTIONS[o.id] })) : RIVER_OBJECTIONS;
+
 const CALL_OPENERS = [
-  { label: "New enquiry", text: "Good morning, am I speaking with {name}? This is {me} from Epic River. You'd enquired about the {model} — is this a good time to talk for two minutes?" },
-  { label: "Reactivating an old lead", text: "Hello {name}, {me} from Epic River. We'd spoken a while back about the {model}. There are some new offers this month — would it be worth me sharing them?" },
-  { label: "Missed follow-up", text: "Hi {name}, {me} from Epic River. I owe you a call from last week about the {model} — apologies for the delay. Where did you get to on it?" },
+  { label: "New enquiry", text: `Good morning, am I speaking with {name}? This is {me} from ${DEALER}. You'd enquired about the {model} — is this a good time to talk for two minutes?` },
+  { label: "Reactivating an old lead", text: `Hello {name}, {me} from ${DEALER}. We'd spoken a while back about the {model}. There are some new offers this month — would it be worth me sharing them?` },
+  { label: "Missed follow-up", text: `Hi {name}, {me} from ${DEALER}. I owe you a call from last week about the {model} — apologies for the delay. Where did you get to on it?` },
 ];
 
-const COMPARISONS = [
+const HY_COMPARISONS = [
+  {
+    ours: "Creta", theirs: "Kia Seltos", segment: "Mid-size SUV",
+    headline: "Same platform, same engines — the difference is what happens after the sale.",
+    points: [
+      { us: "Widest service network in the segment", them: "Fewer touchpoints outside metros", note: "Matters most for tier-2/3 buyers and anyone who travels" },
+      { us: "Strongest resale in segment over 5 years", them: "Resale trails by a noticeable margin", note: "Worth quantifying in rupees, not adjectives" },
+      { us: "Diesel-automatic across more trims", them: "Limited diesel-AT availability", note: "Only raise if they've asked about diesel" },
+    ],
+    watchOut: "Seltos genuinely has a sharper interior design. If they've seen it, acknowledge that rather than arguing — then move to ownership costs.",
+  },
+  {
+    ours: "Venue", theirs: "Tata Nexon", segment: "Compact SUV",
+    headline: "Nexon leads on crash rating — don't fight that. Compete on refinement and running costs.",
+    points: [
+      { us: "Smoother turbo-petrol and DCT gearbox", them: "More vibration at idle, notchier shift", note: "Best demonstrated on a test drive, not described" },
+      { us: "Better cabin fit and finish", them: "Panel gaps and switchgear vary", note: "Let them touch it — this argument wins in person" },
+      { us: "Lower routine service cost", them: "Higher per-service outgo", note: "Bring the actual service schedule sheet" },
+    ],
+    watchOut: "If safety rating is their main criterion, be honest — Nexon rates higher. Pivot to overall ownership rather than disputing the score.",
+  },
+  {
+    ours: "Alcazar", theirs: "Mahindra XUV700", segment: "7-seater SUV",
+    headline: "XUV700 wins on power and price. Alcazar wins on the third row actually being usable.",
+    points: [
+      { us: "Genuinely usable third row for adults", them: "Third row best for children", note: "Ask who will sit there — this decides it" },
+      { us: "Quieter cabin at highway speeds", them: "More road and engine noise", note: "Long-distance families notice within minutes" },
+      { us: "Shorter, more predictable waiting period", them: "Long and variable waits", note: "Check current allocation before quoting" },
+    ],
+    watchOut: "Don't compete on straight-line performance — you'll lose. Move the conversation to who's actually travelling in the car.",
+  },
+  {
+    ours: "Creta Electric", theirs: "Tata Nexon EV", segment: "Electric SUV",
+    headline: "Nexon EV is cheaper to get into. Creta Electric wins on range, space and how it feels as a family car.",
+    points: [
+      { us: "Up to 473 km ARAI range on the 51.4 kWh pack", them: "Lower certified range", note: "Quote certified figures, never estimates" },
+      { us: "Bigger cabin and boot — a mid-size SUV", them: "Compact SUV proportions", note: "Ask who travels in it every day" },
+      { us: "Hyundai service network and 8-yr battery warranty", them: "Service reach varies by city", note: "First question most EV buyers ask" },
+    ],
+    watchOut: "Nexon EV is materially cheaper. If budget is the constraint, compare on-road prices like for like — or steer to a petrol Creta instead of losing the customer entirely.",
+  },
+];
+
+const COMPARISONS = IS_HYUNDAI ? HY_COMPARISONS : [
   {
     ours: "Indie", theirs: "Ather Rizta", segment: "Family electric scooter",
     headline: "Rizta wins on brand familiarity. Indie wins on everything a family actually loads onto it.",
@@ -10967,7 +11297,7 @@ const LEARN_LIBRARY = [
     blurb: "Usually a polite exit. How to earn another sixty seconds without arguing." },
   { id: "wrong-person", cat: "video", mins: 6, topic: "Objections",
     title: "When you've reached the wrong person", by: "Autoprism Sales Lab",
-    blurb: "Enquiries get filed under a brother, a driver, an office number. Finding the buyer without annoying whoever picked up." },
+    blurb: `Enquiries get filed under a brother, ${hy("a cousin", "a driver")}, an office number. Finding the buyer without annoying whoever picked up.` },
 
   // ---- Podcasts ----
   { id: "tone", cat: "podcast", mins: 16, topic: "Communication",
@@ -10996,7 +11326,7 @@ const LEARN_LIBRARY = [
 
   // ---- Internal ----
   { id: "priya-45", cat: "internal", mins: 8, topic: "Qualifying",
-    title: "How I hold a 45% qualification rate", by: "Priya Nair · Aundh",
+    title: "How I hold a 45% qualification rate", by: `Priya Nair · ${BR1}`,
     blurb: "Where she sets the bar, and the two questions she asks before deciding to pass a lead on.", tag: "Most watched" },
   { id: "revive", cat: "internal", mins: 6, topic: "Follow-up",
     title: "Reviving a 90-day-old lead", by: "Priya Nair",
@@ -11242,9 +11572,12 @@ const FUNNEL_STAGES = [
   { key: "delivered",   label: "Delivered",   short: "Deliv" },
 ];
 
-const HIST_SOURCES = ["Website", "BikeDekho", "Referral", "Walk-in", "Facebook Ad", "OLX", "Justdial"];
-// One model, so the "model" slice is by Indie variant (charger × River Care plan).
-const HIST_MODELS  = ["Indie 750W", "Indie 750W + Plus Two", "Indie 750W + Plus Five", "Indie 480W", "Indie 480W + Plus Two", "Indie 480W + Plus Five"];
+const PORTAL = hy("CarDekho", "BikeDekho");   // the big listings portal for this OEM's buyers
+const HIST_SOURCES = ["Website", PORTAL, "Referral", "Walk-in", "Facebook Ad", "OLX", "Justdial"];
+// River: one model, so the "model" slice is by Indie variant (charger × River Care plan).
+// Hyundai: by model.
+const HIST_MODELS  = hy(["Creta", "Venue", "Exter", "Grand i10 Nios", "i20", "Verna", "Alcazar", "Aura"],
+  ["Indie 750W", "Indie 750W + Plus Two", "Indie 750W + Plus Five", "Indie 480W", "Indie 480W + Plus Two", "Indie 480W + Plus Five"]);
 
 // Per-source conversion character — referrals close, portals leak early. Having sources
 // behave differently is what makes the source slice worth looking at.
@@ -11252,7 +11585,7 @@ const SOURCE_PROFILE = {
   "Referral":    { contact: 0.95, opp: 0.72, visit: 0.60, book: 0.42, retail: 0.38 },
   "Walk-in":     { contact: 0.98, opp: 0.66, visit: 0.58, book: 0.36, retail: 0.33 },
   "Website":     { contact: 0.88, opp: 0.48, visit: 0.32, book: 0.18, retail: 0.15 },
-  "BikeDekho":   { contact: 0.72, opp: 0.34, visit: 0.20, book: 0.10, retail: 0.08 },
+  [PORTAL]:      { contact: 0.72, opp: 0.34, visit: 0.20, book: 0.10, retail: 0.08 },
   "Facebook Ad": { contact: 0.61, opp: 0.24, visit: 0.13, book: 0.06, retail: 0.05 },
   "OLX":         { contact: 0.66, opp: 0.29, visit: 0.17, book: 0.08, retail: 0.06 },
   "Justdial":    { contact: 0.70, opp: 0.31, visit: 0.18, book: 0.09, retail: 0.07 },
@@ -11277,7 +11610,7 @@ function buildHistory(seed = 11) {
       const visit       = opportunity && rnd() < p.visit / p.opp;
       const booking     = visit       && rnd() < p.book / p.visit;
       const retailed    = booking     && rnd() < p.retail / p.book;
-      // Delivery lags — a scooter booked this month is often delivered next.
+      // Delivery lags — a vehicle booked this month is often delivered next.
       const delivered   = retailed    && (m > 0 || rnd() < 0.55);
       rows.push({ month: monthDate, monthIdx: m, source, model,
         contacted, opportunity, visit, booking, retailed, delivered });
@@ -11420,7 +11753,7 @@ function buildInsights({ rows, totals, prevTotals, bySource, byModel, role }) {
       title: `${worst.from} → ${worst.to} is your biggest leak`,
       body: `Only ${worst.rate}% get through — ${worst.lost} leads stop here. `
         + (worst.to === "Visit"
-            ? "Getting people onto a scooter is the step that most predicts a sale; try offering a home test ride."
+            ? hy("Getting people into a car is the step that most predicts a sale; try offering a home test drive.", "Getting people onto a scooter is the step that most predicts a sale; try offering a home test ride.")
             : worst.to === "Booking"
             ? "Deals stall here on price or family approval. Ask what's unresolved before the drive ends, not after."
             : worst.to === "Contacted"
@@ -11497,8 +11830,8 @@ function buildInsights({ rows, totals, prevTotals, bySource, byModel, role }) {
     if (stalled > 5) {
       out.push({
         tone: "info",
-        title: `${stalled} opportunities never took a test ride`,
-        body: `These are people who showed real interest and then didn't get on a scooter. `
+        title: `${stalled} opportunities never took a ${testNoun}`,
+        body: `These are people who showed real interest and then didn't get ${hy("behind the wheel", "on a scooter")}. `
           + `It's usually the cheapest conversion available to you this month.`,
       });
     }
@@ -11592,7 +11925,7 @@ function DashboardScreen({ leads }) {
   })).filter(r => r.q > 0).sort((a, b) => b.rate - a.rate);
 
   const RANGES = [{ k: 1, l: "This month" }, { k: 3, l: "3 months" }, { k: 6, l: "6 months" }];
-  const DIMS = [{ k: "month", l: "By month" }, { k: "source", l: "By source" }, { k: "model", l: "By variant" }];
+  const DIMS = [{ k: "month", l: "By month" }, { k: "source", l: "By source" }, { k: "model", l: hy("By model", "By variant") }];
   const drillRow = tableRows.find(r => r.label === drill);
 
   return (
@@ -11605,7 +11938,7 @@ function DashboardScreen({ leads }) {
       <MetricGrid style={{ marginBottom: 12 }}>
         <KpiTile label="Contacted · this month" value={thisM.contacted} prev={lastM.contacted} />
         <KpiTile label="Qualified · this month" value={thisM.opportunity} prev={lastM.opportunity} accent={C.primary} />
-        <KpiTile label="Test rides · this month" value={thisM.visit} prev={lastM.visit} accent={C.warm} />
+        <KpiTile label={`${TestNounPlural} · this month`} value={thisM.visit} prev={lastM.visit} accent={C.warm} />
         <KpiTile hero label="Retailed · this month" value={thisM.retailed} prev={lastM.retailed} accent={C.green} />
       </MetricGrid>
 
