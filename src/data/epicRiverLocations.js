@@ -18,9 +18,15 @@
      format    Flagship (≈3,000 sq ft) · Store (≈900 sq ft, River's standard) · Express (≈400 sq ft)
      opened    "YYYY-MM"
      real      true = an existing River Store address from River's dealer locator
-     address, phone   only on real rows                                                    */
+     address, phone   only on real rows
 
-export const GROUP = {
+   OEM-aware: with ?oem=hyundai, GROUP / ZONES / LOCATIONS come from ./hyundaiLocations.js instead
+   (36 Autoprism Hyundai outlets, same row shape). The River rows below are unchanged.        */
+
+import { IS_HYUNDAI } from "../oem/index.js";
+import * as HY from "./hyundaiLocations.js";
+
+const RIVER_GROUP = {
   name: "Epic River",
   parent: "Raam Group",
   hq: "Hyderabad",
@@ -29,11 +35,14 @@ export const GROUP = {
   targetOutlets: 100,
 };
 
-export const ZONES = [
+export const GROUP = IS_HYUNDAI ? HY.GROUP : RIVER_GROUP;
+
+const RIVER_ZONES = [
   { key: "TG-AP", label: "Telangana & Andhra", states: ["Telangana", "Andhra Pradesh"] },
   { key: "WEST", label: "Maharashtra", states: ["Maharashtra"] },
   { key: "SOUTH", label: "Tamil Nadu & Karnataka", states: ["Tamil Nadu", "Karnataka"] },
 ];
+export const ZONES = IS_HYUNDAI ? HY.ZONES : RIVER_ZONES;
 
 const R = (locality, city, state, cluster, format, opened, address, phone) =>
   ({ locality, city, state, cluster, format, opened, real: true, address, phone });
@@ -152,9 +161,9 @@ const ROWS = [
   P("Kankanady", "Mangaluru", "Karnataka", "Karnataka Districts", "Express", "2026-09"),
 ];
 
-export const LOCATIONS = ROWS.map((r, i) => {
+export const LOCATIONS = (IS_HYUNDAI ? HY.ROWS : ROWS).map((r, i) => {
   const zone = ZONES.find(z => z.states.includes(r.state)).key;
-  return { id: `L${String(i + 1).padStart(3, "0")}`, name: `Epic River — ${r.locality}`, zone, ...r };
+  return { id: `L${String(i + 1).padStart(3, "0")}`, name: `${GROUP.name} — ${r.locality}`, zone, ...r };
 });
 
 /** Months a location has been open as of the demo's "today" (Nov 2026). */
