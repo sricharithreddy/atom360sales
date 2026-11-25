@@ -3,16 +3,54 @@ import { stockFor, unitsOf, PUNE_STORES, INVENTORY_AS_OF } from "../data/epicRiv
 import { MetricBox, MetricGrid } from "../ui/MetricGlass.jsx";
 import { leadsFor } from "../data/epicRiverLeads.js";
 import {
+  OEM, IS_HYUNDAI, MODELS, VEHICLE, VEHICLES, Vehicle, Vehicles, testNoun, testNounPlural, TestNoun, TestNounPlural, TEST_TITLE,
+  BRAND, DEALER, findModel, findVariant, coloursOf, onRoadPrice, bookingAmountOf, fmtLakh,
+} from "../oem/index.js";
+import {
   AlertTriangle, PlayCircle, Headphones, MessageSquare, Flame, TrendingDown, TrendingUp, Settings, Wind, Eye, User, Calendar, MessageCircle, IndianRupee, Heart, RefreshCw,
-  Phone, Bike as ScooterIcon, FileText, ChevronLeft, ChevronRight,
+  Phone, Bike, Car, FileText, ChevronLeft, ChevronRight,
   Search, X, ChevronDown, ChevronUp, Check,
   Clock, Mail, MapPin, Users, Target,
   Bell, Globe, HelpCircle, LogOut, Lock, Trophy, Package,
-  CalendarClock, ClipboardList, Bike as CarFront,
+  CalendarClock, ClipboardList, CarFront as CarFrontIcon,
   Activity as PulseSignal, Scale, SplitSquareHorizontal, Landmark,
   Hourglass, VolumeX, UserPlus, Mic, Store, Camera, ShieldCheck,
   Navigation, BarChart3, Share2, Plus, Flag, SlidersHorizontal, CheckSquare, Square, Link2, Copy, Sparkles, CheckCircle2, AlertCircle, Pencil, Star, GraduationCap, ThumbsUp, ArrowRight, Award, Menu
 } from "lucide-react";
+
+/* ============================== OEM (Hyundai | River) ==============================
+   The demo runs as one OEM at a time (src/oem, picked by ?oem=). Every brand-specific word, list
+   and number in this file reads it: River = Epic River electric scooters (the original demo, output
+   unchanged), Hyundai = Autoprism Hyundai cars. Stage keys stay generic ("test_ride" in the shared
+   pool); the stage *label* is the OEM's test noun ("Test Ride" / "Test Drive"). */
+const VehicleIcon = IS_HYUNDAI ? Car : Bike;
+const CarFront = IS_HYUNDAI ? CarFrontIcon : Bike;
+const TEST_STAGE = TEST_TITLE;               // stage label: "Test Ride" / "Test Drive"
+const TEST_TITLE_PL = TEST_TITLE + "s";      // "Test Rides" / "Test Drives"
+const TEST_VERB = OEM.testVerb;              // "ride" / "drive"
+const VEH_EMOJI = IS_HYUNDAI ? "🚗" : "🛵";
+// The two showrooms this login works (ids L014 / L015 in both OEMs).
+const [BR_A, BR_B] = Object.keys(PUNE_STORES);  // River: Aundh, Shivaji Nagar · Hyundai: Kondapur, Banjara Hills
+const CITY = IS_HYUNDAI ? "Hyderabad" : "Pune";
+const PLAN_NOUN = IS_HYUNDAI ? "extended warranty" : "River Care plan";   // the protection product sold at booking
+const EXCHANGE_NOUN = IS_HYUNDAI ? "old car" : "old scooter";
+// Competitor words the call / note parsers listen for.
+const COMPETITOR_WORDS = IS_HYUNDAI
+  ? ["seltos", "sonet", "nexon", "brezza", "punch", "xuv", "grand vitara", "fronx", "baleno", "honda city", "kia", "maruti", "tata", "mahindra", "toyota"]
+  : ["ather", "rizta", "ola", "iqube", "chetak", "vida"];
+const EXCHANGE_WORDS = IS_HYUNDAI
+  ? ["exchange", "old car", "trade in", "trade-in", "his old", "her old", "i10", "santro", "swift", "wagon r", "alto", "dzire", "current car"]
+  : ["exchange", "old scooter", "old bike", "trade in", "trade-in", "his old", "her old", "activa", "jupiter", "access", "splendor", "pulsar"];
+
+// Hyundai on-road price in lakh (src/oem onRoadPrice: ex-showroom + life tax + insurance + registration + TCS).
+const carOnRoadLakh = (model, variant) => { const r = onRoadPrice(model, variant); return r ? Math.round(r.total / 1000) / 100 : null; };
+// Catalogue transmissions ("6MT", "IVT", "7DCT", "6MT / 7DCT") → the inventory filter's Manual / Automatic.
+const carTransmission = (t) => (/^\d?MT\b/.test(String(t || "")) ? "Manual" : "Automatic");
+// Colours a model / variant comes in (falls back to the whole palette).
+function colourOptionsFor(model, variant) {
+  const m = findModel(model);
+  return m ? coloursOf(m, variant || null).map(c => c.name) : COLOR_OPTIONS;
+}
 
 /* ============================== DESIGN TOKENS ============================== */
 const C = {
@@ -63,10 +101,10 @@ const F = `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
 // Single-role app: the person is always viewing as a Sales Executive. The other Sales
 // Executives are kept only so the Leaderboard has peers to rank against.
 const USERS = [
-  { id: 7, name: "Vikram Singh", role: "Sales Executive", reportsTo: null, email: "vikram.singh@autoprism.in", phone: "+91 98450 77889", branch: "Shivaji Nagar Showroom", target: 18, achieved: 16, monthlyStats: { calls: 52, whatsapp: 38 }, testDrives: 38, bookings: 20, leads: 96, respHrs: 2.9, streak: 6,  prevAchieved: 14, warrantyAttach: 13, addOns: 30, tdShowroom: 24, tdHome: 14, opportunity: 60 },
-  { id: 8, name: "Ananya Rao", role: "Sales Executive", reportsTo: null, email: "ananya.rao@autoprism.in", phone: "+91 98450 88990", branch: "Shivaji Nagar Showroom", target: 16, achieved: 7, monthlyStats: { calls: 24, whatsapp: 19 }, testDrives: 27, bookings: 9, leads: 84, respHrs: 1.1, streak: 4,  prevAchieved: 9, warrantyAttach: 2, addOns: 11, tdShowroom: 22, tdHome: 5, opportunity: 42 },
-  { id: 9, name: "Karthik Menon", role: "Sales Executive", reportsTo: null, email: "karthik.menon@autoprism.in", phone: "+91 98450 99001", branch: "Aundh Showroom", target: 12, achieved: 2, monthlyStats: { calls: 11, whatsapp: 7 }, testDrives: 13, bookings: 4, leads: 72, respHrs: 5.8, streak: 19, prevAchieved: 0, warrantyAttach: 0, addOns: 4, tdShowroom: 13, tdHome: 0, opportunity: 24 },
-  { id: 10, name: "Rahul Kumar", role: "Sales Executive", reportsTo: null, email: "rahul.kumar@autoprism.in", phone: "+91 98450 10112", branch: "Aundh Showroom", target: 14, achieved: 9, monthlyStats: { calls: 48, whatsapp: 26 }, testDrives: 50, bookings: 15, leads: 90, respHrs: 2.4, streak: 9,  prevAchieved: 5, warrantyAttach: 7, addOns: 24, tdShowroom: 44, tdHome: 6, opportunity: 68 },
+  { id: 7, name: "Vikram Singh", role: "Sales Executive", reportsTo: null, email: "vikram.singh@autoprism.in", phone: "+91 98450 77889", branch: `${BR_B} Showroom`, target: 18, achieved: 16, monthlyStats: { calls: 52, whatsapp: 38 }, testDrives: 38, bookings: 20, leads: 96, respHrs: 2.9, streak: 6,  prevAchieved: 14, warrantyAttach: 13, addOns: 30, tdShowroom: 24, tdHome: 14, opportunity: 60 },
+  { id: 8, name: "Ananya Rao", role: "Sales Executive", reportsTo: null, email: "ananya.rao@autoprism.in", phone: "+91 98450 88990", branch: `${BR_B} Showroom`, target: 16, achieved: 7, monthlyStats: { calls: 24, whatsapp: 19 }, testDrives: 27, bookings: 9, leads: 84, respHrs: 1.1, streak: 4,  prevAchieved: 9, warrantyAttach: 2, addOns: 11, tdShowroom: 22, tdHome: 5, opportunity: 42 },
+  { id: 9, name: "Karthik Menon", role: "Sales Executive", reportsTo: null, email: "karthik.menon@autoprism.in", phone: "+91 98450 99001", branch: `${BR_A} Showroom`, target: 12, achieved: 2, monthlyStats: { calls: 11, whatsapp: 7 }, testDrives: 13, bookings: 4, leads: 72, respHrs: 5.8, streak: 19, prevAchieved: 0, warrantyAttach: 0, addOns: 4, tdShowroom: 13, tdHome: 0, opportunity: 24 },
+  { id: 10, name: "Rahul Kumar", role: "Sales Executive", reportsTo: null, email: "rahul.kumar@autoprism.in", phone: "+91 98450 10112", branch: `${BR_A} Showroom`, target: 14, achieved: 9, monthlyStats: { calls: 48, whatsapp: 26 }, testDrives: 50, bookings: 15, leads: 90, respHrs: 2.4, streak: 9,  prevAchieved: 5, warrantyAttach: 7, addOns: 24, tdShowroom: 44, tdHome: 6, opportunity: 68 },
 ];
 const DEFAULT_USER_ID = 10;
 
@@ -109,7 +147,7 @@ const LABEL_OPTIONS = ["Exchange", "Finance", "Urgent"];
 
 // The 6-milestone status timeline. "Lost" is deliberately excluded — it's an exit from the
 // funnel, not a milestone reached along it, so it's handled as a separate action.
-const STATUS_ORDER = ["New", "Contacted", "Test Ride", "Opportunity", "Booking", "Retailed", "Delivered"];
+const STATUS_ORDER = ["New", "Contacted", TEST_STAGE, "Opportunity", "Booking", "Retailed", "Delivered"];
 const STATUS_FILTER_OPTIONS = [...STATUS_ORDER, "Lost"];
 
 // Ordered worst → best. Estimate range spans one level below to one level above the selected condition.
@@ -148,7 +186,7 @@ const LANG_STRINGS = {
   // Actions
   "Call":           { hi: "Call karo",   te: "Call cheyyandi",mr: "Call kara", ta: "Call pannu"  },
   "WhatsApp":       { hi: "WhatsApp karo",te: "WhatsApp cheyyandi",mr: "WhatsApp kara",ta: "WhatsApp pannu"},
-  "Test Ride":     { hi: "Test Ride",  te: "Test Ride",   mr: "Test Ride",  ta: "Test Ride"  },
+  [TEST_TITLE]:    { hi: TEST_TITLE,   te: TEST_TITLE,    mr: TEST_TITLE,   ta: TEST_TITLE   },
   "Quote":          { hi: "Quote",       te: "Quote",        mr: "Quote",       ta: "Quote"       },
   "Log this call":  { hi: "Call log karo",te: "Call log cheyyandi",mr: "Call log kara",ta: "Call log pannu"},
   "Save Log":       { hi: "Save karo",   te: "Save cheyyandi",mr: "Save kara", ta: "Save pannu"  },
@@ -181,7 +219,14 @@ function t(key, lang) {
   return (LANG_STRINGS[key] && LANG_STRINGS[key][lang]) || key;
 }
 
-const MOCK_CALL_DICTATIONS = [
+const MOCK_CALL_DICTATIONS = IS_HYUNDAI ? [
+  "Spoke to him just now, he wants to bring his wife and do the test drive on Saturday at the showroom. He also has an old i10 to exchange, around 2016 model. Said he'll need a loan for about twelve lakhs. Seemed quite keen on the extended warranty.",
+  "Called, he picked up but was driving. Asked me to call back tomorrow evening. Nothing else discussed.",
+  "He's ready to book. Wants to pay twenty five thousand as token today itself, delivery he's asking for before month end. Very positive, said his brother also bought a Venue from us last year.",
+  "No answer, phone just rang out. Third time now.",
+  "He's gone quiet on price, says the Kia dealer is giving him a better deal on the Seltos. Asked me for a discount, I said I'd check with the manager and revert. Worth escalating.",
+  "Not interested anymore, he's decided to postpone the purchase. Said maybe after Diwali he'll think again.",
+] : [
   "Spoke to him just now, he wants to bring his wife and do the test ride on Saturday at the showroom. He also has an old Activa to exchange, around 2016 model. Said he'll need a loan for about one point two lakhs. Seemed quite keen on the Plus Five plan.",
   "Called, he picked up but was driving. Asked me to call back tomorrow evening. Nothing else discussed.",
   "He's ready to book. Wants to pay five thousand as token today itself, delivery he's asking for before month end. Very positive, said his brother also bought from us last year.",
@@ -223,19 +268,20 @@ function parseCallTranscript(text, lead) {
     if (out.callback.window) out.confidence.push(["Best time", out.callback.window]);
   } else if (has("not interested", "postpone", "dropped", "decided against")) {
     out.outcome = "not_interested";
-    out.subReason = has("competitor", "ather", "rizta", "ola", "iqube", "chetak", "vida", "better deal") ? "competitor" : "not_now";
+    out.subReason = has("competitor", ...COMPETITOR_WORDS, "better deal") ? "competitor" : "not_now";
     out.confidence.push(["Outcome", "Not Interested"]);
     out.confidence.push(["Reason", out.subReason === "competitor" ? "Preferring Competitor" : "Not Interested Now"]);
   } else if (has("ready to book", "wants to book", "token", "booking amount")) {
     out.outcome = "ready";
     out.confidence.push(["Outcome", "Ready to Book"]);
     const amt = t.match(/(\d[\d,]*)\s*(?:thousand|k\b)/) || t.match(/five thousand/);
-    if (t.includes("five thousand")) out.booking = { advance: "5000" };
+    const spoken = [["twenty five thousand", "25000"], ["twenty one thousand", "21000"], ["eleven thousand", "11000"], ["five thousand", "5000"]].find(([w]) => t.includes(w));
+    if (spoken) out.booking = { advance: spoken[1] };
     else if (amt) out.booking = { advance: amt[1].replace(/,/g, "") };
     if (out.booking) out.confidence.push(["Token amount", "₹" + out.booking.advance]);
-  } else if (has("test ride", "testride", "trial ride")) {
+  } else if (has(testNoun, testNoun.replace(" ", ""), "trial " + TEST_VERB)) {
     out.outcome = "test_drive";
-    out.confidence.push(["Outcome", "Wants Test Ride"]);
+    out.confidence.push(["Outcome", `Wants ${TEST_TITLE}`]);
     out.testDrive.mode = has("at home", "his place", "her place", "their location") ? "location" : "showroom";
     out.confidence.push(["Location", out.testDrive.mode === "location" ? "Customer's Location" : "Showroom"]);
     const dayMap = { saturday: 6, sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5 };
@@ -244,7 +290,7 @@ function parseCallTranscript(text, lead) {
         const now = new Date(today);
         let delta = (dow - now.getDay() + 7) % 7; if (delta === 0) delta = 7;
         out.testDrive.date = toDateInputValue(d(delta));
-        out.confidence.push(["Test ride", fmt(parseDateInput(out.testDrive.date))]);
+        out.confidence.push([TestNoun, fmt(parseDateInput(out.testDrive.date))]);
         break;
       }
     }
@@ -255,7 +301,7 @@ function parseCallTranscript(text, lead) {
   }
 
   // --- signals, independent of outcome ---
-  if (has("exchange", "old scooter", "old bike", "trade in", "trade-in", "his old", "her old", "activa", "jupiter", "access", "splendor", "pulsar")) {
+  if (has(...EXCHANGE_WORDS)) {
     out.signals.push("Exchange");
     const yr = t.match(/\b(20[0-2]\d)\b/);
     out.exchange = { year: yr ? yr[1] : "" };
@@ -263,8 +309,9 @@ function parseCallTranscript(text, lead) {
   }
   if (has("loan", "finance", "emi", "lakhs", "lakh")) {
     out.signals.push("Finance");
-    const lk = t.match(/(one point \w+|one|\d+(?:\.\d+)?)\s*lakh/);
-    const words = { "one": "1", "one point two": "1.2", "one point three": "1.3", "one point five": "1.5", "one point one": "1.1" };
+    const lk = IS_HYUNDAI ? t.match(/(eighteen|fifteen|twelve|ten|eight|\d+(?:\.\d+)?)\s*lakh/) : t.match(/(one point \w+|one|\d+(?:\.\d+)?)\s*lakh/);
+    const words = { "one": "1", "one point two": "1.2", "one point three": "1.3", "one point five": "1.5", "one point one": "1.1",
+      "eight": "8", "ten": "10", "twelve": "12", "fifteen": "15", "eighteen": "18" };
     let amt = lk ? (words[lk[1]] || lk[1]) : "";
     out.finance = { loanAmount: amt };
     out.signals.push("Finance");
@@ -281,7 +328,7 @@ function parseCallTranscript(text, lead) {
 // Call-log presets, grouped by whether the call actually connected.
 const CONTACTED_OUTCOMES = [
   { key: "callback", label: "Call Back" },
-  { key: "test_drive", label: "Wants Test Ride" },
+  { key: "test_drive", label: `Wants ${TEST_TITLE}` },
   { key: "discount", label: "Asked for Discount" },
   { key: "ready", label: "Ready to Book" },
   { key: "not_interested", label: "Not Interested" },
@@ -309,7 +356,56 @@ const WHATSAPP_OUTCOMES = [
 
 // Competitor battle cards — three sharp, factual points each. Brief by design — meant to be
 // scanned mid-conversation, not read as an essay.
-const COMPETITOR_BATTLE_CARDS = {
+const COMPETITOR_BATTLE_CARDS = IS_HYUNDAI ? {
+  "Seltos": {
+    ourCar: "Creta",
+    points: [
+      "Panoramic sunroof and ventilated front seats from a lower Creta trim than Seltos offers them — customers notice it on the test drive.",
+      "Same engines and platform; Creta wins on service-network reach and resale value after three years.",
+      "Diesel-automatic is available on more Creta trims — check the variant ladder before the customer settles on Seltos.",
+    ],
+  },
+  "Brezza": {
+    ourCar: "Venue / Exter",
+    points: [
+      "Venue's 1.0 turbo with the 7-speed DCT is punchier on the highway than Brezza's naturally aspirated engine.",
+      "Exter offers a sunroof and six airbags at a price where Brezza doesn't — a strong answer for budget buyers.",
+      "Hyundai's Bluelink connected-car suite does more remotely than Suzuki Connect at the same tier.",
+    ],
+  },
+  "Nexon": {
+    ourCar: "Venue / Creta",
+    points: [
+      "Nexon leads on crash rating — don't fight that. Compete on refinement: smoother turbo, gearbox and cabin finish.",
+      "Hyundai's service network is wider, especially in tier-2 and tier-3 towns — less waiting at every service.",
+      "For buyers stretching to a bigger car, the Creta's space and resale make the step up worth showing.",
+    ],
+  },
+  "City": {
+    ourCar: "Verna",
+    points: [
+      "Verna's 1.5 turbo petrol has no answer in the City line-up — get the customer into that variant on the test drive.",
+      "Level-2 ADAS, ventilated seats and the 10.25-inch screens come at a lower Verna price point than comparable City trims.",
+      "City's badge and resale are real — acknowledge them, then compare equipment trim for trim.",
+    ],
+  },
+  "XUV700": {
+    ourCar: "Alcazar",
+    points: [
+      "Ask who sits in the third row — Alcazar's is genuinely usable for adults, and captain seats are on offer.",
+      "XUV700 wins on power and headline price; Alcazar wins on refinement and a quieter cabin at highway speed.",
+      "Alcazar's waiting period is usually shorter and more predictable — a real point for a family that needs the car soon.",
+    ],
+  },
+  "Other": {
+    ourCar: "Our Model",
+    points: [
+      "Ask what specifically attracted them — it's often one feature you can match or exceed.",
+      "Highlight Hyundai's 3-year unlimited-km warranty, extended warranty up to 5 years and Bluelink — consistently underestimated.",
+      "Check competitor delivery timelines — if they're waiting 2+ months, you may be able to deliver faster.",
+    ],
+  },
+} : {
   "Ather Rizta": {
     ourCar: "Indie",
     points: [
@@ -361,8 +457,17 @@ const COMPETITOR_BATTLE_CARDS = {
 };
 const COMPETITOR_OPTIONS = Object.keys(COMPETITOR_BATTLE_CARDS);
 
-// Shared demo fleet — physical demo scooters all reps book from the same pool.
-const DEMO_FLEET = [
+// Shared demo fleet — physical demo vehicles all reps book from the same pool.
+const DEMO_FLEET = IS_HYUNDAI ? [
+  { id: "demo1", model: "Creta", variant: "SX Premium IVT Petrol", color: "Atlas White", regNo: "TS07 HY 4421" },
+  { id: "demo2", model: "Creta", variant: "King MT Diesel", color: "Titan Grey", regNo: "TS07 HY 4422" },
+  { id: "demo3", model: "Venue", variant: "HX8", color: "Hazel Blue", regNo: "TS07 HY 4423" },
+  { id: "demo4", model: "Verna", variant: "HX8", color: "Fiery Red", regNo: "TS09 HY 1187" },
+  { id: "demo5", model: "Exter", variant: "HX6 AMT", color: "Ranger Khaki", regNo: "TS09 HY 1188" },
+  { id: "demo6", model: "Creta Electric", variant: "Premium 42kWh", color: "Ocean Blue", regNo: "TS09 HY 1189" },
+  { id: "demo7", model: "i20", variant: "Asta", color: "Fiery Red", regNo: "TS09 HY 1190" },
+  { id: "demo8", model: "Alcazar", variant: "Signature", color: "Starry Night", regNo: "TS07 HY 4424" },
+] : [
   { id: "demo1", model: "Indie", variant: "750W", color: "Monsoon Blue", regNo: "MH12 RV 4421" },
   { id: "demo2", model: "Indie", variant: "750W", color: "Summer Red", regNo: "MH12 RV 4422" },
   { id: "demo3", model: "Indie", variant: "480W", color: "Storm Grey", regNo: "MH12 RV 4423" },
@@ -383,7 +488,7 @@ const TEST_DRIVE_RESPONSES = [
   { key: "positive_comparing", label: "Positive, Still Comparing" },
   { key: "neutral", label: "Neutral" },
   { key: "not_liked", label: "Didn't Like It" },
-  { key: "wants_second", label: "Wants a Second Test Ride" },
+  { key: "wants_second", label: `Wants a Second ${TEST_TITLE}` },
 ];
 
 // SE → Team Leader → Manager. Both escalation steps are actions the SE takes themselves — the
@@ -413,56 +518,69 @@ const TEST_DRIVE_CANCEL_REASONS = [
 ];
 const PAYMENT_MODES = ["Cash", "Loan", "Exchange"];
 
-// On-road price breakup, modeled on River's official Maharashtra price sheet. System computes
-// everything except discount — that's the one lever the executive controls in a negotiation.
-// Official River accessory prices; fitment is charged once when any accessory is added.
-const ACCESSORY_OPTIONS = [
-  { key: "side_step", label: "Side Step", amount: 1449 },
-  { key: "grab_rail", label: "Tubular Grab Rail", amount: 1199 },
-  { key: "back_rest", label: "Back Rest", amount: 2199 },
-  { key: "visor_clear", label: "Visor (Clear)", amount: 1499 },
-  { key: "visor_tinted", label: "Visor (Tinted)", amount: 1499 },
-  { key: "pannier_cover", label: "Pannier Slot Cover", amount: 799 },
-  { key: "top_rack", label: "Top Rack", amount: 1599 },
-  { key: "collar_bag", label: "Collar Bag", amount: 1599 },
-  { key: "mount_open", label: "Open Mobile Mount", amount: 1399 },
-  { key: "mount_wp", label: "Weatherproof Mobile Mount", amount: 1999 },
-  { key: "charger_holder", label: "Single Socket Charger Holder", amount: 1499 },
-  { key: "cover", label: "Vehicle Cover", amount: 559 },
-  { key: "mat_pop", label: "Pop Floor Mat", amount: 799 },
-  { key: "mat_black", label: "All Black Floor Mat", amount: 549 },
-  { key: "seat_pop", label: "Pop Seat Cover", amount: 999 },
-  { key: "seat_dual", label: "Dual-Tone Seat Cover", amount: 699 },
-  { key: "helmet_open", label: "Open Face Helmet", amount: 1499 },
-  { key: "helmet_full", label: "Full-face Helmet", amount: 1999 },
-];
-const ACCESSORY_FITMENT = 118;
-// Official price sheet (Maharashtra, Sep 2026). listPrice is ex-showroom before the PM E-DRIVE
-// subsidy; warranty is the River Care plan bundled into the variant. 480W rows are estimates.
-const PM_EDRIVE_SUBSIDY = 5000;
-const RIVER_PRICE_SHEET = {
-  "750W":             { listPrice: 159799, insurance: 10889, rto: 1060, warranty: 0 },
-  "750W + Plus Two":  { listPrice: 159799, insurance: 10889, rto: 1060, warranty: 5899 },
-  "750W + Plus Five": { listPrice: 159799, insurance: 10889, rto: 1060, warranty: 9912 },
-  "480W":             { listPrice: 155799, insurance: 10889, rto: 1060, warranty: 0 },
-  "480W + Plus Two":  { listPrice: 155799, insurance: 10889, rto: 1060, warranty: 5899 },
-  "480W + Plus Five": { listPrice: 155799, insurance: 10889, rto: 1060, warranty: 9912 },
-};
+// On-road price breakup from the OEM's price sheet (src/oem). System computes everything except
+// discount — that's the one lever the executive controls in a negotiation.
+// OEM accessory prices; fitment (River) is charged once when any accessory is added.
+const ACCESSORY_OPTIONS = OEM.accessories;
+const ACCESSORY_FITMENT = OEM.priceSheet.accessoryFitment || 0;
+// River: one row per variant label ("750W + Plus Two" = charger + care plan) from the OEM price sheet.
+// listPrice is ex-showroom before the subsidy; warranty is the plan bundled into the variant.
+const SUBSIDY_AMOUNT = OEM.subsidy ? OEM.subsidy.amount : 0;
+const RIVER_PRICE_SHEET = IS_HYUNDAI ? {} : Object.fromEntries(MODELS[0].variants.flatMap(v => OEM.protectionPlans.map(pl => [
+  pl.price ? `${v.name} + ${pl.name}` : v.name,
+  { listPrice: v.listPrice, insurance: OEM.priceSheet.insurance, rto: OEM.priceSheet.rto, warranty: pl.price, plan: pl.label || pl.name, planDesc: pl.desc },
+])));
 // Finds the price-sheet row for a variant; when only an on-road lakh figure is known, picks the
 // variant whose on-road price rounds to it.
 function priceSheetRow(variant, priceLakh) {
   if (variant && RIVER_PRICE_SHEET[variant]) return RIVER_PRICE_SHEET[variant];
-  const onRoadLakh = (r) => Math.round((r.listPrice - PM_EDRIVE_SUBSIDY + r.insurance + r.rto + r.warranty) / 1000) / 100;
+  const onRoadLakh = (r) => Math.round((r.listPrice - SUBSIDY_AMOUNT + r.insurance + r.rto + r.warranty) / 1000) / 100;
   const hit = Object.values(RIVER_PRICE_SHEET).find(r => Math.abs(onRoadLakh(r) - (priceLakh || 0)) < 0.006);
-  return hit || RIVER_PRICE_SHEET["750W"];
+  return hit || RIVER_PRICE_SHEET[MODELS[0].variants[0].name];
+}
+// Hyundai: the car a lead / quote refers to — by model + variant, else by variant name alone.
+function resolveCar(model, variant) {
+  const exact = model ? findVariant(model, variant) : null;
+  if (exact) return { model, v: exact };
+  for (const m of MODELS) {
+    const v = m.variants.find(x => x.name === variant || `${m.name} ${x.name}` === variant);
+    if (v) return { model: m.name, v };
+  }
+  return null;
+}
+// Hyundai quote: on-road pieces from onRoadPrice (src/oem) — ex-showroom, life tax by price slab
+// (EVs exempt), 1st-year insurance, registration + plates + FASTag, TCS above ₹10 L. No subsidy.
+// Extended warranty / Shield of Trust / RSA are picked per quote (`plans`: OEM.protectionPlans keys).
+function computeCarQuote(priceLakh, discountRupees, accessoriesRupees, variant, model, plans) {
+  const ps = OEM.priceSheet;
+  const car = resolveCar(model, variant);
+  const r = car ? onRoadPrice(car.model, car.v.name) : null;
+  const exShowroom = r ? r.exShowroom : Math.round((priceLakh || 0) * 100000 / 1.2);
+  const parts = r || {
+    roadTax: Math.round(exShowroom * ps.roadTaxSlabs.find(([upTo]) => exShowroom <= upTo)[1]),
+    insurance: Math.round(exShowroom * ps.insurancePct), registration: ps.registration,
+    tcs: exShowroom > ps.tcsAbove ? Math.round(exShowroom * ps.tcsPct) : 0,
+  };
+  const planList = (plans || []).map(k => OEM.protectionPlans.find(p => p.key === k || p.name === k))
+    .filter(p => p && p.price > 0).map(p => ({ key: p.key, label: p.label || p.name, amount: p.price }));
+  const warranty = planList.reduce((n, p) => n + p.amount, 0);
+  const accessories = accessoriesRupees || 0;
+  const handling = accessories > 0 ? ACCESSORY_FITMENT : 0;
+  const subtotal = exShowroom + parts.roadTax + parts.insurance + parts.registration + parts.tcs + warranty + handling + accessories;
+  const discount = discountRupees || 0;
+  const total = Math.max(10000, subtotal - discount);
+  return { exShowroom, subsidy: 0, rto: parts.roadTax, registration: parts.registration, insurance: parts.insurance,
+    warranty, plans: planList, tcs: parts.tcs, handling, accessories, discount, subtotal, total,
+    ev: car ? car.v.fuel === "Electric" : false };
 }
 function formatINR(amount) {
   return "₹" + Math.round(amount || 0).toLocaleString("en-IN");
 }
-function computeQuoteBreakup(priceLakh, discountRupees, accessoriesRupees, variant) {
+function computeQuoteBreakup(priceLakh, discountRupees, accessoriesRupees, variant, model, plans) {
+  if (IS_HYUNDAI) return computeCarQuote(priceLakh, discountRupees, accessoriesRupees, variant, model, plans);
   const row = priceSheetRow(variant, priceLakh);
   const exShowroom = row.listPrice;
-  const subsidy = PM_EDRIVE_SUBSIDY;
+  const subsidy = SUBSIDY_AMOUNT;
   const rto = row.rto;
   const insurance = row.insurance;
   const warranty = row.warranty;
@@ -476,12 +594,25 @@ function computeQuoteBreakup(priceLakh, discountRupees, accessoriesRupees, varia
 }
 // Quote rows shared by the quote form and the quote detail sheet, in price-sheet order.
 function quoteBreakupRows(q) {
+  if (IS_HYUNDAI) {
+    const ps = OEM.priceSheet;
+    return [
+      ["Ex-Showroom Price", q.exShowroom],
+      [q.ev ? "Road Tax (EV — exempt)" : "Road Tax (life tax)", q.rto],
+      ["Insurance (1st year comprehensive)", q.insurance],
+      ["Registration, Plates & FASTag", q.registration || 0],
+      ...(q.plans || []).map(p => [p.label, p.amount]),
+      ...(q.tcs > 0 ? [[`TCS @ ${ps.tcsPct * 100}% (above ${fmtLakh(ps.tcsAbove, 0)})`, q.tcs]] : []),
+      ...(q.handling > 0 ? [["Accessory Fitment", q.handling]] : []),
+    ];
+  }
+  const planRow = Object.values(RIVER_PRICE_SHEET).find(r => r.warranty > 0 && r.warranty === q.warranty);
   return [
     ["Ex-Showroom Price", q.exShowroom],
-    ...(q.subsidy > 0 ? [["PM E-DRIVE Subsidy", -q.subsidy]] : []),
+    ...(q.subsidy > 0 ? [[`${OEM.subsidy.name} Subsidy`, -q.subsidy]] : []),
     ["Insurance + RSA (1st year)", q.insurance],
     ["RTO + Road Tax", q.rto],
-    ...(q.warranty > 0 ? [[q.warranty >= 9912 ? "River Care Plus Five (8-yr warranty)" : "River Care Plus Two (5-yr warranty)", q.warranty]] : []),
+    ...(q.warranty > 0 ? [[planRow ? `${planRow.plan} (${planRow.planDesc})` : PLAN_NOUN, q.warranty]] : []),
     ...(q.tcs > 0 ? [["TCS", q.tcs]] : []),
     ...(q.handling > 0 ? [["Accessory Fitment", q.handling]] : []),
   ];
@@ -529,7 +660,7 @@ const LEAD_SUBTYPE = {
   RETAILED: "retailed",
 };
 
-// Shared step used after a positive test ride and after a "ready to book" call outcome.
+// Shared step used after a positive test ride / drive and after a "ready to book" call outcome.
 // It refuses to let the lead go quiet: either the money is in, or we book the call that chases it.
 function BookingAmountStep({ value, onChange, attempted }) {
   const v = value || { received: null, amount: "", mode: "", promiseDate: "", promiseWindow: "" };
@@ -608,7 +739,8 @@ function bookingStepComplete(v) {
   return !!(v.promiseDate && v.promiseWindow);
 }
 
-const COLOR_OPTIONS = ["Monsoon Blue", "Summer Red", "Spring Yellow", "Winter White", "Storm Grey"];
+// Every colour the OEM offers (River: the five Indie colours, in catalogue order).
+const COLOR_OPTIONS = [...new Set(MODELS.flatMap(m => m.colours.map(c => c.name)))];
 // Customer-stated contact preference. Not a nicety — DPDP purpose-limitation and TRAI's DND
 // framework both mean continuing to call/message someone who's restricted a channel is a real
 // compliance exposure, so this is treated as a hard restriction, not a soft suggestion.
@@ -711,7 +843,114 @@ function mkLead(o) {
   };
 }
 
-const RAW_LEADS = [
+// Hyundai versions of the scripted demo leads (same people, same demo moments — cars instead of
+// scooters). Built lazily so the River ids / sequence stay exactly as they were.
+function hyundaiRawLeads() {
+  const q = (model, variant, disc, acc, plans) => computeQuoteBreakup(carOnRoadLakh(model, variant), disc, acc, variant, model, plans);
+  const venueQ2 = q("Venue", "HX8", 15000, 8650, ["ew5"]), venueQ1 = q("Venue", "HX8", 0, 0, []);
+  return [
+  mkLead({ owner: 10, name: "Ravi Teja", phone: "98765 43210", location: "Gachibowli", model: "Creta", variant: "SX Premium IVT Petrol", bucket: "ready", propensity: 82, stage: TEST_STAGE,
+    budget: "₹21–22 L", targetDate: fmt(d(10)), created: d(-6), followUp: { date: d(0), window: null }, source: "Website",
+    summary: "Loved the panoramic sunroof on the test drive — bringing spouse for a second look", flag: "positive",
+    nextAction: "Call today — confirm booking before spouse's visit",
+    labels: ["Family Approval"],
+    suggestedSignals: [{ signal: "Exchange", reason: "From yesterday's call: customer mentioned trading in their current i10. Add the Exchange signal to start booking an evaluation?" }],
+    hasRecording: true,
+    recordingTranscript: "Spoke to him just now, he wants to bring his wife and do the test drive on Saturday at the showroom. He also has an old i10 to exchange, around 2016 model. Said he'll need a loan for about twelve lakhs.",
+    channelUsage: { call: 2, whatsapp: 0 },
+    testDrive: { mode: "showroom", date: d(0), time: "17:00", location: null },
+    notes: ["Compared with Kia Seltos, prefers the Creta's ride quality and sunroof.", "Wants the IVT automatic + 5-year extended warranty only.", "Bringing spouse for 2nd test drive."],
+    timeline: [
+      { type: "test-drive", text: "Test drive completed — loved the panoramic sunroof and the IVT in traffic", date: d(-1) },
+      { type: "call", text: "Discussed finance options, sent EMI breakup", date: d(-3) },
+      { type: "visit", text: "Walked in, browsed Creta & compared with Kia Seltos", date: d(-6) },
+    ] }),
+  mkLead({ owner: 10, name: "Sneha Kulkarni", phone: "98765 43211", location: BR_A, model: "Venue", variant: "HX8", bucket: "quiet", propensity: 55,
+    budget: "₹15–16 L", targetDate: fmt(d(15)), created: d(-12), followUp: { date: d(2), window: "evening" }, source: "CarDekho", stage: "Opportunity",
+    summary: "Last 2 calls unanswered · earlier said okay to proceed with added discount", flag: "attention",
+    nextAction: "Switch to WhatsApp — 2 calls missed, put the discount offer in writing",
+    labels: ["Opportunity", "Exchange"],
+    channelUsage: { call: 1, whatsapp: 2 },
+    exchange: { model: "Hyundai i10", variant: "Magna", year: "2016", odometer: "62000", condition: "bad", photos: 2, appraisalScheduled: true, appraisedValue: null },
+    notes: ["Negotiating on accessories package.", "Exchange car: 2016 i10, awaiting valuation."],
+    timeline: [
+      { type: "call", text: "Call unanswered, follow-up SMS sent", date: d(-1) },
+      { type: "call", text: "Call unanswered", date: d(-3) },
+      { type: "call", text: "Said will proceed if additional discount is offered", date: d(-5) },
+      { type: "quote", text: `Quote #2 generated — ${formatINR(venueQ2.total)}`, date: d(-3), quoteDetails: venueQ2 },
+      { type: "quote", text: `Quote #1 generated — ${formatINR(venueQ1.total)}`, date: d(-6), quoteDetails: venueQ1 },
+      { type: "test-drive", text: "Test drive done, liked the Hazel Blue with the black roof", date: d(-9) },
+    ] }),
+  mkLead({ owner: 10, name: "Amit Joshi", phone: "98765 43212", location: "Madhapur", model: "Verna", variant: "HX6", bucket: "nurture", propensity: 25, stage: "Contacted",
+    budget: "₹16–17 L", targetDate: fmt(d(40)), created: d(-20), followUp: { date: d(6), window: null }, source: "Walk-in",
+    summary: "Low response rate — said will decide after Diwali, no urgency yet", flag: "attention",
+    nextAction: "Light touch only — check in closer to Diwali",
+    labels: ["Needs Time"],
+    notes: ["Still comparing with Honda City.", "Not in a hurry — budget approval pending from family."],
+    timeline: [
+      { type: "call", text: "Follow-up call, said will decide after Diwali", date: d(-8) },
+      { type: "visit", text: "Walked in for brochure and pricing", date: d(-20) },
+    ] }),
+  mkLead({ owner: 10, name: "Lakshmi Narayan", phone: "98765 43213", location: "Jubilee Hills", model: "Alcazar", variant: "Prestige", bucket: "ready", propensity: 88, stage: "Contacted",
+    budget: "₹19.5–20.5 L", targetDate: fmt(d(7)), created: d(-9), followUp: { date: d(-1), window: "morning" }, source: "Referral",
+    summary: "Budget & seating confirmed, ready to move — follow-up is overdue", flag: "attention",
+    nextAction: "Call today — she's ready, don't lose momentum",
+    escalation: {
+      level: "manager", reason: "stuck", note: "Team Leader didn't respond after 2 days — pushing to manager for special allocation given the urgent 7-seater need.",
+      date: d(-1), history: [{ level: "tl", date: d(-3) }, { level: "manager", date: d(-1) }],
+    },
+    notes: ["Referred by existing customer Suresh Pillai.", "Needs a 7-seater for a joint family, urgent — wants Robust Emerald."],
+    timeline: [
+      { type: "call", text: "Confirmed budget and seating requirement", date: d(-2) },
+      { type: "visit", text: "Referral walk-in, met at showroom", date: d(-9) },
+    ] }),
+  mkLead({ owner: 10, name: "Farhan Khan", phone: "98765 43214", location: "Kukatpally", model: "i20", variant: "Asta", bucket: "new", propensity: 40, stage: "New",
+    budget: "₹9.5–10.5 L", targetDate: fmt(d(30)), created: d(-2), followUp: { date: d(1), window: null }, source: "Website",
+    summary: "First-time buyer, engaged well on intro call — needs variant guidance", flag: "neutral",
+    nextAction: "Send variant comparison — help narrow down the choice",
+    labels: ["Variant Confusion"],
+    notes: ["Enquired via website chatbot, first car buyer."],
+    timeline: [
+      { type: "call", text: "Introductory call, explained variant lineup", date: d(-1) },
+    ] }),
+  mkLead({ owner: 10, name: "Deepika Rao", phone: "98765 43215", location: "Manikonda", model: "Verna", variant: "HX10", bucket: "ready", propensity: 95, stage: "Booking",
+    budget: "₹22.4 L", targetDate: fmt(d(20)), created: d(-30), followUp: null, source: "Website",
+    expectedDeliveryDate: d(2),
+    documents: {
+      ...defaultDocuments(),
+      aadhaar: { done: true, via: "customer" },
+      pan: { done: true, via: "customer" },
+    },
+    summary: "Booking confirmed, advance received — awaiting delivery this week", flag: "positive",
+    nextAction: "Keep customer updated on delivery timeline",
+    notes: ["Booking confirmed, advance paid.", "Delivery expected this week."],
+    timeline: [
+      { type: "booking", text: `Booking confirmed — ${formatINR(bookingAmountOf("Verna"))} advance received`, date: d(-4) },
+      { type: "quote", text: "Final quote approved by customer", date: d(-10) },
+    ] }),
+  mkLead({ owner: 10, name: "Suresh Pillai", phone: "98765 43216", location: "Miyapur", model: "Exter", variant: "HX6 Knight", bucket: "ready", propensity: 100, stage: "Delivered",
+    budget: "₹10 L", targetDate: fmt(d(-5)), created: d(-45), followUp: null, source: "Referral",
+    summary: "Delivered and happy — already referred one new lead", flag: "neutral",
+    nextAction: "Ask for a review / further referrals",
+    notes: ["Delivered successfully, very happy customer.", "Referred Lakshmi Narayan for an Alcazar."],
+    timeline: [
+      { type: "delivery", text: "Vehicle delivered, customer delighted", date: d(-5) },
+      { type: "booking", text: "Booking confirmed", date: d(-25) },
+    ] }),
+  mkLead({ owner: 10, name: "Neha Verma", phone: "98765 43220", location: BR_A, model: "Creta Electric", variant: "Excellence / LR 51.4kWh", bucket: "ready", propensity: 80, stage: "Opportunity",
+    budget: "₹24.5 L", targetDate: fmt(d(5)), created: d(-14), followUp: { date: d(0), window: "afternoon" }, source: "Website", commPref: "whatsapp",
+    summary: "Keen on home-charger setup — wants delivery before month-end", flag: "positive",
+    nextAction: "Confirm the wall-box installation survey to lock month-end delivery",
+    labels: ["Exchange", "Finance"],
+    exchange: { model: "Hyundai Verna", variant: "SX", year: "2019", odometer: "45000", condition: "very_good", photos: 3, appraisalScheduled: true, appraisedValue: 5.4 },
+    finance: { loanAmount: "18", bank: "HDFC Bank", status: "approved" },
+    testDrive: { mode: "location", date: d(0), time: "11:30", location: { text: `${BR_A}, ${CITY}`, mapsLink: "" } },
+    notes: ["First EV — checking a wall-box point in her apartment parking.", "Wants delivery before month-end for the festive offer."],
+    timeline: [{ type: "call", text: "Discussed home charging and the EV road-tax exemption", date: d(-1) }] }),
+  ];
+}
+
+const RAW_LEADS = IS_HYUNDAI ? hyundaiRawLeads() : [
   // Rahul Kumar (10)
   mkLead({ owner: 10, name: "Ravi Teja", phone: "98765 43210", location: "Kothrud", model: "Indie", variant: "750W + Plus Five", bucket: "ready", propensity: 82, stage: "Test Ride",
     budget: "₹1.7–1.8 L", targetDate: fmt(d(10)), created: d(-6), followUp: { date: d(0), window: null }, source: "Website",
@@ -813,7 +1052,7 @@ const RAW_LEADS = [
     timeline: [{ type: "call", text: "Discussed home charging & PM E-DRIVE subsidy", date: d(-1) }] }),
 ];
 
-/* ============================== SHARED SAMPLE POOL (Epic River) ==============================
+/* ============================== SHARED SAMPLE POOL (src/data, active OEM) ==============================
    ~130 extra leads for this login, mapped once at module load from the shared pool in
    src/data/epicRiverLeads.js (leadsFor("sales") = Rahul Kumar's leads + unassigned Aundh
    walk-ins). The hand-written leads above stay first — they drive the scripted demo moments.
@@ -836,17 +1075,21 @@ const poolWindow = (iso) => { const h = poolHourIST(iso); return h < 12 ? "morni
 const POOL_LOST_KEY = {
   "Bought competitor": "competitor", "Price / budget": "budget", "Low exchange value": "budget",
   "Postponed purchase": "postponed", "Charging / range concern": "not_interested",
-  "Not reachable": "other", "Finance rejected": "other", "Long delivery wait": "other", "Other": "other",
+  "Not reachable": "other", "Finance rejected": "other", "Long delivery wait": "other", "Long waiting period": "other", "Other": "other",
 };
-const POOL_STAGE_LABEL = { attempted: "first contact", contacted: "first contact", interested: "Contacted", test_ride: "Test Ride", booking: "Booking" };
+const POOL_STAGE_LABEL = { attempted: "first contact", contacted: "first contact", interested: "Contacted", test_ride: TEST_STAGE, booking: "Booking" };
 // Same on-road figures as VARIANT_PRICES (declared further down, so not usable at module load here).
 const POOL_VARIANT_LAKH = { "750W": 1.67, "750W + Plus Two": 1.73, "750W + Plus Five": 1.77, "480W": 1.63, "480W + Plus Two": 1.69, "480W + Plus Five": 1.73 };
+const poolPriceLakh = (p) => IS_HYUNDAI ? (carOnRoadLakh(p.model, p.variant) || 15) : (POOL_VARIANT_LAKH[p.variant] || 1.67);
+const POOL_DISCOUNTS = IS_HYUNDAI ? [0, 15000, 25000, 10000] : [0, 1000, 2000, 1500];
+// Hyundai pool leads carry a protection-plan name; quotes include it.
+const poolPlans = (p) => { const pl = p.plan && OEM.protectionPlans.find(x => x.name === p.plan); return pl ? [pl.key] : []; };
 const fmtDur = (s) => `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s`;
 
 function poolAppStage(p) {
   if (p.stage === "new" || p.stage === "attempted" || p.stage === "contacted") return "New";
   if (p.stage === "interested") return "Contacted";
-  if (p.stage === "test_ride") return (/booked/i.test(p.note) || p.rating < 3) ? "Test Ride" : "Opportunity";
+  if (p.stage === "test_ride") return (/booked/i.test(p.note) || p.rating < 3) ? TEST_STAGE : "Opportunity";
   return { booking: "Booking", retailed: "Retailed", delivered: "Delivered", lost: "Lost" }[p.stage];
 }
 
@@ -860,7 +1103,9 @@ function mapPoolLead(p, usedNames) {
   const lastConnected = connected[connected.length - 1] || null;
   const lastContactOff = lastConnected ? poolOffset(lastConnected.at) : poolOffset(p.createdAt);
   const quiet = open && stage !== "New" && lastContactOff <= -8;
-  const priceLakh = POOL_VARIANT_LAKH[p.variant] || 1.67;
+  const priceLakh = poolPriceLakh(p);
+  const poolModel = p.model ?? MODELS[0].name;
+  const bookAmt = p.bookingAmount || bookingAmountOf(poolModel);
 
   // Name collisions inside the pool get a different surname so search/cards stay unambiguous.
   let name = p.name;
@@ -885,9 +1130,9 @@ function mapPoolLead(p, usedNames) {
   else if (!open) bucket = stage === "Lost" ? "nurture" : "ready";
   else if (quiet) bucket = "quiet";
   else if (stage === "Contacted") bucket = p.rating >= 4 ? (p.finance ? "finance" : "price") : p.rating <= 1 ? "nurture" : "comparing";
-  else if (stage === "Test Ride") bucket = p.rating >= 4 ? "ready" : p.finance ? "finance" : "comparing";
+  else if (stage === TEST_STAGE) bucket = p.rating >= 4 ? "ready" : p.finance ? "finance" : "comparing";
   else bucket = p.rating >= 4 ? "ready" : "price"; // Opportunity
-  const baseProp = { New: 30, Contacted: 38, "Test Ride": 52, Opportunity: 62, Booking: 90, Retailed: 98, Delivered: 100, Lost: 10 }[stage];
+  const baseProp = { New: 30, Contacted: 38, [TEST_STAGE]: 52, Opportunity: 62, Booking: 90, Retailed: 98, Delivered: 100, Lost: 10 }[stage];
   const propensity = Math.min(100, stage === "Delivered" || stage === "Retailed" ? baseProp : baseProp + (p.rating - 3) * 7 + (h % 7));
   const flag = quiet || fuOff < 0 ? "attention" : p.rating >= 4 || !open && stage !== "Lost" ? "positive" : "neutral";
 
@@ -898,8 +1143,8 @@ function mapPoolLead(p, usedNames) {
     labels.push("Exchange");
     const appraised = stage !== "New" && stage !== "Contacted";
     exchange = {
-      model: p.exchange.bike, variant: ["STD", "DLX", "ZX", "SMW"][h % 4], year: String(p.exchange.year),
-      odometer: String(12000 + (h % 40) * 1000), condition: ["good", "bad", "very_good", "good"][h % 4],
+      model: p.exchange.vehicle || p.exchange.bike, variant: (IS_HYUNDAI ? ["Base", "Mid", "Top", "Mid"] : ["STD", "DLX", "ZX", "SMW"])[h % 4], year: String(p.exchange.year),
+      odometer: String(IS_HYUNDAI ? 28000 + (h % 60) * 1500 : 12000 + (h % 40) * 1000), condition: ["good", "bad", "very_good", "good"][h % 4],
       photos: appraised ? 2 + (h % 3) : 0, appraisalScheduled: appraised, appraisedValue: appraised ? +(p.exchange.value / 100000).toFixed(2) : null,
     };
   }
@@ -908,7 +1153,7 @@ function mapPoolLead(p, usedNames) {
     labels.push("Finance");
     const status = stage === "Lost" && p.lostReason === "Finance rejected" ? "rejected"
       : stage === "New" ? "" : stage === "Contacted" ? "applied"
-      : stage === "Test Ride" ? "review" : stage === "Opportunity" ? (h % 2 ? "approved" : "review") : "approved";
+      : stage === TEST_STAGE ? "review" : stage === "Opportunity" ? (h % 2 ? "approved" : "review") : "approved";
     finance = { loanAmount: (p.finance.amount / 100000).toFixed(2), bank: p.finance.lender, status };
   }
   if (open && p.rating === 5 && fuOff <= 1) labels.push("Urgent");
@@ -917,7 +1162,7 @@ function mapPoolLead(p, usedNames) {
   const timeline = [];
   const created = poolDate(p.createdAt);
   timeline.push({ type: "visit", date: created, text: p.source === "Walk-in"
-    ? `Walked in at ${p.storeName} showroom — enquired about the Indie ${p.variant}`
+    ? `Walked in at ${p.storeName} showroom — enquired about the ${poolModel} ${p.variant}`
     : `New enquiry via ${p.source} (${p.locality}) — routed to telecaller Priya Nambiar` });
   calls.forEach(c => {
     const who = c.by === "Rahul Kumar" ? "You" : `${c.by} (telecaller)`;
@@ -935,15 +1180,15 @@ function mapPoolLead(p, usedNames) {
   if (rideScheduled) {
     const off = Math.max(0, fuOff);
     testDrive = { mode: h % 4 === 0 ? "location" : "showroom", date: d(off), time: ["11:00", "12:30", "16:00", "17:30"][h % 4],
-      location: h % 4 === 0 ? { text: `${p.locality}, Pune`, mapsLink: "" } : null };
+      location: h % 4 === 0 ? { text: `${p.locality}, ${CITY}`, mapsLink: "" } : null };
   } else if (p.testRideAt) {
     timeline.push({ type: "test-drive", date: poolDate(p.testRideAt),
-      text: `Test ride done — Indie ${p.variant}${p.colour ? ` in ${p.colour}` : ""}${p.rating >= 4 ? ", liked the ride quality" : ""}` });
+      text: `${TestNoun} done — ${poolModel} ${p.variant}${p.colour ? ` in ${p.colour}` : ""}${p.rating >= 4 ? ", liked the ride quality" : ""}` });
   }
   const lastOff = poolOffset(p.lastActivityAt);
   const quoteOff = Math.min(-1, lastOff - 1);
   if (stage === "Opportunity" || (!open && stage !== "Lost")) {
-    const q = computeQuoteBreakup(priceLakh, [0, 1000, 2000, 1500][h % 4], 0, p.variant);
+    const q = computeQuoteBreakup(priceLakh, POOL_DISCOUNTS[h % 4], 0, p.variant, poolModel, poolPlans(p));
     timeline.push({ type: "quote", date: d(quoteOff), text: `Quote shared — ${formatINR(q.total)}`, quoteDetails: q });
   }
   const mode = p.finance ? "Loan" : p.exchange ? "Exchange" : "Cash";
@@ -951,14 +1196,14 @@ function mapPoolLead(p, usedNames) {
   if (!open && stage !== "Lost") {
     const bookOff = Math.min(0, lastOff);
     const bookDate = d(stage === "Booking" ? bookOff : bookOff - 6);
-    timeline.push({ type: "booking", date: bookDate, text: `Booking confirmed — Indie ${p.variant}, ₹${(p.bookingAmount || 2500).toLocaleString("en-IN")} advance (${mode})` });
+    timeline.push({ type: "booking", date: bookDate, text: `Booking confirmed — ${poolModel} ${p.variant}, ₹${bookAmt.toLocaleString("en-IN")} advance (${mode})` });
     if (stage === "Booking") expectedDeliveryDate = d(h % 5 === 0 ? 0 : 1 + (h % 9));
     else if (stage === "Retailed") expectedDeliveryDate = d(h % 6 === 0 ? 0 : 1 + (h % 6));
     else expectedDeliveryDate = d(Math.min(-1, lastOff));
-    booking = { advance: String(p.bookingAmount || 2500), deliveryDate: expectedDeliveryDate, mode };
+    booking = { advance: String(bookAmt), deliveryDate: expectedDeliveryDate, mode };
     if (stage === "Retailed" || stage === "Delivered") {
       retailDate = d(stage === "Retailed" ? bookOff : bookOff - 2);
-      const total = computeQuoteBreakup(priceLakh, 0, 0, p.variant).total;
+      const total = computeQuoteBreakup(priceLakh, 0, 0, p.variant, poolModel, poolPlans(p)).total;
       const fin = p.finance ? Math.min(p.finance.amount, total - 10000) : 0;
       paymentDetails = { ...defaultPaymentBreakdown(), financeAmount: fin ? String(fin) : "", financeCompany: p.finance ? p.finance.lender : "",
         cashAmount: String(total - fin), insuranceCompany: "ICICI Lombard", isFullPayment: true };
@@ -984,10 +1229,10 @@ function mapPoolLead(p, usedNames) {
   const firstName = name.split(" ")[0];
   const lastComment = lastConnected?.comment || p.note;
   const nextAction = {
-    New: fuOff < 0 ? `Overdue — call ${firstName} now, first SE contact pending` : `First SE call — introduce yourself and offer a test ride`,
-    Contacted: quiet ? `Gone quiet — WhatsApp ${firstName} a fresh offer` : p.finance ? `Share EMI breakup and push for a test ride` : `Invite ${firstName} for a test ride this week`,
-    "Test Ride": rideScheduled ? `Confirm the test ride slot and keep a ${p.colour} demo ready` : `Follow up on the test ride — ask what's holding the decision`,
-    Opportunity: p.rating >= 4 ? `Close the booking — ask for the ₹2,500 token` : `Send a revised quote and handle the price objection`,
+    New: fuOff < 0 ? `Overdue — call ${firstName} now, first SE contact pending` : `First SE call — introduce yourself and offer a ${testNoun}`,
+    Contacted: quiet ? `Gone quiet — WhatsApp ${firstName} a fresh offer` : p.finance ? `Share EMI breakup and push for a ${testNoun}` : `Invite ${firstName} for a ${testNoun} this week`,
+    [TEST_STAGE]: rideScheduled ? `Confirm the ${testNoun} slot and keep a ${p.colour} demo ready` : `Follow up on the ${testNoun} — ask what's holding the decision`,
+    Opportunity: p.rating >= 4 ? `Close the booking — ask for the ${formatINR(bookAmt)} token` : `Send a revised quote and handle the price objection`,
     Booking: `Keep ${firstName} updated on ${p.colour} allotment and delivery`,
     Retailed: `Fix the delivery slot and finish RTO paperwork`,
     Delivered: `Ask for a Google review and referrals`,
@@ -995,12 +1240,13 @@ function mapPoolLead(p, usedNames) {
   }[stage];
   const summary = stage === "Lost" ? `Lost — ${p.lostReason}${p.lostTo ? ` (${p.lostTo})` : ""}. ${lastComment}` : lastComment;
   const docsDone = (keys) => { const docs = defaultDocuments(); keys.forEach(k => { docs[k] = { done: true, via: "customer" }; }); return docs; };
-  const budgetLow = priceLakh - 0.05;
+  const [budgetLo, budgetHi, budgetDp] = IS_HYUNDAI ? [0.6, 0.4, 1] : [0.05, 0.03, 2];
+  const budgetLow = priceLakh - budgetLo;
   return mkLead({
     owner: 10, poolId: p.id, name, phone: p.phone.replace(/^\+91 (\d{5})(\d{5})$/, "$1 $2"), location: p.locality,
-    model: "Indie", variant: p.variant, color: (stage === "New" || stage === "Contacted") && h % 3 === 0 ? "" : p.colour,
+    model: poolModel, variant: p.variant, color: (stage === "New" || stage === "Contacted") && h % 3 === 0 ? "" : p.colour,
     colorInterest: [p.colour], bucket, propensity, stage, source: p.source,
-    budget: `₹${budgetLow.toFixed(2)}–${(priceLakh + 0.03).toFixed(2)} L`,
+    budget: `₹${budgetLow.toFixed(budgetDp)}–${(priceLakh + budgetHi).toFixed(budgetDp)} L`,
     targetDate: fmt(stage === "Delivered" ? actualDeliveryDate : expectedDeliveryDate || d(Math.max(fuOff, 0) + 7 + (h % 14))),
     created, followUp, summary, flag, nextAction, labels,
     exchange, finance, testDrive, booking, expectedDeliveryDate, retailDate, paymentDetails, actualDeliveryDate, lostReason,
@@ -1011,7 +1257,7 @@ function mapPoolLead(p, usedNames) {
     documents: stage === "Booking" ? docsDone(["aadhaar", "pan"]) : stage === "Retailed" || stage === "Delivered" ? docsDone(DOCUMENT_ITEMS.map(x => x.key)) : defaultDocuments(),
     drivingLicense: stage === "Retailed" || stage === "Delivered" ? { done: true, via: "customer" } : { done: false, via: null },
     notes: [p.note,
-      ...(p.exchange ? [`Exchange: ${p.exchange.year} ${p.exchange.bike}, customer expects ~₹${p.exchange.value.toLocaleString("en-IN")}.`] : []),
+      ...(p.exchange ? [`Exchange: ${p.exchange.year} ${p.exchange.vehicle || p.exchange.bike}, customer expects ~₹${p.exchange.value.toLocaleString("en-IN")}.`] : []),
       ...(p.finance ? [`Finance: ${p.finance.lender}, ₹${(p.finance.amount / 100000).toFixed(2)} L loan.`] : [])],
     timeline: ordered,
   });
@@ -1029,7 +1275,19 @@ const POOL_LEADS = (() => {
 const SEED_LEADS = [...RAW_LEADS, ...POOL_LEADS];
 
 /* ============================== MOCK INVENTORY (flat variants — grouped by model for display) ============================== */
-const INVENTORY = [
+// Hyundai: every catalogue variant of every model, on-road lakh from onRoadPrice; units = all colours
+// of that variant across the two showrooms (src/data stock).
+function hyundaiInventory() {
+  let id = 0;
+  return MODELS.flatMap(m => m.variants.map(v => {
+    id += 1;
+    const units = Object.values(PUNE_STORES).reduce((n, loc) => n + m.colours.reduce((k, c) => k + unitsOf(loc, v.name, c.name, m.name), 0), 0);
+    return { id, model: m.name, variant: v.name, color: (v.colours && v.colours[0]) || m.colours[0].name, fuel: v.fuel,
+      transmission: carTransmission(v.transmission), priceLakh: carOnRoadLakh(m.name, v.name), restock: 3 + hashStr(m.name + v.name) % 12,
+      units, status: units === 0 ? "In Transit" : units <= 3 ? "Low Stock" : "In Stock" };
+  }));
+}
+const INVENTORY = IS_HYUNDAI ? hyundaiInventory() : [
   // Indie — one model; variants are charger (750W / 480W) × River Care plan. Lakh prices are on-road.
   { id: 1, model: "Indie", variant: "750W", color: "Monsoon Blue", fuel: "Electric", transmission: "Automatic", priceLakh: 1.67, restock: 7 },
   { id: 2, model: "Indie", variant: "750W + Plus Two", color: "Summer Red", fuel: "Electric", transmission: "Automatic", priceLakh: 1.73, restock: 8 },
@@ -1047,8 +1305,8 @@ const INVENTORY = [
 // Powertrain attributes kept as filter groups for parity with the shared inventory schema — every
 // Indie is electric and twist-and-go. Color options are derived from real inventory data so they
 // never go stale if inventory changes.
-const FUEL_FILTER_OPTIONS = ["Electric"];
-const TRANSMISSION_FILTER_OPTIONS = ["Automatic"];
+const FUEL_FILTER_OPTIONS = [...new Set(INVENTORY.map(v => v.fuel))];
+const TRANSMISSION_FILTER_OPTIONS = [...new Set(INVENTORY.map(v => v.transmission))];
 const COLOR_FILTER_OPTIONS = [...new Set(INVENTORY.map(v => v.color))].sort();
 
 function matchesInventoryFilters(v, filters) {
@@ -1086,13 +1344,13 @@ const FLAG_META = {
 function daysAgo(dt) { return Math.round((today - dt) / 86400000); }
 function daysUntil(dt) { return Math.round((dt - today) / 86400000); }
 
-const COUNTER_LABELS = ["Leads", "Contacted", "Test Rides", "Bookings", "Delivery"];
+const COUNTER_LABELS = ["Leads", "Contacted", TEST_TITLE_PL, "Bookings", "Delivery"];
 // Shared by the performance-strip counts and the filtered screen those numbers open into.
 function filterLeadsByCounter(leads, label) {
   switch (label) {
     case "Leads": return leads;
     case "Contacted": return leads.filter(l => l.stage !== "New");
-    case "Test Rides": return leads.filter(l => l.stage === "Test Ride" || l.timeline.some(t => t.type === "test-drive"));
+    case TEST_TITLE_PL: return leads.filter(l => l.stage === TEST_STAGE || l.timeline.some(t => t.type === "test-drive"));
     case "Bookings": return leads.filter(l => ["Booking", "Retailed", "Delivered"].includes(l.stage));
     case "Delivery": return leads.filter(l => l.stage === "Delivered");
     default: return leads;
@@ -1107,13 +1365,16 @@ function directionsUrl(location) {
 }
 
 // Mock trade-in estimator — illustrative only, not a real valuation model.
-// Base value (in lakh) assumes a generic 110cc petrol scooter; depreciates with age & mileage.
+// Base value (in lakh) assumes a generic petrol vehicle of the OEM's kind (River: a 110cc scooter,
+// Hyundai: a hatchback / compact sedan); depreciates with age & mileage.
+const EXCHANGE_CURVE = IS_HYUNDAI ? { start: 6.5, perYear: 0.42, per10k: 0.12, floor: 0.8 } : { start: 0.5, perYear: 0.03, per10k: 0.02, floor: 0.1 };
 function exchangeBaseValue(year, odometer) {
   const y = parseInt(year, 10);
   const km = parseInt(odometer, 10);
   if (!y || !km) return null;
   const age = Math.max(0, today.getFullYear() - y);
-  return Math.max(0.1, 0.5 - age * 0.03 - (km / 10000) * 0.02);
+  const k = EXCHANGE_CURVE;
+  return Math.max(k.floor, k.start - age * k.perYear - (km / 10000) * k.per10k);
 }
 // Range spans one condition level below to one above the selected condition.
 function exchangeRange(year, odometer, conditionKey) {
@@ -1204,7 +1465,7 @@ function getAttentionItems(leads) {
       items.push({ lead: l, icon: Phone, color: C.hot, text: `Follow-up overdue — ${l.name}` });
     }
     if (l.testDrive?.date && isSameDay(l.testDrive.date, today)) {
-      items.push({ lead: l, icon: ScooterIcon, color: C.purple, text: `Test ride today — ${l.name}` });
+      items.push({ lead: l, icon: VehicleIcon, color: C.purple, text: `${TestNoun} today — ${l.name}` });
     }
     if (l.expectedDeliveryDate && daysUntil(l.expectedDeliveryDate) >= 0 && daysUntil(l.expectedDeliveryDate) <= 1) {
       items.push({ lead: l, icon: CarFront, color: C.green, text: `Delivery due soon — ${l.name}` });
@@ -1363,7 +1624,7 @@ function labelStyle(label) {
 
 function StageBadge({ stage }) {
   const map = {
-    "New": C.faint, "Contacted": C.cold, "Test Ride": C.primary,
+    "New": C.faint, "Contacted": C.cold, [TEST_STAGE]: C.primary,
     "Opportunity": C.warm, "Booking": C.green, "Retailed": C.green, "Delivered": C.green, "Lost": C.faint,
   };
   const color = map[stage] || C.sub;
@@ -1544,10 +1805,10 @@ function MenuDrawer({ active, onChange, onClose, onLogout, onQuickQuote, onOpenM
       { key: "activity",         label: "Recent Activity" },
     ]},
     { key: "inventory", label: "Inventory", Icon: CarFront, subs: [
-      { key: "inventory:new",      label: "New Scooters" },
+      { key: "inventory:new",      label: `New ${Vehicles}` },
       { key: "inventory:preowned", label: "Pre-Owned" },
-      { key: "inventory:demo",     label: "Demo Scooters" },
-      { key: "inventory:block",    label: "Block/Allocate a scooter" },
+      { key: "inventory:demo",     label: `Demo ${Vehicles}` },
+      { key: "inventory:block",    label: `Block/Allocate a ${VEHICLE}` },
     ]},
     { key: "performance", label: "Performance", Icon: BarChart3, subs: [
       { key: "leaderboard", label: "Leaderboard" },
@@ -1677,9 +1938,9 @@ function TestDriveFields({ value, onChange, model, leads, excludeLeadId }) {
       {availability && availability.conflicts.length > 0 && (
         <div style={{ background: C.warmSoft, borderRadius: 9, padding: 9, marginTop: 9 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <ScooterIcon size={12} color={C.warm} />
+            <VehicleIcon size={12} color={C.warm} />
             <span style={{ fontFamily: F, fontSize: 10, fontWeight: 800, color: C.warm, textTransform: "uppercase", letterSpacing: .3 }}>
-              Demo scooter may be unavailable
+              Demo {VEHICLE} may be unavailable
             </span>
           </div>
           {availability.conflicts.map((c, i) => (
@@ -1695,7 +1956,7 @@ function TestDriveFields({ value, onChange, model, leads, excludeLeadId }) {
       {availability && availability.conflicts.length === 0 && (
         <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 9 }}>
           <Check size={12} color={C.green} />
-          <span style={{ fontFamily: F, fontSize: 11, color: C.green, fontWeight: 600 }}>Demo scooter likely available at this time</span>
+          <span style={{ fontFamily: F, fontSize: 11, color: C.green, fontWeight: 600 }}>Demo {VEHICLE} likely available at this time</span>
         </div>
       )}
     </div>
@@ -1722,7 +1983,7 @@ function TestDriveCancelForm({ onCancel, onSubmit }) {
 
   return (
     <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px dashed ${C.border}` }} onClick={e => e.stopPropagation()}>
-      <div style={{ fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.ink, marginBottom: 8 }}>Cancel Test Ride</div>
+      <div style={{ fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.ink, marginBottom: 8 }}>Cancel {TEST_TITLE}</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {TEST_DRIVE_CANCEL_REASONS.map(r => (
           <button key={r.key} onClick={() => setReason(r.key)} style={chipStyle(reason === r.key)}>{r.label}</button>
@@ -1778,7 +2039,7 @@ function TestDriveResponseForm({ onCancel, onSubmit }) {
       </div>
       {attempted && !canSubmit && (
         <div style={{ marginTop: 10 }}>
-          <MissingBanner items={!response ? ["how the test ride went"] : bookingMissing(booking)} />
+          <MissingBanner items={!response ? [`how the ${testNoun} went`] : bookingMissing(booking)} />
         </div>
       )}
       <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
@@ -1894,9 +2155,9 @@ function CallLogForm({ lead, onSubmit, onCancel, voiceFirst = true }) {
       if (!callback.window) m.push("time window");
     }
     if (outcome === "test_drive") {
-      if (!testDrive.mode) m.push("test ride location");
-      if (!testDrive.date) m.push("test ride date");
-      if (!testDrive.time) m.push("test ride time");
+      if (!testDrive.mode) m.push(`${testNoun} location`);
+      if (!testDrive.date) m.push(`${testNoun} date`);
+      if (!testDrive.time) m.push(`${testNoun} time`);
     }
     if (outcome === "ready") {
       if (!readyVehicle.model || !readyVehicle.variant) m.push("confirmed vehicle");
@@ -2272,44 +2533,62 @@ function FilterSheet({ open, onClose, groups, draft, setDraft, onApply, onClearA
 // A library of openers. Which three surface is decided by where the lead actually is —
 // there's no point offering a test ride to someone who took one last week, or asking
 // for a booking amount from a lead that hasn't been qualified yet.
+// OEM wording inside the WhatsApp openers.
+const WA_WORDS = IS_HYUNDAI ? {
+  priceIncludes: "Ex-showroom, road tax, registration and 1st-year insurance included",
+  demoVisit: "or bring a demo car to your home or office",
+  carry: "Please carry your driving licence — it's needed before the drive.",
+  enjoyed: "driving",
+  afterTitle: "Follow up after the drive",
+  dayExtras: "accessories, a ribbon, photos",
+  firstUse: "How have the first few drives been? Any questions on Bluelink, the first free service or the warranty?",
+} : {
+  priceIncludes: `Ex-showroom, ${OEM.subsidy ? OEM.subsidy.name + " subsidy, " : ""}RTO and insurance + RSA included`,
+  demoVisit: "or bring a demo scooter to your place",
+  carry: "Please carry your two-wheeler driving licence and a helmet — the licence is required before the ride.",
+  enjoyed: "riding",
+  afterTitle: "Follow up after the ride",
+  dayExtras: "accessories, helmet, photos",
+  firstUse: "How have the first rides been? Any questions on charging, the app or the first service?",
+};
 const WA_LIB = {
   intro: {
     title: "Introduce yourself", brief: "Who you are + what they enquired about",
     Icon: User, tone: "#25D366",
     build: ({ first, model, rep, dealership }) =>
       `Hello ${first}, this is ${rep} from ${dealership}. 🙏\n\n` +
-      `Thank you for your enquiry about the ${model}. I'll be your point of contact for anything you need — pricing, variants, test ride or exchange.\n\n` +
+      `Thank you for your enquiry about the ${model}. I'll be your point of contact for anything you need — pricing, variants, ${testNoun} or exchange.\n\n` +
       `Is this a good time to share the details?`,
   },
   quote: {
     title: "Share on-road price", brief: "Full price breakup for their model",
     Icon: FileText, tone: "#0F766E",
     build: ({ first, model, variant, rep, dealership }) =>
-      `Hi ${first}, as promised — here is the on-road price for the ${model}${variant ? ` ${variant}` : ""}. 🛵\n\n` +
-      `• Ex-showroom, PM E-DRIVE subsidy, RTO and insurance + RSA included\n• Current offers already applied\n• Exchange and finance options available\n\n` +
+      `Hi ${first}, as promised — here is the on-road price for the ${model}${variant ? ` ${variant}` : ""}. ${VEH_EMOJI}\n\n` +
+      `• ${WA_WORDS.priceIncludes}\n• Current offers already applied\n• Exchange and finance options available\n\n` +
       `Shall I send the detailed quote PDF?\n\n— ${rep}, ${dealership}`,
   },
   testdrive: {
-    title: "Invite for a test ride", brief: "Offer slots, bring them to the showroom",
+    title: `Invite for a ${testNoun}`, brief: "Offer slots, bring them to the showroom",
     Icon: CarFront, tone: "#D97706",
     build: ({ first, model, rep, dealership }) =>
       `Hi ${first}, would you like to experience the ${model} before deciding? 🙂\n\n` +
-      `I can arrange a test ride at the showroom, or bring a demo scooter to your place — whichever is easier.\n\n` +
+      `I can arrange a ${testNoun} at the showroom, ${WA_WORDS.demoVisit} — whichever is easier.\n\n` +
       `Which works better — this weekend or a weekday evening?\n\n— ${rep}, ${dealership}`,
   },
   td_confirm: {
-    title: "Confirm the test ride", brief: "Slot, location and what to carry",
+    title: `Confirm the ${testNoun}`, brief: "Slot, location and what to carry",
     Icon: Calendar, tone: "#D97706",
     build: ({ first, model, rep, dealership }) =>
-      `Hi ${first}, confirming your test ride of the ${model}. 🛵\n\n` +
-      `Please carry your two-wheeler driving licence and a helmet — the licence is required before the ride.\n\n` +
+      `Hi ${first}, confirming your ${testNoun} of the ${model}. ${VEH_EMOJI}\n\n` +
+      `${WA_WORDS.carry}\n\n` +
       `If the timing needs to change, just message me here.\n\n— ${rep}, ${dealership}`,
   },
   td_feedback: {
-    title: "Follow up after the ride", brief: "Ask how it went, move to next step",
+    title: WA_WORDS.afterTitle, brief: "Ask how it went, move to next step",
     Icon: MessageCircle, tone: "#0F766E",
     build: ({ first, model, rep }) =>
-      `Hi ${first}, hope you enjoyed riding the ${model}! 😊\n\n` +
+      `Hi ${first}, hope you enjoyed ${WA_WORDS.enjoyed} the ${model}! 😊\n\n` +
       `How did it feel — anything you'd like to know before taking it forward?\n\n` +
       `Happy to share the best offer running right now.\n\n— ${rep}`,
   },
@@ -2330,10 +2609,10 @@ const WA_LIB = {
       `No rush at all, happy to help whenever you're ready.\n\n— ${rep}, ${dealership}`,
   },
   booking_amount: {
-    title: "Request booking amount", brief: "Payment details to block the scooter",
+    title: "Request booking amount", brief: `Payment details to block the ${VEHICLE}`,
     Icon: IndianRupee, tone: "#2E7D32",
     build: ({ first, model, rep, dealership }) =>
-      `Hi ${first}, to block your ${model} I'll need the booking amount. 🛵\n\n` +
+      `Hi ${first}, to block your ${model} I'll need the booking amount. ${VEH_EMOJI}\n\n` +
       `Once received, I'll confirm your allotment and share the expected delivery date.\n\n` +
       `Shall I send the payment details?\n\n— ${rep}, ${dealership}`,
   },
@@ -2346,27 +2625,27 @@ const WA_LIB = {
       `You can send photos right here on WhatsApp.\n\n— ${rep}, ${dealership}`,
   },
   delivery_update: {
-    title: "Delivery update", brief: "Where the scooter is and what's next",
+    title: "Delivery update", brief: `Where the ${VEHICLE} is and what's next`,
     Icon: Package, tone: "#2E7D32",
     build: ({ first, model, rep, dealership }) =>
       `Hi ${first}, an update on your ${model}. 🎉\n\n` +
       `We're preparing everything for your delivery. I'll confirm the exact slot shortly.\n\n` +
-      `Anything you'd like arranged on the day — accessories, helmet, photos?\n\n— ${rep}, ${dealership}`,
+      `Anything you'd like arranged on the day — ${WA_WORDS.dayExtras}?\n\n— ${rep}, ${dealership}`,
   },
   psf: {
-    title: "Post-delivery check-in", brief: "How the scooter is treating them",
+    title: "Post-delivery check-in", brief: `How the ${VEHICLE} is treating them`,
     Icon: Heart, tone: "#2E7D32",
     build: ({ first, model, rep, dealership }) =>
       `Hi ${first}, congratulations again on your ${model}! 🎉\n\n` +
-      `How have the first rides been? Any questions on charging, the app or the first service?\n\n` +
+      `${WA_WORDS.firstUse}\n\n` +
       `I'm always here on this number.\n\n— ${rep}, ${dealership}`,
   },
   referral: {
     title: "Ask for a referral", brief: "Friends or family in the market",
     Icon: Users, tone: "#6D28D9",
     build: ({ first, rep, dealership }) =>
-      `Hi ${first}, hope you're enjoying the new scooter! 😊\n\n` +
-      `If any friend or family member is looking at a new scooter, do point them my way — I'll personally make sure they're looked after.\n\n— ${rep}, ${dealership}`,
+      `Hi ${first}, hope you're enjoying the new ${VEHICLE}! 😊\n\n` +
+      `If any friend or family member is looking at a new ${VEHICLE}, do point them my way — I'll personally make sure they're looked after.\n\n— ${rep}, ${dealership}`,
   },
   reengage: {
     title: "Re-open the conversation", brief: "New offer for a cold lead",
@@ -2404,10 +2683,10 @@ function WhatsAppTemplateSheet({ lead, user, onSend, onClose }) {
 
   const vars = {
     first: (lead.name || "there").split(" ")[0],
-    model: lead.model ? `River ${lead.model}` : "the scooter",
+    model: lead.model ? `${BRAND} ${lead.model}` : `the ${VEHICLE}`,
     variant: lead.variant || "",
     rep: (user?.name || "your sales executive").split(" ")[0],
-    dealership: user?.branch ? "Epic River — " + user.branch.replace(" Showroom", "") : "Epic River",
+    dealership: user?.branch ? DEALER + " — " + user.branch.replace(" Showroom", "") : DEALER,
   };
   const textFor = (t) => drafts[t.id] !== undefined ? drafts[t.id] : t.build(vars);
 
@@ -2492,10 +2771,10 @@ function WhatsAppTemplateSheet({ lead, user, onSend, onClose }) {
 
 
 // Model/variant vocabulary for the inventory screen, derived from INVENTORY above.
-const MODEL_VARIANTS = {
+const MODEL_VARIANTS = IS_HYUNDAI ? Object.fromEntries(MODELS.map(m => [m.name, m.variants.map(v => v.name)])) : {
   "Indie": ["750W", "750W + Plus Two", "750W + Plus Five", "480W", "480W + Plus Two", "480W + Plus Five"],
 };
-const VARIANT_PRICES = {
+const VARIANT_PRICES = IS_HYUNDAI ? Object.fromEntries(MODELS.map(m => [m.name, Object.fromEntries(m.variants.map(v => [v.name, carOnRoadLakh(m.name, v.name)]))])) : {
   "Indie": { "750W": 1.67, "750W + Plus Two": 1.73, "750W + Plus Five": 1.77, "480W": 1.63, "480W + Plus Two": 1.69, "480W + Plus Five": 1.73 },
 };
 
@@ -2507,13 +2786,27 @@ function hashStr(str) {
 }
 function genActivityId() { return `act_${Date.now()}_${Math.floor(Math.random() * 1000)}`; }
 
-const EV_MODELS = ["Indie"];
+const EV_MODELS = MODELS.filter(m => m.variants.every(v => v.fuel === "Electric")).map(m => m.name);
 const isEV = (model) => EV_MODELS.includes(model);
 
 // Waiting period when nothing is in stock or in transit for a combination. Real dealerships
 // quote these off the OEM allocation cycle; here they're per-model so a rep can still give
 // the customer an honest answer instead of "let me check".
-const WAITING_WEEKS = { "Indie": 2 };
+const WAITING_WEEKS = IS_HYUNDAI
+  ? { "Creta": 6, "Creta Electric": 8, "Creta N Line": 5, "Alcazar": 6, "Venue": 4, "Venue N Line": 4, "Verna": 4, "Exter": 3,
+      "i20": 3, "i20 N Line": 4, "Grand i10 Nios": 2, "Aura": 2, "Ioniq 5": 10, "Prime HB": 2, "Prime SD": 2 }
+  : { "Indie": 2 };
+// EV spec shown on an electric unit (River Indie / Hyundai Creta Electric, Ioniq 5).
+function evSpecFor(model, variant) {
+  if (!IS_HYUNDAI) return {
+    batteryKwh: 4, rangeKm: 161,
+    charger: variant === "480W" ? "480W portable · full charge in ~8 h" : "750W portable · 0–80% in ~5 h",
+    batteryWarranty: "5 yrs standard (River Care plan added at booking)",
+  };
+  if (model === "Ioniq 5") return { batteryKwh: 72.6, rangeKm: 631, charger: "11 kW AC wall box · DC fast charge 10–80% in ~18 min", batteryWarranty: "8 yrs / 1,60,000 km" };
+  const big = /51\.4|LR|Lounge/.test(variant);
+  return { batteryKwh: big ? 51.4 : 42, rangeKm: big ? 473 : 390, charger: "11 kW AC wall box (~4 h) · DC 10–80% in ~58 min", batteryWarranty: "8 yrs / 1,60,000 km" };
+}
 
 const UNIT_STATUS = {
   in_stock:   { label: "In Stock",   color: C.green,  soft: C.greenSoft },
@@ -2535,8 +2828,34 @@ const UNIT_STATUS = {
 const STOCK_AS_OF = new Date(INVENTORY_AS_OF + "T00:00:00");
 const AGE_RANGES = [[2, 30], [31, 60], [61, 90], [91, 150]];
 const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const SEEDED_HOLD_COMBOS = ["480W|Spring Yellow", "480W|Storm Grey"];
-const SEEDED_HOLDERS = [
+// Key for a held / in-transit combination. River stock is one model, held by charger × colour;
+// Hyundai stock is model × variant × colour.
+const holdKey = (model, variant, color) => IS_HYUNDAI ? `${model}|${variant}|${color}` : `${variant}|${color}`;
+// Hyundai: two combinations stocked at both showrooms, every unit already held (the waitlist demo).
+function hyundaiHoldCombos() {
+  const [a, b] = Object.values(PUNE_STORES).map(id => stockFor(id).lines);
+  const both = a.filter(x => x.units >= 2 && x.units <= 3 && b.some(y => y.key === x.key && y.colour === x.colour));
+  const venue = both.find(x => x.model === "Venue") || both[1] || both[0];
+  const creta = both.find(x => x.model === "Creta" && x !== venue) || both[0];
+  return [venue, creta].map(x => ({ model: x.model, variant: x.variant, color: x.colour }));
+}
+const HOLD_COMBOS = IS_HYUNDAI ? hyundaiHoldCombos()
+  : [{ model: "Indie", variant: "480W", color: "Spring Yellow" }, { model: "Indie", variant: "480W", color: "Storm Grey" }];
+const SEEDED_HOLD_COMBOS = HOLD_COMBOS.map(c => holdKey(c.model, c.variant, c.color));
+const SEEDED_HOLDERS = IS_HYUNDAI ? [
+  { name: "Kavya Reddy", phone: "+91 98480 41107", by: "Rahul Kumar", ago: 3 },
+  { name: "Srinivas Goud", phone: "+91 99490 22874", by: "Divya Pillai", ago: 6 },
+  { name: "Harika Naidu", phone: "+91 97014 10592", by: "Arjun Nair", ago: 2 },
+  { name: "Imran Shaikh", phone: "+91 99230 66418", by: "Rahul Kumar", ago: 8 },
+  { name: "Pooja Rao", phone: "+91 98500 37721", by: "Divya Pillai", ago: 1 },
+  { name: "Aniketh Varma", phone: "+91 90110 58263", by: "Arjun Nair", ago: 5 },
+  { name: "Ramya Chowdary", phone: "+91 98234 90145", by: "Rahul Kumar", ago: 4 },
+  { name: "Sameer Khan", phone: "+91 97302 11836", by: "Divya Pillai", ago: 9 },
+  { name: "Neha Bhaskar", phone: "+91 99700 24519", by: "Arjun Nair", ago: 2 },
+  { name: "Vikranth Rao", phone: "+91 98810 73302", by: "Rahul Kumar", ago: 7 },
+  { name: "Shruti Iyer", phone: "+91 90960 48857", by: "Divya Pillai", ago: 3 },
+  { name: "Harsha Vardhan", phone: "+91 98605 12490", by: "Arjun Nair", ago: 6 },
+] : [
   { name: "Kavya Deshmukh", phone: "+91 98220 41107", by: "Rahul Kumar", ago: 3 },
   { name: "Omkar Joshi", phone: "+91 98903 22874", by: "Divya Pillai", ago: 6 },
   { name: "Snehal Patil", phone: "+91 97644 10592", by: "Arjun Nair", ago: 2 },
@@ -2550,13 +2869,13 @@ const SEEDED_HOLDERS = [
   { name: "Shruti Apte", phone: "+91 90960 48857", by: "Divya Pillai", ago: 3 },
   { name: "Harsh Wagh", phone: "+91 98605 12490", by: "Arjun Nair", ago: 6 },
 ];
-const SEEDED_TRANSIT = [{ variant: "480W", color: "Storm Grey", branch: "Aundh", etaDays: 4 }];
+const SEEDED_TRANSIT = [{ model: HOLD_COMBOS[1].model, variant: HOLD_COMBOS[1].variant, color: HOLD_COMBOS[1].color, branch: BR_A, etaDays: 4 }];
 // Plan-variants ("750W + Plus Two") all draw on their charger's physical pool.
 function chargerOf(variant) { return String(variant || "").split(" + ")[0]; }
 function withCharger(variant, charger) { return [charger, ...String(variant || "").split(" + ").slice(1)].join(" + "); }
 // Seeded holds per charger × colour (both stores) — what's physically there but already spoken for.
 function seededHeldCount(variant, color) {
-  if (!SEEDED_HOLD_COMBOS.includes(`${chargerOf(variant)}|${color}`)) return 0;
+  if (!SEEDED_HOLD_COMBOS.includes(holdKey(MODELS[0].name, chargerOf(variant), color))) return 0;
   return Object.values(PUNE_STORES).reduce((n, id) => n + unitsOf(id, chargerOf(variant), color), 0);
 }
 
@@ -2564,16 +2883,17 @@ function buildInventoryUnits() {
   const units = [];
   let seq = 0;
   let holder = 0;
-  const model = "Indie";
-  const ev = isEV(model);
-  const make = (variant, color, branch, extra) => {
+  const make = (model, variant, color, branch, extra) => {
+    const ev = isEV(model);
     seq += 1;
     const h = hashStr(model + variant + color + branch + seq);
     return {
       id: `U${seq}`,
       category: "new",
       model, variant, color, branch,
-      vin: `MD9RIV${String(h % 900 + 100)}${model.slice(0, 2).toUpperCase()}${String(seq).padStart(5, "0")}`,
+      vin: IS_HYUNDAI
+        ? `MALC${String(h % 900 + 100)}${model.replace(/[^A-Za-z]/g, "").slice(0, 2).toUpperCase()}${String(seq).padStart(6, "0")}`
+        : `MD9RIV${String(h % 900 + 100)}${model.slice(0, 2).toUpperCase()}${String(seq).padStart(5, "0")}`,
       chassis: `CH${String(h % 90000 + 10000)}${seq}`,
       engineNo: ev ? null : `EN${String((h * 7) % 90000 + 10000)}${seq}`,
       motorNo: ev ? `MT${String((h * 7) % 90000 + 10000)}${seq}` : null,
@@ -2582,28 +2902,24 @@ function buildInventoryUnits() {
       daysInStock: null,
       mfgMonth: null,
       priceLakh: (VARIANT_PRICES[model] || {})[variant] || null,
-      ev: ev ? {
-        batteryKwh: 4,
-        rangeKm: 161,
-        charger: variant === "480W" ? "480W portable · full charge in ~8 h" : "750W portable · 0–80% in ~5 h",
-        batteryWarranty: "5 yrs standard (River Care plan added at booking)",
-      } : null,
+      ev: ev ? evSpecFor(model, variant) : null,
       blockedFor: null,
       ...extra,
     };
   };
   Object.entries(PUNE_STORES).forEach(([branch, locId]) => {
     stockFor(locId).lines.forEach(line => {
-      const held = SEEDED_HOLD_COMBOS.includes(`${line.variant}|${line.colour}`);
+      const lineModel = line.model ?? MODELS[0].name;
+      const held = SEEDED_HOLD_COMBOS.includes(holdKey(lineModel, line.variant, line.colour));
       line.buckets.forEach((n, b) => {
         const [lo, hi] = AGE_RANGES[b];
         for (let k = 0; k < n; k++) {
-          const days = lo + hashStr(locId + line.variant + line.colour + b + k) % (hi - lo + 1);
+          const days = lo + hashStr(locId + (IS_HYUNDAI ? lineModel : "") + line.variant + line.colour + b + k) % (hi - lo + 1);
           // Built ~3–6 weeks before it reached the branch.
           const built = new Date(STOCK_AS_OF);
           built.setDate(built.getDate() - days - 20 - (days % 22));
           const who = held ? SEEDED_HOLDERS[holder++ % SEEDED_HOLDERS.length] : null;
-          units.push(make(line.variant, line.colour, branch, {
+          units.push(make(lineModel, line.variant, line.colour, branch, {
             daysInStock: days,
             mfgMonth: `${MONTHS_SHORT[built.getMonth()]} ${built.getFullYear()}`,
             blockedFor: who ? { leadId: null, name: who.name, phone: who.phone, at: d(-who.ago), by: who.by } : null,
@@ -2612,15 +2928,16 @@ function buildInventoryUnits() {
       });
     });
   });
-  SEEDED_TRANSIT.forEach(t => units.push(make(t.variant, t.color, t.branch, {
+  SEEDED_TRANSIT.forEach(t => units.push(make(t.model, t.variant, t.color, t.branch, {
     status: "in_transit", etaDays: t.etaDays, mfgMonth: `${MONTHS_SHORT[STOCK_AS_OF.getMonth()]} ${STOCK_AS_OF.getFullYear()}`,
   })));
   return units;
 }
 
-// Demo and used scooters are a much smaller, hand-listed set — they're individual assets, not
+// Demo and used vehicles are a much smaller, hand-listed set — they're individual assets, not
 // allocations off a production line, so they carry odometer and ownership instead of ETA.
-const DEMO_USED_UNITS = [
+// (Hyundai: derived from its USED_STOCK below, so declared lazily.)
+const DEMO_USED_UNITS = IS_HYUNDAI ? null : [
   { id: "D1", category: "demo", model: "Indie", variant: "750W", color: "Monsoon Blue",
     vin: "MD9RIVDEMO00001", chassis: "CHD10001", engineNo: null, motorNo: "MTD10001", status: "in_stock",
     branch: "Aundh", odometer: "4,120 km", mfgMonth: "Nov 2025", priceLakh: 1.49,
@@ -2703,7 +3020,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
       <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} onClick={onClose} />
       <div style={{ position: "relative", background: C.card, borderRadius: "18px 18px 0 0", maxHeight: "88vh", overflowY: "auto", padding: 16 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-          <span style={{ fontFamily: F, fontSize: 16, fontWeight: 800, color: C.ink }}>{waitlistMode ? "Add to waitlist" : "Block this scooter"}</span>
+          <span style={{ fontFamily: F, fontSize: 16, fontWeight: 800, color: C.ink }}>{waitlistMode ? "Add to waitlist" : `Block this ${VEHICLE}`}</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><X size={18} color={C.sub} /></button>
         </div>
         <div style={{ fontFamily: F, fontSize: 11.5, color: C.sub, marginBottom: 14 }}>
@@ -2749,7 +3066,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
               <div style={{ display: "flex", gap: 8, background: C.hotSoft, border: `1px solid ${C.hot}55`, borderRadius: 10, padding: 11, marginBottom: 10 }}>
                 <AlertTriangle size={14} color={C.hot} style={{ flexShrink: 0, marginTop: 1 }} />
                 <div style={{ fontFamily: F, fontSize: 11.5, color: C.hot, lineHeight: 1.4 }}>
-                  <strong>Booking amount not received.</strong> A scooter can only be held once the booking is paid — otherwise it sits blocked while another customer could have taken it.
+                  <strong>Booking amount not received.</strong> A {VEHICLE} can only be held once the booking is paid — otherwise it sits blocked while another customer could have taken it.
                 </div>
               </div>
             )}
@@ -2759,7 +3076,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
                 <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                   <AlertTriangle size={14} color={C.warm} style={{ flexShrink: 0, marginTop: 1 }} />
                   <div style={{ fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.warm }}>
-                    This scooter doesn't match what {picked.name.split(" ")[0]} booked
+                    This {VEHICLE} doesn't match what {picked.name.split(" ")[0]} booked
                   </div>
                 </div>
                 {mismatches.map(m => (
@@ -2772,7 +3089,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
                 ))}
                 <div style={{ paddingLeft: 22, marginTop: 10 }}>
                   <div style={{ fontFamily: F, fontSize: 11, fontWeight: 700, color: C.warm, marginBottom: 7 }}>
-                    Is this scooter finalised, replacing the one that was booked?
+                    Is this {VEHICLE} finalised, replacing the one that was booked?
                   </div>
                   <div style={{ display: "flex", gap: 7 }}>
                     <button onClick={() => setResolution("finalise")} style={{
@@ -2781,7 +3098,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
                       background: resolution === "finalise" ? C.greenSoft : C.card,
                       color: resolution === "finalise" ? C.green : C.sub,
                       fontFamily: F, fontWeight: 700, fontSize: 11.5,
-                    }}>Yes — finalise this scooter</button>
+                    }}>Yes — finalise this {VEHICLE}</button>
                     <button onClick={() => setResolution("wrong_car")} style={{
                       flex: 1, padding: "8px 0", borderRadius: 8, cursor: "pointer",
                       border: `1.5px solid ${resolution === "wrong_car" ? C.hot : C.borderStrong}`,
@@ -2803,7 +3120,7 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
                     <div style={{ display: "flex", gap: 7, marginTop: 9, background: C.hotSoft, borderRadius: 8, padding: "8px 10px" }}>
                       <AlertTriangle size={13} color={C.hot} style={{ flexShrink: 0, marginTop: 1 }} />
                       <span style={{ fontFamily: F, fontSize: 10.5, color: C.hot, lineHeight: 1.4 }}>
-                        Then this isn't the right scooter. Close this and pick the {picked.variant || picked.model}
+                        Then this isn't the right {VEHICLE}. Close this and pick the {picked.variant || picked.model}
                         {picked.colorInterest?.length ? ` in ${picked.colorInterest.join(" or ")}` : ""} the customer actually booked.
                       </span>
                     </div>
@@ -2823,10 +3140,10 @@ function BlockUnitSheet({ unit, leads, onClose, onConfirm, waitlistMode }) {
           }}>
           {!picked ? "Select a customer"
             : !bookingPaid ? "Booking amount required"
-            : mismatches.length && resolution === "wrong_car" ? "Pick the booked scooter instead"
+            : mismatches.length && resolution === "wrong_car" ? `Pick the booked ${VEHICLE} instead`
             : mismatches.length && !resolution ? "Answer the question above"
             : waitlistMode ? "Add to waitlist" : mismatches.length ? "Block & update booking"
-            : "Block this scooter"}
+            : `Block this ${VEHICLE}`}
         </button>
       </div>
     </div>
@@ -2886,7 +3203,7 @@ function UnitRow({ unit, onBlock, onRelease, onArrived }) {
               <div style={{ fontFamily: F, fontSize: 9.5, fontWeight: 800, color: C.teal, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Electric vehicle</div>
               {[
                 ["Battery", `${unit.ev.batteryKwh} kWh`],
-                ["Certified range (IDC)", `${unit.ev.rangeKm} km`],
+                [`Certified range (${IS_HYUNDAI ? "ARAI" : "IDC"})`, `${unit.ev.rangeKm} km`],
                 ["Charger", unit.ev.charger],
                 ["Battery warranty", unit.ev.batteryWarranty],
               ].map(([k, v]) => (
@@ -2946,11 +3263,17 @@ function UnitRow({ unit, onBlock, onRelease, onArrived }) {
    way new stock is. Every used scooter or bike is a unique asset with its own history, so each gets
    its own card. */
 
-const INSPECTION_AREAS = [
+const INSPECTION_AREAS = IS_HYUNDAI ? [
+  { key: "engine",    label: "Engine & transmission", Icon: Settings },
+  { key: "ac",        label: "Air conditioning",      Icon: Wind },
+  { key: "steering",  label: "Steering, suspension & brakes", Icon: Navigation },
+  { key: "exterior",  label: "Exterior & tyres",      Icon: VehicleIcon },
+  { key: "interior",  label: "Interior & electricals", Icon: Sparkles },
+] : [
   { key: "engine",    label: "Motor / engine & drivetrain", Icon: Settings },
   { key: "ac",        label: "Battery & charging system",   Icon: PulseSignal },
   { key: "steering",  label: "Handling, suspension & brakes", Icon: Navigation },
-  { key: "exterior",  label: "Body panels & tyres",         Icon: ScooterIcon },
+  { key: "exterior",  label: "Body panels & tyres",         Icon: VehicleIcon },
   { key: "interior",  label: "Seat, storage & electricals", Icon: Sparkles },
 ];
 
@@ -2971,7 +3294,118 @@ const READINESS = {
   photos:       { label: "Photos pending", color: C.cold,   soft: C.coldSoft },
 };
 
-const USED_STOCK = [
+// Hyundai demo cars (the DEMO_FLEET, 4 per showroom as in the shared stock) and pre-owned cars.
+function hyundaiUsedStock() {
+  const demo = (id, f, i, o) => {
+    const v = findVariant(f.model, f.variant), ex = v.exShowroom, ev = v.fuel === "Electric";
+    return { id, kind: "demo", brand: BRAND, model: f.model, variant: f.variant, year: o.year || 2026, color: f.color,
+      vin: `MALCDEMO${String(i).padStart(5, "0")}`, chassis: `CHD1000${i}`, engineNo: ev ? null : `END1000${i}`, motorNo: ev ? `MTD1000${i}` : null,
+      regNo: f.regNo, regCity: CITY, odometer: o.km, fuel: v.fuel, transmission: carTransmission(v.transmission), owners: 1, branch: o.branch,
+      cost: { purchase: Math.round(ex * 0.86 / 1000) * 1000, refurb: o.refurb }, ask: Math.round(ex * 0.94 / 1000) * 1000, floor: Math.round(ex * 0.9 / 1000) * 1000,
+      daysInStock: o.days, enquiries: o.enq, testDrives: o.td, readiness: "retail_ready",
+      inspection: o.insp || { engine: 5, ac: 5, steering: 5, exterior: 4.5, interior: 4.5 }, defects: o.defects || [],
+      docs: { rc: true, insurance: true, noc: true, service: true, duplicate: true }, insuranceTill: o.ins, photos: o.photos,
+      highlights: o.hl, ev: ev ? evSpecFor(f.model, f.variant) : undefined, blockedFor: null };
+  };
+  const fleet = Object.fromEntries(DEMO_FLEET.map(f => [f.id, f]));
+  return [
+    demo("D1", fleet.demo1, 1, { branch: BR_A, km: 4120, refurb: 12000, days: 41, enq: 4, td: 11, ins: "Jan 2028", photos: 24,
+      defects: ["Light wear on front seat bolster from test drives"], hl: ["Dealership demo", "Full service history", "Under warranty", "Non-accidental"] }),
+    demo("D2", fleet.demo2, 2, { branch: BR_A, km: 2860, refurb: 8000, days: 27, enq: 7, td: 14, ins: "Feb 2028", photos: 26,
+      insp: { engine: 5, ac: 5, steering: 5, exterior: 5, interior: 5 }, hl: ["Dealership demo", "Nearly new", "Under warranty", "Non-accidental"] }),
+    demo("D3", fleet.demo3, 3, { branch: BR_A, km: 6540, refurb: 14000, days: 88, enq: 2, td: 9, ins: "Jun 2027", photos: 19, year: 2025,
+      insp: { engine: 4.5, ac: 5, steering: 4.5, exterior: 4, interior: 4 }, defects: ["Minor scratches on rear bumper", "Boot-lid trim scuffed"], hl: ["Dealership demo", "Full service history", "Under warranty"] }),
+    demo("D4", fleet.demo4, 4, { branch: BR_B, km: 1300, refurb: 6000, days: 30, enq: 3, td: 8, ins: "Mar 2028", photos: 22,
+      defects: ["Small scuff on rear door sill"], hl: ["Dealership demo", "Under warranty", "Non-accidental"] }),
+    demo("D5", fleet.demo5, 5, { branch: BR_B, km: 450, refurb: 0, days: 12, enq: 5, td: 4, ins: "May 2028", photos: 24,
+      insp: { engine: 5, ac: 5, steering: 5, exterior: 5, interior: 5 }, hl: ["Dealership demo", "Nearly new", "Under warranty", "Non-accidental"] }),
+    demo("D6", fleet.demo6, 6, { branch: BR_B, km: 3100, refurb: 5000, days: 35, enq: 6, td: 12, ins: "Feb 2028", photos: 23,
+      hl: ["Dealership demo", "Battery health 99%", "Under warranty", "Non-accidental"] }),
+    demo("D7", fleet.demo7, 7, { branch: BR_B, km: 5200, refurb: 9000, days: 52, enq: 3, td: 10, ins: "Dec 2027", photos: 20, year: 2025,
+      defects: ["Light kerb rash on front-left alloy"], hl: ["Dealership demo", "Full service history", "Under warranty"] }),
+    demo("D8", fleet.demo8, 8, { branch: BR_A, km: 2400, refurb: 7000, days: 19, enq: 4, td: 7, ins: "Apr 2028", photos: 25,
+      hl: ["Dealership demo", "Captain seats", "Under warranty", "Non-accidental"] }),
+    {
+      id: "P1", kind: "used", brand: "Hyundai", model: "Creta", variant: "SX", year: 2022, color: "Abyss Black",
+      vin: "MALCUSED00001", chassis: "CHU10001", engineNo: "ENU10001",
+      regNo: "TS09 EA 4471", regCity: CITY, odometer: 38200, fuel: "Petrol",
+      transmission: "Manual", owners: 1, branch: BR_A,
+      cost: { purchase: 1080000, refurb: 46000 }, ask: 1340000, floor: 1265000,
+      daysInStock: 18, enquiries: 6, testDrives: 2, readiness: "retail_ready",
+      inspection: { engine: 4.5, ac: 5, steering: 4, exterior: 4, interior: 4.5 },
+      defects: ["Minor scuff on rear bumper", "Both front tyres at ~40% tread"],
+      docs: { rc: true, insurance: true, noc: true, service: true, duplicate: true },
+      insuranceTill: "Mar 2027", photos: 21,
+      highlights: ["Single owner", "Full service history", "Non-accidental", "Original paint"], blockedFor: null,
+    },
+    {
+      id: "P2", kind: "used", brand: "Hyundai", model: "i20", variant: "Asta (O)", year: 2021, color: "Titan Grey",
+      vin: "MALCUSED00002", chassis: "CHU10002", engineNo: "ENU10002",
+      regNo: "TS07 FB 9902", regCity: CITY, odometer: 51700, fuel: "Petrol",
+      transmission: "Manual", owners: 2, branch: BR_B,
+      cost: { purchase: 560000, refurb: 38000 }, ask: 710000, floor: 662000,
+      daysInStock: 63, enquiries: 2, testDrives: 0, readiness: "retail_ready",
+      inspection: { engine: 4, ac: 3.5, steering: 4, exterior: 3.5, interior: 4 },
+      defects: ["AC cooling weak — gas top-up done, monitor", "Windscreen chip, front-right", "Alloy kerb rash x2"],
+      docs: { rc: true, insurance: true, noc: true, service: false, duplicate: false },
+      insuranceTill: "Nov 2026", photos: 18,
+      highlights: ["Second owner", "Accident-free", "New battery"], blockedFor: null,
+    },
+    {
+      id: "P3", kind: "used", brand: "Hyundai", model: "Verna", variant: "SX Turbo DCT", year: 2023, color: "Atlas White",
+      vin: "MALCUSED00003", chassis: "CHU10003", engineNo: "ENU10003",
+      regNo: "TS10 GC 1188", regCity: CITY, odometer: 22400, fuel: "Petrol",
+      transmission: "Automatic", owners: 1, branch: BR_A,
+      cost: { purchase: 1040000, refurb: 22000 }, ask: 1280000, floor: 1195000,
+      daysInStock: 6, enquiries: 9, testDrives: 4, readiness: "photos",
+      inspection: { engine: 5, ac: 5, steering: 4.5, exterior: 4.5, interior: 5 },
+      defects: [],
+      docs: { rc: true, insurance: true, noc: true, service: true, duplicate: true },
+      insuranceTill: "Aug 2027", photos: 6,
+      highlights: ["Single owner", "Under warranty till 2026", "Full service history", "Non-accidental"], blockedFor: null,
+    },
+    {
+      id: "P5", kind: "used", brand: "Maruti Suzuki", model: "Baleno", variant: "Zeta", year: 2021, color: "Grandeur Grey",
+      vin: "MALCUSED00005", chassis: "CHU10005", engineNo: "ENU10005",
+      regNo: "TS08 JK 5521", regCity: CITY, odometer: 44300, fuel: "Petrol",
+      transmission: "Manual", owners: 1, branch: BR_B,
+      cost: { purchase: 585000, refurb: 29000 }, ask: 725000, floor: 678000,
+      daysInStock: 31, enquiries: 3, testDrives: 1, readiness: "retail_ready",
+      inspection: { engine: 4, ac: 4.5, steering: 4, exterior: 4, interior: 4 },
+      defects: ["Rear bumper repainted"],
+      docs: { rc: true, insurance: true, noc: true, service: true, duplicate: true },
+      insuranceTill: "Sep 2026", photos: 17,
+      highlights: ["Single owner", "Exchange intake", "Full service history"], blockedFor: null,
+    },
+    {
+      id: "P6", kind: "used", brand: "Tata", model: "Nexon", variant: "XZ+", year: 2022, color: "Flame Red",
+      vin: "MALCUSED00006", chassis: "CHU10006", engineNo: "ENU10006",
+      regNo: "TS10 LM 7734", regCity: CITY, odometer: 33900, fuel: "Petrol",
+      transmission: "Manual", owners: 1, branch: BR_A,
+      cost: { purchase: 790000, refurb: 34000 }, ask: 965000, floor: 902000,
+      daysInStock: 12, enquiries: 5, testDrives: 2, readiness: "photos",
+      inspection: { engine: 4.5, ac: 4, steering: 4, exterior: 4, interior: 4.5 },
+      defects: ["Front-left alloy kerb rash"],
+      docs: { rc: true, insurance: true, noc: true, service: false, duplicate: true },
+      insuranceTill: "Dec 2026", photos: 9,
+      highlights: ["Single owner", "Exchange intake", "5-star safety"], blockedFor: null,
+    },
+    {
+      id: "P4", kind: "used", brand: "Hyundai", model: "Venue", variant: "S Turbo", year: 2020, color: "Fiery Red",
+      vin: "MALCUSED00004", chassis: "CHU10004", engineNo: "ENU10004",
+      regNo: "AP28 HD 3390", regCity: "Vijayawada", odometer: 74800, fuel: "Petrol",
+      transmission: "Manual", owners: 2, branch: BR_B,
+      cost: { purchase: 520000, refurb: 71000 }, ask: 690000, floor: 640000,
+      daysInStock: 104, enquiries: 1, testDrives: 0, readiness: "docs_pending",
+      inspection: { engine: 3.5, ac: 4, steering: 3, exterior: 3, interior: 3.5 },
+      defects: ["Clutch nearing replacement", "Rear-left door repainted", "Suspension noise over bumps", "Other-state registration — NOC pending"],
+      docs: { rc: true, insurance: false, noc: false, service: false, duplicate: true },
+      insuranceTill: "Expired", photos: 14,
+      highlights: ["Priced to move"], blockedFor: null,
+    },
+  ];
+}
+const USED_STOCK = IS_HYUNDAI ? hyundaiUsedStock() : [
   {
     id: "D1", kind: "demo", brand: "River",
     model: "Indie", variant: "750W", year: 2026, color: "Monsoon Blue",
@@ -3154,6 +3588,16 @@ const USED_STOCK = [
   },
 ];
 
+// Hyundai: the inventory's demo / used unit records, from USED_STOCK (River keeps its hand list).
+function demoUsedUnitsFrom(stock) {
+  return stock.slice(0, 4).concat(stock.filter(u => u.kind === "used").slice(0, 3)).map(u => ({
+    id: u.id, category: u.kind, model: u.model, variant: u.variant, color: u.color,
+    vin: u.vin, chassis: u.chassis, engineNo: u.engineNo || null, motorNo: u.motorNo || null, status: "in_stock",
+    branch: u.branch, odometer: `${u.odometer.toLocaleString("en-IN")} km`, mfgMonth: String(u.year), owners: u.owners,
+    priceLakh: Math.round(u.ask / 1000) / 100, ev: u.ev || null, blockedFor: null,
+  }));
+}
+
 const inr = (n) => "₹" + Number(n).toLocaleString("en-IN");
 const lakh = (n) => "₹" + (n / 100000).toFixed(2) + " L";
 const totalCost = (u) => u.cost.purchase + u.cost.refurb;
@@ -3249,7 +3693,7 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
             background: `linear-gradient(135deg, ${C.bg} 0%, ${C.border} 100%)`,
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            <ScooterIcon size={24} color={C.ghost} />
+            <VehicleIcon size={24} color={C.ghost} />
             <span style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(0,0,0,0.6)",
               borderRadius: 4, padding: "1px 5px", fontFamily: F, fontSize: 8.5, color: "#fff", fontWeight: 700 }}>
               {unit.photos} 📷
@@ -3265,7 +3709,7 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
                   <span style={{ display: "inline-block", background: C.tealSoft, color: C.teal,
                     borderRadius: 5, padding: "1px 6px", marginBottom: 3,
                     fontFamily: F, fontSize: 8.5, fontWeight: 800, letterSpacing: 0.4 }}>
-                    DEMO SCOOTER
+                    DEMO {VEHICLE.toUpperCase()}
                   </span>
                 )}
                 <span style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink, lineHeight: 1.25 }}>
@@ -3306,7 +3750,7 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
           </span>
           <span style={{ fontFamily: F, fontSize: 10, color: C.faint }}>·</span>
           <span style={{ fontFamily: F, fontSize: 10, color: C.sub }}>
-            {unit.enquiries} enquiries · {unit.testDrives} test rides
+            {unit.enquiries} enquiries · {unit.testDrives} {testNounPlural}
           </span>
           <span style={{ flex: 1 }} />
           <span style={{ background: ready.soft, borderRadius: 999, padding: "2px 8px",
@@ -3511,10 +3955,10 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
               </>
             ) : (
               <>
-                <button onClick={() => showToast && showToast("Test ride request sent to the branch")}
+                <button onClick={() => showToast && showToast(`${TestNoun} request sent to the branch`)}
                   style={{ flex: 1, background: C.card, border: `1.5px solid ${C.borderStrong}`, borderRadius: 9,
                     padding: "10px 0", cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.sub }}>
-                  Book test ride
+                  Book {testNoun}
                 </button>
                 <button onClick={() => onBlock(unit)} style={{
                   flex: 1, background: C.primary, border: "none", borderRadius: 9, padding: "10px 0",
@@ -3547,7 +3991,7 @@ function UsedCarCard({ unit, leads, onBlock, onRelease, currentUser, showToast, 
 const DECLINE_REASONS = [
   {
     key: "car_issue",
-    label: "Issue with this specific scooter",
+    label: `Issue with this specific ${VEHICLE}`,
     hint: "Damage, higher odometer on the transit unit, wrong build month",
     outcome: "Position kept — the customer stays first in line for the next arrival.",
   },
@@ -3650,7 +4094,7 @@ function AllotmentBanner({ allotment, onAccept, onDecline }) {
         <CheckCircle2 size={15} color={C.green} style={{ flexShrink: 0, marginTop: 1 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: F, fontSize: 12, fontWeight: 800, color: C.green }}>
-            Scooter arrived — auto-allotted to {allotment.name}
+            {Vehicle} arrived — auto-allotted to {allotment.name}
           </div>
           <div style={{ fontFamily: F, fontSize: 10.5, color: C.sub, marginTop: 3, lineHeight: 1.45 }}>
             {allotment.model} {allotment.variant} · {allotment.color} · VIN {allotment.vin}
@@ -3664,7 +4108,7 @@ function AllotmentBanner({ allotment, onAccept, onDecline }) {
         <button onClick={() => onDecline(allotment)} style={{
           flex: 1, background: C.card, border: `1.5px solid ${C.borderStrong}`, borderRadius: 9,
           padding: "9px 0", cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.sub,
-        }}>Decline this scooter</button>
+        }}>Decline this {VEHICLE}</button>
         <button onClick={() => onAccept(allotment)} style={{
           flex: 1.3, background: C.green, border: "none", borderRadius: 9, padding: "9px 0",
           cursor: "pointer", fontFamily: F, fontSize: 11.5, fontWeight: 800, color: "#fff",
@@ -3714,7 +4158,7 @@ function DeclineAllotmentSheet({ allotment, onClose, onConfirm }) {
           <div style={{ display: "flex", gap: 7, background: C.bg, borderRadius: 9, padding: "10px 11px", marginTop: 4 }}>
             <AlertTriangle size={13} color={C.sub} style={{ flexShrink: 0, marginTop: 1 }} />
             <span style={{ fontFamily: F, fontSize: 10.5, color: C.sub, lineHeight: 1.45 }}>
-              <strong>What happens: </strong>{picked.outcome} The scooter goes back to available stock either way.
+              <strong>What happens: </strong>{picked.outcome} The {VEHICLE} goes back to available stock either way.
             </span>
           </div>
         )}
@@ -3780,7 +4224,7 @@ function AddPhotosSheet({ unit, onClose, onAdd }) {
 
 function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, releasedUnitId, canAllocate = true, subView }) {
   const [category, setCategory] = useState("new");
-  const [units, setUnits] = useState(() => [...buildInventoryUnits(), ...DEMO_USED_UNITS]);
+  const [units, setUnits] = useState(() => [...buildInventoryUnits(), ...(DEMO_USED_UNITS || demoUsedUnitsFrom(USED_STOCK))]);
   const [openModel, setOpenModel] = useState(null);
   const [openVariant, setOpenVariant] = useState(null);
   const [openColor, setOpenColor] = useState(null);
@@ -3812,7 +4256,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
     // customer, and whoever picks the file up next needs to see which scooter was held and why.
     const changed = mismatches.length > 0 && resolution === "finalise";
     const note = changed
-      ? `Scooter finalised — ${unit.model} ${unit.variant} in ${unit.color} (VIN ${unit.vin}) blocked. Booking updated from ${mismatches.map(m => `${m.field}: ${m.booked} → ${m.unit}`).join(", ")}. Customer confirmed the change. Blocked by ${currentUser?.name || "an SE"}.`
+      ? `${Vehicle} finalised — ${unit.model} ${unit.variant} in ${unit.color} (VIN ${unit.vin}) blocked. Booking updated from ${mismatches.map(m => `${m.field}: ${m.booked} → ${m.unit}`).join(", ")}. Customer confirmed the change. Blocked by ${currentUser?.name || "an SE"}.`
       : `${unit.model} ${unit.variant} in ${unit.color} (VIN ${unit.vin}) blocked for this customer by ${currentUser?.name || "an SE"}.`;
 
     if (onUpdateLead) {
@@ -3862,7 +4306,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
     return next;
   };
 
-  const doRelease = (unit) => releaseAndCascade(unit, "Scooter released");
+  const doRelease = (unit) => releaseAndCascade(unit, `${Vehicle} released`);
 
   // A lead elsewhere in the app cancelled or was lost while holding this scooter.
   useEffect(() => {
@@ -3871,7 +4315,13 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
     if (unit && unit.blockedFor) releaseAndCascade(unit, "Booking cancelled");
   }, [releasedUnitId]);
 
-  const [waitlist, setWaitlist] = useState([
+  const [waitlist, setWaitlist] = useState(IS_HYUNDAI ? [
+    // Same queue as River, against the two Hyundai combinations HOLD_COMBOS picked from the stock.
+    { id: "w1", ...HOLD_COMBOS[0], leadId: 3, name: "Ajay Pillai", phone: "+91 9000000003", by: "Divya Pillai", at: d(-9), status: "waiting" },
+    { id: "w2", ...HOLD_COMBOS[0], leadId: 5, name: "Sunita Gupta", phone: "+91 9000000005", by: "Rahul Kumar", at: d(-4), status: "waiting" },
+    { id: "w3", ...HOLD_COMBOS[1], leadId: 4, name: "Meena Rao", phone: "+91 9000000004", by: "Rahul Kumar", at: d(-6), status: "waiting" },
+    { id: "w4", ...HOLD_COMBOS[1], leadId: 6, name: "Rahul Mehta", phone: "+91 9000000001", by: "Rahul Kumar", at: d(-2), status: "waiting" },
+  ] : [
     // Seeded so the queue mechanic is visible without having to build one up first. Every
     // 480W Spring Yellow at both stores is already held (see SEEDED_HOLD_COMBOS) — nothing free.
     { id: "w1", model: "Indie", variant: "480W", color: "Spring Yellow",
@@ -3934,9 +4384,9 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
     if (first) {
       setWaitlist(ws => ws.map(w => w.id === first.id
         ? { ...w, status: "allotted", vin: unit.vin, unitId: unit.id } : w));
-      showToast(`🛵 Arrived — auto-allotted to ${first.name.split(" ")[0]}`);
+      showToast(`${VEH_EMOJI} Arrived — auto-allotted to ${first.name.split(" ")[0]}`);
     } else {
-      showToast("🛵 Scooter arrived — added to available stock");
+      showToast(`${VEH_EMOJI} ${Vehicle} arrived — added to available stock`);
     }
   };
 
@@ -3944,7 +4394,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
     setUnits(us => us.map(u => u.id === a.unitId
       ? { ...u, blockedFor: { ...u.blockedFor, pending: false } } : u));
     setWaitlist(ws => ws.filter(w => w.id !== a.id));
-    showToast(`✅ ${a.name.split(" ")[0]} confirmed — scooter held`);
+    showToast(`✅ ${a.name.split(" ")[0]} confirmed — ${VEHICLE} held`);
   };
 
   // Declining always frees the scooter. What differs is what happens to the queue place.
@@ -3961,7 +4411,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
     const unit = units.find(u => u.id === a.unitId);
     if (unit) setTimeout(() => releaseAndCascade(unit, "Declined"), 0);
     showToast(reason === "car_issue"
-      ? `Scooter released — ${a.name.split(" ")[0]} keeps position 1`
+      ? `${Vehicle} released — ${a.name.split(" ")[0]} keeps position 1`
       : reason === "changed_colour"
         ? `Removed from this queue — add ${a.name.split(" ")[0]} to the right colour`
         : `${a.name.split(" ")[0]} removed from the waitlist`);
@@ -3977,7 +4427,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
 
 
   const CATEGORIES = [
-    { key: "new",  label: "New Scooters" },
+    { key: "new",  label: `New ${Vehicles}` },
     { key: "used", label: "Pre-owned" },
   ];
 
@@ -4042,7 +4492,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
         <div style={{ display: "flex", gap: 7, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 9, padding: "8px 10px", marginBottom: 10 }}>
           <AlertTriangle size={13} color={C.faint} style={{ flexShrink: 0, marginTop: 1 }} />
           <span style={{ fontFamily: F, fontSize: 10.5, color: C.sub, lineHeight: 1.4 }}>
-            Availability and waiting periods only. The assigned Sales Executive allocates a specific scooter.
+            Availability and waiting periods only. The assigned Sales Executive allocates a specific {VEHICLE}.
           </span>
         </div>
       )}
@@ -4112,7 +4562,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
           {filtersOn && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <span style={{ flex: 1, fontFamily: F, fontSize: 10.5, color: C.sub }}>
-                {shown.length} of {usedStock.length} scooters
+                {shown.length} of {usedStock.length} {VEHICLES}
               </span>
               <button onClick={() => { setPreKind("all"); setPreBrand(""); setPreModel(""); setPreVariant(""); }}
                 style={{ background: "none", border: "none", cursor: "pointer",
@@ -4123,7 +4573,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
           {shown.length === 0 && (
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12,
               padding: 22, textAlign: "center", fontFamily: F, fontSize: 12.5, color: C.sub }}>
-              No pre-owned scooters match these filters.
+              No pre-owned {VEHICLES} match these filters.
             </div>
           )}
 
@@ -4165,7 +4615,9 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
             {mOpen && (
               <div style={{ padding: "0 14px 10px" }}>
                 <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, lineHeight: 1.4, padding: "0 0 8px" }}>
-                  Stock is held by charger. River Care Plus Two / Plus Five is added at booking — every plan draws on the same 750W or 480W scooters below.
+                  {IS_HYUNDAI
+                    ? `Ex-showroom ${fmtLakh(Math.min(...findModel(model).variants.map(v => v.exShowroom)))} – ${fmtLakh(Math.max(...findModel(model).variants.map(v => v.exShowroom)))}. Extended warranty, Shield of Trust and RSA are added at booking.`
+                    : `Stock is held by charger. ${OEM.protectionPlans.filter(p => p.price).map(p => p.label).join(" / ").replace(/ \/ River Care /, " / ")} is added at booking — every plan draws on the same ${MODELS[0].variants.map(v => v.name).join(" or ")} ${VEHICLES} below.`}
                 </div>
                 {variants.map(variant => {
                   const vUnits = mUnits.filter(u => u.variant === variant);
@@ -4175,7 +4627,7 @@ function InventoryScreen({ leads, showToast, onUpdateLead, currentUser, released
                   // case the waitlist exists for, so it has to be visible to queue against.
                   const stockedColors = [...new Set(vUnits.map(u => u.color))];
                   const colors = canAllocate
-                    ? [...new Set([...stockedColors, ...COLOR_OPTIONS])]
+                    ? [...new Set([...stockedColors, ...colourOptionsFor(model, variant)])]
                     : stockedColors;
                   return (
                     <div key={variant} style={{ borderTop: `1px solid ${C.border}` }}>
@@ -4491,7 +4943,7 @@ function MISReport({ leads, user }) {
 
   const stats = [
     { label: "Calls Made", value: callsMade, icon: Phone },
-    { label: "Test Rides", value: testDrivesDone, icon: ScooterIcon },
+    { label: TEST_TITLE_PL, value: testDrivesDone, icon: VehicleIcon },
     { label: "Bookings", value: bookingsMade, icon: Package },
     { label: "Deliveries", value: deliveriesDone, icon: CarFront },
     { label: "New Leads", value: newLeads, icon: UserPlus },
@@ -4713,7 +5165,7 @@ function LeadsScreen({ currentId, leads, onOpenLead, onCall, onWhatsApp, onCount
 
       {/* ---- Single-line monthly target (same compact pattern as the telecaller) ---- */}
       <MetricGrid testid="se-target" style={{ marginBottom: 8 }}>
-        <MetricBox span hero label="Scooters retailed · this month" value={achieved} after={`/${target}`}
+        <MetricBox span hero label={`${Vehicles} retailed · this month`} value={achieved} after={`/${target}`}
           sub={achieved >= target ? "Target hit 🎯" : `${target - achieved} more to go`}
           bar={{ value: target ? achieved / target : 0 }} />
       </MetricGrid>
@@ -4726,7 +5178,7 @@ function LeadsScreen({ currentId, leads, onOpenLead, onCall, onWhatsApp, onCount
           const TABS = [
             { key: "all",     label: "All",           match: (l) => l.stage !== "Lost" },
             { key: "ready",   label: "Ready to Book", match: (l) => l.bucket === "ready" || l.stage === "Booking" },
-            { key: "oppty",   label: "Opportunity",   match: (l) => ["Opportunity", "Test Ride"].includes(l.stage) },
+            { key: "oppty",   label: "Opportunity",   match: (l) => ["Opportunity", TEST_STAGE].includes(l.stage) },
             { key: "lost",    label: "Lost",          match: (l) => l.stage === "Lost" },
           ];
           const active = allTab || "all";
@@ -4801,7 +5253,7 @@ function LeadsScreen({ currentId, leads, onOpenLead, onCall, onWhatsApp, onCount
               const tabs = [
                 { key: null,          label: "All",          n: all.length },
                 { key: "ready",       label: "Ready to Book",n: all.filter(i => isReadyToBook(i.lead)).length },
-                { key: "test-drive",  label: "Test Ride",   n: all.filter(i => i.kind === "test-drive").length },
+                { key: "test-drive",  label: TEST_TITLE,   n: all.filter(i => i.kind === "test-drive").length },
                 { key: "delivery",    label: "Delivery",     n: all.filter(i => i.kind === "delivery").length },
               ];
               return tabs.map(t => {
@@ -4908,8 +5360,9 @@ function ExchangeCard({ lead, onUpdateField, onAddPhoto, onAppraise }) {
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "9px 4%" }}>
         {[
-          ["Two-wheeler Model", "model", "e.g. Honda Activa 5G"],
-          ["Variant", "variant", "e.g. DLX"],
+          ...(IS_HYUNDAI
+            ? [["Car Model", "model", "e.g. Maruti Suzuki Swift"], ["Variant", "variant", "e.g. VXi"]]
+            : [["Two-wheeler Model", "model", "e.g. Honda Activa 5G"], ["Variant", "variant", "e.g. DLX"]]),
           ["Year", "year", "e.g. 2016"],
           ["Odometer (km)", "odometer", "e.g. 38000"],
         ].map(([label, field, placeholder]) => (
@@ -5151,8 +5604,18 @@ function StatusTimeline({ currentStatus, pendingStatus, onSelect }) {
 /* ============================== QUOTE GENERATION ============================== */
 function QuoteForm({ lead, onCancel, onSubmit, onViewQuote }) {
   const variant = INVENTORY.find(v => v.model === lead.model && v.variant === lead.variant);
-  const priceLakh = variant?.priceLakh || (VARIANT_PRICES[lead.model] || {})[lead.variant] || 1.67;
+  const priceLakh = variant?.priceLakh || (VARIANT_PRICES[lead.model] || {})[lead.variant] || (IS_HYUNDAI ? 15 : 1.67);
   const [selectedAccessories, setSelectedAccessories] = useState([]);
+  // Hyundai: extended warranty / Shield of Trust / RSA chosen per quote (River's plan is part of the variant).
+  const sellablePlans = IS_HYUNDAI ? OEM.protectionPlans.filter(p => p.price > 0) : [];
+  const leadPlan = IS_HYUNDAI && lead.plan ? OEM.protectionPlans.find(p => p.name === lead.plan && p.price > 0) : null;
+  const [selectedPlans, setSelectedPlans] = useState(leadPlan ? [leadPlan.key] : []);
+  const togglePlan = (key) => setSelectedPlans(s => {
+    if (s.includes(key)) return s.filter(x => x !== key);
+    // The extended-warranty tiers replace each other; the rest stack.
+    const ew = (k) => /^ew/.test(k);
+    return [...s.filter(x => !(ew(key) && ew(x))), key];
+  });
   const [discount, setDiscount] = useState("");
   const [note, setNote] = useState("");
   const [recording, setRecording] = useState(false);
@@ -5163,7 +5626,7 @@ function QuoteForm({ lead, onCancel, onSubmit, onViewQuote }) {
     const a = ACCESSORY_OPTIONS.find(x => x.key === key);
     return sum + (a?.amount || 0);
   }, 0);
-  const breakup = computeQuoteBreakup(priceLakh, parseInt(discount) || 0, accessoriesTotal, lead.variant);
+  const breakup = computeQuoteBreakup(priceLakh, parseInt(discount) || 0, accessoriesTotal, lead.variant, lead.model, selectedPlans);
   const toggleAccessory = (key) => setSelectedAccessories(s => s.includes(key) ? s.filter(x => x !== key) : [...s, key]);
 
   const handleVoice = () => {
@@ -5204,6 +5667,19 @@ function QuoteForm({ lead, onCancel, onSubmit, onViewQuote }) {
         ))}
       </div>
 
+      {sellablePlans.length > 0 && (
+        <>
+          <div style={{ fontFamily: F, fontSize: 10.5, color: C.sub, fontWeight: 600, marginBottom: 6 }}>Warranty & protection (optional)</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+            {sellablePlans.map(p => (
+              <button key={p.key} onClick={() => togglePlan(p.key)} title={p.desc} style={chipStyle(selectedPlans.includes(p.key), true)}>
+                {p.name} (+{formatINR(p.price)})
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
       <div style={{ fontFamily: F, fontSize: 10.5, color: C.sub, fontWeight: 600, marginBottom: 6 }}>Accessories (optional)</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
         {ACCESSORY_OPTIONS.map(a => (
@@ -5214,7 +5690,7 @@ function QuoteForm({ lead, onCancel, onSubmit, onViewQuote }) {
       </div>
 
       <div style={{ fontFamily: F, fontSize: 10.5, color: C.sub, fontWeight: 600, marginBottom: 6 }}>Discount (₹) — your call</div>
-      <input type="number" min="0" step="500" placeholder="e.g. 2000" value={discount}
+      <input type="number" min="0" step={IS_HYUNDAI ? 1000 : 500} placeholder={IS_HYUNDAI ? "e.g. 20000" : "e.g. 2000"} value={discount}
         onChange={e => setDiscount(e.target.value)} style={{ ...formInputStyle, width: "100%", marginBottom: 10 }} />
 
       <div style={{ background: C.primarySoft, borderRadius: 10, padding: 11, marginBottom: 10 }}>
@@ -5513,7 +5989,7 @@ function PaymentBreakdownFields({ value, onChange }) {
       <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 11 }}>
       <div style={{ display: "flex", gap: 8, marginBottom: 11 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <span style={labelStyle}>River Care Plan (₹)</span>
+          <span style={labelStyle}>{IS_HYUNDAI ? "Extended Warranty (₹)" : "River Care Plan (₹)"}</span>
           <input type="number" min="0" value={pd.extendedWarranty} onChange={e => set({ extendedWarranty: e.target.value })} placeholder="0" style={{ ...smallInput, width: "100%" }} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -5683,10 +6159,10 @@ function VehicleConfirmPicker({ lead, value, onChange }) {
                     ))}
                   </div>
                   <div style={{ width: 90, flexShrink: 0, overflowY: "auto", padding: 4 }}>
-                    {COLOR_OPTIONS.map((c, i) => (
+                    {colourOptionsFor(value.model, value.variant).map((c, i, arr) => (
                       <button key={c} onClick={() => updateField("color", c)} style={{
                         display: "flex", alignItems: "center", gap: 5, width: "100%", background: "none", border: "none",
-                        borderBottom: i < COLOR_OPTIONS.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer", padding: "7px 5px", textAlign: "left",
+                        borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer", padding: "7px 5px", textAlign: "left",
                       }}>
                         {value.color === c ? <CheckSquare size={11} color={C.teal} /> : <Square size={11} color={C.ghost} />}
                         <span style={{ fontFamily: F, fontSize: 9.5, fontWeight: value.color === c ? 700 : 500, color: value.color === c ? C.teal : C.ink, lineHeight: 1.2 }}>{c}</span>
@@ -6155,10 +6631,10 @@ function VehicleTabsSection({ lead, onUpdateVehicles }) {
           ))}
         </div>
         <div style={{ width: 90, flexShrink: 0, overflowY: "auto", padding: 4 }}>
-          {COLOR_OPTIONS.map((c, i) => (
+          {colourOptionsFor(active.model, active.variant).map((c, i, arr) => (
             <button key={c} onClick={() => updateActive({ color: c })} style={{
               display: "flex", alignItems: "center", gap: 5, width: "100%", background: "none", border: "none",
-              borderBottom: i < COLOR_OPTIONS.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer", padding: "7px 5px", textAlign: "left",
+              borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer", padding: "7px 5px", textAlign: "left",
             }}>
               {active.color === c ? <CheckSquare size={11} color={C.teal} /> : <Square size={11} color={C.ghost} />}
               <span style={{ fontFamily: F, fontSize: 9.5, fontWeight: active.color === c ? 700 : 500, color: active.color === c ? C.teal : C.ink, lineHeight: 1.2 }}>{c}</span>
@@ -6270,7 +6746,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
   };
 
   const timelineIcon = {
-    call: Phone, visit: MapPin, "test-drive": ScooterIcon, quote: FileText, booking: Package, delivery: CarFront,
+    call: Phone, visit: MapPin, "test-drive": VehicleIcon, quote: FileText, booking: Package, delivery: CarFront,
     escalation: Flag, "escalation-response": CheckCircle2, whatsapp: WhatsAppIcon,
   };
 
@@ -6465,7 +6941,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
           if (channelBlocked(lead, "whatsapp")) { setContactWarning("whatsapp"); return; }
           setWaTemplateOpen(true); setCallLogExpanded(false); setTestDriveExpanded(false); setQuoteFormOpen(false);
         }} />
-        <IconBtn icon={ScooterIcon} label="Test Ride" onClick={() => {
+        <IconBtn icon={VehicleIcon} label={TEST_TITLE} onClick={() => {
           if (lead.testDrive && !testDriveExpanded) {
             setTdForm({ mode: lead.testDrive.mode, date: toDateInputValue(lead.testDrive.date), time: lead.testDrive.time, locationText: lead.testDrive.location?.text || lead.testDrive.location?.mapsLink || "" });
           }
@@ -6534,12 +7010,12 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
         <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <div style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink }}>Test Ride Scheduled</div>
+              <div style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink }}>{TEST_TITLE} Scheduled</div>
               <div style={{ fontFamily: F, fontSize: 11.5, color: C.sub, marginTop: 2 }}>
                 {lead.testDrive.mode === "location" ? "Customer's Location" : "Showroom"} · {fmt(lead.testDrive.date)} at {fmtTime(lead.testDrive.time)}
               </div>
             </div>
-            <ScooterIcon size={17} color={C.purple} />
+            <VehicleIcon size={17} color={C.purple} />
           </div>
 
           <DrivingLicenseBlock lead={lead} onToggle={onToggleDrivingLicense} onShareLink={onShareDLLink} />
@@ -6558,7 +7034,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
               background: "none", border: "none", cursor: "pointer", padding: "8px 0 0", width: "100%",
               fontFamily: F, fontSize: 11.5, fontWeight: 700, color: C.hot
             }}>
-              Cancel Test Ride
+              Cancel {TEST_TITLE}
             </button>
           )}
           {testDriveResponseOpen && (
@@ -6579,7 +7055,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
       {testDriveExpanded && (
         <div style={{ background: C.card, borderRadius: 14, padding: 12, marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 6px 18px rgba(0,0,0,0.075)" }}>
           <div style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink }}>
-            {lead.testDrive ? "Reschedule Test Ride" : "Schedule Test Ride"}
+            {lead.testDrive ? `Reschedule ${TEST_TITLE}` : `Schedule ${TEST_TITLE}`}
           </div>
           <TestDriveFields value={tdForm} onChange={setTdForm} model={lead.model} leads={allLeads} excludeLeadId={lead.id} />
           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
@@ -6708,7 +7184,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
               background: "none", border: "none", cursor: "pointer", padding: "0 0 13px", textAlign: "left",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
-                <ScooterIcon size={14} color={C.faint} style={{ flexShrink: 0 }} />
+                <VehicleIcon size={14} color={C.faint} style={{ flexShrink: 0 }} />
                 <span style={{ fontFamily: F, fontWeight: 700, fontSize: 12.5, color: C.ink, flexShrink: 0 }}>Details</span>
                 <span style={{ fontFamily: F, fontSize: 11.5, color: C.sub, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {lead.model} · {lead.variant}{lead.color ? ` · ${lead.color}` : ""}
@@ -6762,7 +7238,7 @@ function LeadDetail({ lead, currentId, voiceFirst = true, onDone, onUpdateCommPr
             <button onClick={() => setTlFilter(null)} style={chipStyle(!tlFilter)}>All</button>
             {timelineTypes.map(ty => (
               <button key={ty} onClick={() => setTlFilter(ty === tlFilter ? null : ty)} style={chipStyle(tlFilter === ty, true)}>
-                {ty === "test-drive" ? "Test ride" : ty.charAt(0).toUpperCase() + ty.slice(1)}
+                {ty === "test-drive" ? TestNoun : ty.charAt(0).toUpperCase() + ty.slice(1)}
               </button>
             ))}
           </div>
@@ -7090,9 +7566,14 @@ const FUNNEL_STAGES = [
   { key: "delivered",   label: "Delivered",   short: "Deliv" },
 ];
 
-const HIST_SOURCES = ["Website", "BikeDekho", "Referral", "Walk-in", "Facebook Ad", "OLX", "Justdial"];
-// One model, so the "model" slice of history is cut by Indie variant (charger × River Care plan).
-const HIST_MODELS  = ["750W", "750W + Plus Two", "750W + Plus Five", "480W", "480W + Plus Two", "480W + Plus Five"];
+// The OEM's main portal source (River: BikeDekho, Hyundai: CarDekho).
+const PORTAL = IS_HYUNDAI ? "CarDekho" : "BikeDekho";
+const HIST_SOURCES = ["Website", PORTAL, "Referral", "Walk-in", "Facebook Ad", "OLX", "Justdial"];
+// River has one model, so its "model" slice of history is cut by Indie variant (charger × River Care
+// plan); Hyundai's is cut by model (the best sellers).
+const HIST_MODELS  = IS_HYUNDAI
+  ? ["Creta", "Venue", "Exter", "Grand i10 Nios", "i20", "Verna", "Alcazar", "Creta Electric"]
+  : ["750W", "750W + Plus Two", "750W + Plus Five", "480W", "480W + Plus Two", "480W + Plus Five"];
 
 // Per-source conversion character — referrals close, portals leak early. Having sources
 // behave differently is what makes the source slice worth looking at.
@@ -7100,7 +7581,7 @@ const SOURCE_PROFILE = {
   "Referral":    { contact: 0.95, opp: 0.72, visit: 0.60, book: 0.42, retail: 0.38 },
   "Walk-in":     { contact: 0.98, opp: 0.66, visit: 0.58, book: 0.36, retail: 0.33 },
   "Website":     { contact: 0.88, opp: 0.48, visit: 0.32, book: 0.18, retail: 0.15 },
-  "BikeDekho":   { contact: 0.72, opp: 0.34, visit: 0.20, book: 0.10, retail: 0.08 },
+  [PORTAL]:      { contact: 0.72, opp: 0.34, visit: 0.20, book: 0.10, retail: 0.08 },
   "Facebook Ad": { contact: 0.61, opp: 0.24, visit: 0.13, book: 0.06, retail: 0.05 },
   "OLX":         { contact: 0.66, opp: 0.29, visit: 0.17, book: 0.08, retail: 0.06 },
   "Justdial":    { contact: 0.70, opp: 0.31, visit: 0.18, book: 0.09, retail: 0.07 },
@@ -7125,7 +7606,7 @@ function buildHistory(seed = 11) {
       const visit       = opportunity && rnd() < p.visit / p.opp;
       const booking     = visit       && rnd() < p.book / p.visit;
       const retailed    = booking     && rnd() < p.retail / p.book;
-      // Delivery lags — a scooter booked this month is often delivered next.
+      // Delivery lags — a vehicle booked this month is often delivered next.
       const delivered   = retailed    && (m > 0 || rnd() < 0.55);
       rows.push({ month: monthDate, monthIdx: m, source, model,
         contacted, opportunity, visit, booking, retailed, delivered });
@@ -7268,9 +7749,9 @@ function buildInsights({ rows, totals, prevTotals, bySource, byModel, role }) {
       title: `${worst.from} → ${worst.to} is your biggest leak`,
       body: `Only ${worst.rate}% get through — ${worst.lost} leads stop here. `
         + (worst.to === "Visit"
-            ? "Getting people onto a scooter is the step that most predicts a sale; try offering a home test ride."
+            ? `Getting people ${IS_HYUNDAI ? "into a car" : "onto a scooter"} is the step that most predicts a sale; try offering a home ${testNoun}.`
             : worst.to === "Booking"
-            ? "Deals stall here on price or family approval. Ask what's unresolved before the ride ends, not after."
+            ? `Deals stall here on price or family approval. Ask what's unresolved before the ${TEST_VERB} ends, not after.`
             : worst.to === "Contacted"
             ? "These leads were never reached. Speed matters more than anything else at this stage."
             : "Worth reviewing what happens immediately after this step."),
@@ -7345,8 +7826,8 @@ function buildInsights({ rows, totals, prevTotals, bySource, byModel, role }) {
     if (stalled > 5) {
       out.push({
         tone: "info",
-        title: `${stalled} opportunities never took a test ride`,
-        body: `These are people who showed real interest and then never got on a scooter. `
+        title: `${stalled} opportunities never took a ${testNoun}`,
+        body: `These are people who showed real interest and then never got ${IS_HYUNDAI ? "behind the wheel" : "on a scooter"}. `
           + `It's usually the cheapest conversion available to you this month.`,
       });
     }
@@ -7396,7 +7877,23 @@ function KpiTile({ label, value, prev, accent, hero }) {
    with River Care and insurance attached out-earns one selling 18 without. So the earnings
    tab leads with what was left on the table, not with the balance. */
 
-const COMMISSION = {
+// Hyundai scheme (demo assumption): smaller per-car base, attachments on car-sized tickets, tiers at
+// car volumes. River's scheme is unchanged.
+const COMMISSION = IS_HYUNDAI ? {
+  base: {
+    "Creta": 1500, "Venue": 1200, "Exter": 1000, "Grand i10 Nios": 800, "i20": 1000, "Aura": 800, "Verna": 1500,
+    "Alcazar": 2000, "Creta Electric": 2500, "Venue N Line": 1400, "Creta N Line": 1800, "i20 N Line": 1300,
+    "Ioniq 5": 5000, "Prime HB": 600, "Prime SD": 600,
+  },
+  rates: {
+    accessories:  { pct: 2.0, label: "Accessories",       typical: 25000 },
+    warranty:     { pct: 5.0, label: "Extended warranty", typical: 13900 },
+    insurance:    { pct: 2.0, label: "Insurance",         typical: 38000 },
+    finance:      { flat: 750, label: "Finance",          typical: null },
+    exchange:     { flat: 1000, label: "Exchange",        typical: null },
+  },
+  tiers: [{ at: 10, bonus: 5000 }, { at: 14, bonus: 10000 }, { at: 18, bonus: 18000 }],
+} : {
   // Per-unit base. Slower-moving stock pays more — that's the dealership steering the
   // floor, and it's the one place a commission number *should* influence what gets pushed.
   // Keyed by model ("Indie") for inventory, and by variant for the sales history.
@@ -7423,8 +7920,9 @@ const attachValue = (k) => {
 };
 
 // Full potential on one scooter, if every attachment lands.
+const BASE_FALLBACK = IS_HYUNDAI ? 1000 : 500;
 function commissionFor(model) {
-  const base = COMMISSION.base[model] || 500;
+  const base = COMMISSION.base[model] || BASE_FALLBACK;
   const parts = Object.keys(COMMISSION.rates).map(k => ({ key: k, label: COMMISSION.rates[k].label, value: attachValue(k) }));
   const attachTotal = parts.reduce((n, p) => n + p.value, 0);
   return { base, parts, attachTotal, max: base + attachTotal };
@@ -7495,7 +7993,7 @@ function CommissionBreakup({ model }) {
             <span style={{ fontFamily: F, fontSize: 12, fontWeight: 900, color: C.ink }}>{inrShort(c.max)}</span>
           </div>
           <div style={{ fontFamily: F, fontSize: 9.5, color: C.faint, marginTop: 7, lineHeight: 1.45 }}>
-            Attachments are worth more than the scooter itself on most units. Warranty and insurance are
+            Attachments are worth more than the {VEHICLE} itself on most units. Warranty and insurance are
             the two that move this number.
           </div>
         </div>
@@ -7592,7 +8090,7 @@ function EarningsPanel({ history }) {
   const delivered = deals.filter(d => d.delivered);
   const awaiting  = deals.filter(d => !d.delivered);
 
-  const baseTotal   = delivered.reduce((n, d) => n + (COMMISSION.base[d.model] || 500), 0);
+  const baseTotal   = delivered.reduce((n, d) => n + (COMMISSION.base[d.model] || BASE_FALLBACK), 0);
   const attachTotal = delivered.reduce((n, d) => n + earnedOn(d), 0) - baseTotal;
   const attachCount = delivered.reduce((n, d) => n + Object.values(d.attached).filter(Boolean).length, 0);
 
@@ -7658,7 +8156,7 @@ function EarningsPanel({ history }) {
         {/* Where it came from — three lines, each traceable below. */}
         <div style={{ marginTop: 13, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
           {[
-            { l: `Unit commission · ${units} scooters`, v: baseTotal, c: C.ink },
+            { l: `Unit commission · ${units} ${VEHICLES}`, v: baseTotal, c: C.ink },
             { l: `Add-ons · ${attachCount} attached`, v: attachTotal, c: C.green },
             { l: singleMonth ? (tier ? `Volume bonus · ${tier.at}+ tier` : "Volume bonus · not reached")
                              : `Volume bonus · ${monthsInRange.length} months`,
@@ -7677,7 +8175,7 @@ function EarningsPanel({ history }) {
           <div style={{ display: "flex", gap: 7, background: C.bg, borderRadius: 9, padding: "9px 10px", marginTop: 5 }}>
             <Clock size={12} color={C.sub} style={{ flexShrink: 0, marginTop: 1 }} />
             <span style={{ fontFamily: F, fontSize: 10.5, color: C.sub, lineHeight: 1.45 }}>
-              A further <strong>{inrShort(pendingTotal)}</strong> across {awaiting.length} booked scooters,
+              A further <strong>{inrShort(pendingTotal)}</strong> across {awaiting.length} booked {VEHICLES},
               payable once they're delivered.
             </span>
           </div>
@@ -7690,7 +8188,7 @@ function EarningsPanel({ history }) {
           How the volume bonus works
         </div>
         <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, marginBottom: 12, lineHeight: 1.45 }}>
-          Cross a tier and the bonus is paid on the whole month, not only the scooters after it.
+          Cross a tier and the bonus is paid on the whole month, not only the {VEHICLES} after it.
         </div>
 
         {COMMISSION.tiers.map(t => {
@@ -7746,7 +8244,7 @@ function EarningsPanel({ history }) {
       {/* The ledger. Every rupee traceable to a scooter. */}
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
         <div style={{ fontFamily: F, fontSize: 12.5, fontWeight: 800, color: C.ink, marginBottom: 3 }}>
-          What each scooter paid
+          What each {VEHICLE} paid
         </div>
         <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, marginBottom: 11, lineHeight: 1.45 }}>
           Tap a sale to see how it was made up.
@@ -7805,7 +8303,7 @@ function EarningsPanel({ history }) {
             <Sparkles size={13} color={C.green} style={{ flexShrink: 0, marginTop: 1 }} />
             <span style={{ fontFamily: F, fontSize: 10.5, color: C.green, lineHeight: 1.5 }}>
               Add-ons brought in <strong>{inrShort(attachTotal)}</strong> — {pct(attachTotal, total)}% of everything
-              you earned this month, from {attachCount} attachments across {units} scooters.
+              you earned this month, from {attachCount} attachments across {units} {VEHICLES}.
             </span>
           </div>
         )}
@@ -7902,7 +8400,7 @@ function SEDashboardScreen({ leads, user }) {
       {/* ---- KPI strip: always this month vs last ---- */}
       <MetricGrid style={{ marginBottom: 12 }}>
         <KpiTile label="Contacted · this month" value={thisM.contacted} prev={lastM.contacted} />
-        <KpiTile label="Test rides · this month" value={thisM.visit} prev={lastM.visit} accent={C.primary} />
+        <KpiTile label={`${TestNounPlural} · this month`} value={thisM.visit} prev={lastM.visit} accent={C.primary} />
         <KpiTile label="Bookings · this month" value={thisM.booking} prev={lastM.booking} accent={C.warm} />
         <KpiTile hero label="Retailed · this month" value={thisM.retailed} prev={lastM.retailed} accent={C.darkGreen} />
       </MetricGrid>
@@ -7956,7 +8454,7 @@ function SEDashboardScreen({ leads, user }) {
             {drillRow.label}
           </div>
           <div style={{ fontFamily: F, fontSize: 11, color: C.sub, lineHeight: 1.55 }}>
-            {drillRow.values.leads} leads · {drillRow.values.visit} test rides
+            {drillRow.values.leads} leads · {drillRow.values.visit} {testNounPlural}
             ({pct(drillRow.values.visit, drillRow.values.leads)}%) ·
             {" "}{drillRow.values.retailed} retailed ({pct(drillRow.values.retailed, drillRow.values.leads)}%).
             {" "}{pct(drillRow.values.retailed, drillRow.values.leads) > pct(totals.retailed, totals.leads)
@@ -7993,7 +8491,7 @@ function ActivityScreen({ leads, onOpenLead }) {
 
   const tabs = [
     { key: "calls", label: "Calls", data: calls, icon: Phone },
-    { key: "testdrives", label: "Test Rides", data: testDrives, icon: ScooterIcon },
+    { key: "testdrives", label: TEST_TITLE_PL, data: testDrives, icon: VehicleIcon },
     { key: "bookings", label: "Bookings", data: bookings, icon: Package },
     { key: "delivery", label: "Delivery", data: deliveries, icon: CarFront },
   ];
@@ -8095,7 +8593,164 @@ function ActivityScreen({ leads, onOpenLead }) {
 // other shortlisted options, common objections and how to answer them, and what independent
 // reviewers tend to highlight — so an SE walking into a comparison conversation has the
 // talking points ready instead of improvising.
-const LEARNING_CONTENT = {
+const LEARNING_CONTENT = IS_HYUNDAI ? {
+  Creta: {
+    segment: "Mid-size SUV",
+    competitors: ["Kia Seltos", "Maruti Grand Vitara", "Honda Elevate"],
+    keyStrengths: [
+      "Widest service network in the segment — matters most to buyers outside metro cities",
+      "Strongest resale value of any mid-size SUV, tracked over a 5-year hold",
+      "Panoramic sunroof and ventilated seats available from a lower trim than most rivals",
+    ],
+    talkingPoints: [
+      { vs: "Kia Seltos", points: [
+        "Same platform and powertrains — Creta wins on resale value and service network density",
+        "Creta's diesel-automatic combination is available where Seltos often isn't at every trim",
+      ]},
+      { vs: "Maruti Grand Vitara", points: [
+        "Grand Vitara is hybrid-only for its best mileage figures — Creta offers a straightforward turbo-petrol for buyers who don't want hybrid running costs",
+        "Creta's cabin trim and sunroof size are usually seen as a class above at the equivalent price point",
+      ]},
+      { vs: "Honda Elevate", points: [
+        "Elevate is newer to the segment with a thinner dealer network in tier-2/3 towns",
+        "Creta has a longer track record — a real point for buyers who ask about long-term reliability",
+      ]},
+    ],
+    objectionHandling: [
+      { objection: "\"Seltos looks sportier\"", response: "Agree it's a fair styling preference, then pivot to running cost: resale value and service cost over 5 years favour Creta noticeably." },
+      { objection: "\"Why not the hybrid Grand Vitara for better mileage?\"", response: "Ask their real daily running — hybrids pay back mainly in heavy city traffic. For highway-heavy use, Creta's turbo-petrol is usually cheaper to own." },
+    ],
+    reviewThemes: [
+      "Ride comfort and highway stability are consistently rated above segment average",
+      "Cabin quality and features-for-price are the most repeated praise across reviewers",
+      "Turbo-petrol DCT is frequently called out as the pick of the range for city + highway mix",
+    ],
+    searchTip: "Search \"Hyundai Creta 2025 review\" — Autocar India, CarWale, and CarDekho all have recent long-form reviews worth watching together with a customer if they're undecided.",
+  },
+  Venue: {
+    segment: "Compact SUV",
+    competitors: ["Tata Nexon", "Maruti Brezza"],
+    keyStrengths: [
+      "Turbo-petrol DCT option gives genuinely quick performance in the segment",
+      "Feature list at mid-trim (sunroof, connected car tech) beats most rivals at the same price",
+    ],
+    talkingPoints: [
+      { vs: "Tata Nexon", points: [
+        "Nexon's 5-star crash rating is a strong pitch for them — don't dodge it, pivot to Venue's lower service cost and better infotainment responsiveness instead",
+        "Venue's turbo-DCT is noticeably smoother in traffic than Nexon's AMT",
+      ]},
+      { vs: "Maruti Brezza", points: [
+        "Brezza's mileage claim is close on paper — Venue's real-world city mileage is competitive and the turbo-petrol is more fun to drive",
+        "Venue's cabin tech (sunroof, digital cluster) is available at a lower trim than Brezza's equivalent",
+      ]},
+    ],
+    objectionHandling: [
+      { objection: "\"Nexon is safer\"", response: "Acknowledge the crash rating directly — don't argue it. Then move to total cost of ownership and in-city drivability, where Venue is genuinely stronger." },
+    ],
+    reviewThemes: [
+      "Turbo-petrol engine and DCT gearbox combination is the most-praised part of the range",
+      "Reviewers consistently note the features-per-rupee value at the SX trim",
+    ],
+    searchTip: "Search \"Hyundai Venue N Line review\" for the sportier trim specifically — useful when a customer is cross-shopping on driving feel, not just space.",
+  },
+  i20: {
+    segment: "Premium hatchback",
+    competitors: ["Maruti Baleno", "Tata Altroz"],
+    keyStrengths: [
+      "Cabin quality and dashboard design are consistently rated best-in-class for the segment",
+      "Diesel option available where most hatchback rivals have gone petrol-only",
+    ],
+    talkingPoints: [
+      { vs: "Maruti Baleno", points: [
+        "i20's cabin materials and fit-finish are usually seen as a clear step up",
+        "Baleno wins on outright mileage — be upfront about this, then pivot to ride quality and NVH, where i20 leads",
+      ]},
+      { vs: "Tata Altroz", points: [
+        "Altroz's 5-star safety rating is real — pivot to i20's stronger resale and lower long-term maintenance cost",
+      ]},
+    ],
+    objectionHandling: [
+      { objection: "\"Baleno gives better mileage\"", response: "True on paper — ask if they're cross-shopping on running cost or on how the car feels to drive daily. i20 wins clearly on the second." },
+    ],
+    reviewThemes: [
+      "Interior design and build quality are the most consistently praised aspects",
+      "Ride comfort at highway speed is repeatedly called out as segment-leading",
+    ],
+    searchTip: "Search \"Hyundai i20 vs Baleno comparison\" — several channels have done direct back-to-back tests that are useful to show a customer weighing both.",
+  },
+  Verna: {
+    segment: "Mid-size sedan",
+    competitors: ["Honda City", "Skoda Slavia"],
+    keyStrengths: [
+      "Only car in the segment offering a turbo-petrol with a proper sporty character",
+      "ADAS (Level-2 safety assists) available at a lower trim than most segment rivals",
+    ],
+    talkingPoints: [
+      { vs: "Honda City", points: [
+        "City has a stronger brand reputation for reliability — don't dismiss it, but point to Verna's turbo-petrol performance and ADAS availability as real differentiators",
+      ]},
+      { vs: "Skoda Slavia", points: [
+        "Slavia has a European road-manners reputation — Verna counters with a much larger dealer and service network",
+      ]},
+    ],
+    objectionHandling: [
+      { objection: "\"Honda has a better reliability reputation\"", response: "Fair point historically — pivot to Verna's warranty terms and the fact that recent JD Power/quality survey gaps between Korean and Japanese brands have narrowed significantly." },
+    ],
+    reviewThemes: [
+      "Turbo-petrol performance is the most repeated highlight — often called the most engaging car in its class to drive",
+      "ADAS features at the price point are frequently flagged as excellent value",
+    ],
+    searchTip: "Search \"Hyundai Verna turbo review\" for driving-focused content — most useful when a customer explicitly asks about performance, not just comfort.",
+  },
+  Alcazar: {
+    segment: "3-row SUV",
+    competitors: ["Tata Safari", "Mahindra XUV700"],
+    keyStrengths: [
+      "Genuinely usable third row for shorter trips — not just an emergency seat",
+      "Captain seat option in the 6-seat variant is a strong pitch for premium-feel buyers",
+    ],
+    talkingPoints: [
+      { vs: "Tata Safari", points: [
+        "Safari has more road presence — Alcazar counters with a noticeably better-finished cabin and lower service cost",
+      ]},
+      { vs: "Mahindra XUV700", points: [
+        "XUV700 wins on raw power and ADAS tech — Alcazar counters on ride comfort, cabin refinement, and resale value",
+      ]},
+    ],
+    objectionHandling: [
+      { objection: "\"XUV700 has more powerful engines\"", response: "True on the top trim — ask about their actual use case. For city + occasional highway family use, Alcazar's refinement and comfort usually wins the comparison once they drive both." },
+    ],
+    reviewThemes: [
+      "Third-row usability is repeatedly called out as better than most competitors at this price",
+      "Cabin refinement and ride quality are consistently rated above the segment average",
+    ],
+    searchTip: "Search \"Hyundai Alcazar 6-seater review\" — most family buyers cross-shopping this segment specifically want to see third-row and captain-seat usability.",
+  },
+  Exter: {
+    segment: "Micro SUV",
+    competitors: ["Tata Punch", "Maruti Fronx"],
+    keyStrengths: [
+      "Highest ground clearance in the micro-SUV segment — a genuine, visible differentiator",
+      "CNG factory-fitted option available, unlike some rivals' aftermarket-only CNG",
+    ],
+    talkingPoints: [
+      { vs: "Tata Punch", points: [
+        "Punch has a 5-star crash rating — acknowledge it directly, then pivot to Exter's larger boot and factory CNG option",
+      ]},
+      { vs: "Maruti Fronx", points: [
+        "Fronx's turbo-petrol is quicker — Exter counters on ground clearance, boot space, and a roomier rear seat",
+      ]},
+    ],
+    objectionHandling: [
+      { objection: "\"Punch is safer\"", response: "Don't argue the rating — acknowledge it and move to what Exter offers that Punch doesn't at this price: factory CNG and more boot space." },
+    ],
+    reviewThemes: [
+      "Ground clearance and general road presence for the segment are the most-praised aspects",
+      "Boot space is repeatedly called out as best-in-class for a micro-SUV",
+    ],
+    searchTip: "Search \"Hyundai Exter CNG review\" — most useful for customers specifically asking about running cost, since CNG is a major reason buyers shortlist this segment.",
+  },
+} : {
   Indie: {
     segment: "Electric scooter — \"the SUV of scooters\"",
     competitors: ["Ather Rizta", "Ola S1 Pro", "TVS iQube", "Bajaj Chetak", "Hero Vida V2"],
@@ -8148,7 +8803,69 @@ const LEARN_CATS = [
   { key: "internal", label: "Internal", Icon: Users,      color: C.teal,    verb: "Watch" },
 ];
 
-const LEARN_LIBRARY = [
+const LEARN_LIBRARY = IS_HYUNDAI ? [
+  // ---- Videos (produced) ----
+  { id: "speed-lead", cat: "video", mins: 6, topic: "Sales",
+    title: "Speed to lead — the first hour", by: "Autoprism Sales Lab",
+    blurb: "Why an enquiry called back in ten minutes converts several times better than the same enquiry called at day's end." },
+  { id: "hold-price", cat: "video", mins: 12, topic: "Sales",
+    title: "Holding price without losing the deal", by: "Autoprism Sales Lab",
+    blurb: "Four ways to answer \"what's your best price\" that don't start with a number." },
+  { id: "addons", cat: "video", mins: 9, topic: "Sales",
+    title: "Selling add-ons at booking", by: "Autoprism Sales Lab",
+    blurb: "Warranty and insurance are a booking conversation. Once the customer has the keys in mind, they stop buying." },
+  { id: "who-decides", cat: "video", mins: 11, topic: "Communication",
+    title: "Reading the room — who actually decides", by: "Meera Shankar · sales trainer",
+    blurb: "The person asking questions is often not the person signing." },
+  { id: "angry", cat: "video", mins: 14, topic: "Communication",
+    title: "The delivery-day complaint", by: "Meera Shankar",
+    blurb: "The most expensive conversation in the business — it decides the referral, not just this sale." },
+  { id: "finance-talk", cat: "video", mins: 10, topic: "Communication",
+    title: "Explaining finance without jargon", by: "Autoprism Sales Lab",
+    blurb: "Said in language a customer repeats correctly to their spouse that evening." },
+  { id: "ev-basics", cat: "video", mins: 16, topic: "Product",
+    title: "Selling an EV to a petrol buyer", by: "Autoprism Sales Lab",
+    blurb: "The four objections that come up every time on the Creta Electric — range, charging, service, resale." },
+
+  // ---- Podcasts ----
+  { id: "qualify-call", cat: "podcast", mins: 22, topic: "Sales",
+    title: "Qualifying on the first call", by: "The Showroom Floor · Ep. 31",
+    blurb: "Budget, timeline and who decides — without it feeling like an interrogation." },
+  { id: "first-time", cat: "podcast", mins: 26, topic: "Communication",
+    title: "First-time buyer vs repeat buyer", by: "The Showroom Floor · Ep. 18",
+    blurb: "Two different conversations. One needs reassurance, the other finds it patronising." },
+  { id: "silence", cat: "podcast", mins: 18, topic: "Communication",
+    title: "Silence as a closing tool", by: "The Showroom Floor · Ep. 24",
+    blurb: "After you state the price, whoever speaks first loses." },
+  { id: "phone-tone", cat: "podcast", mins: 15, topic: "Communication",
+    title: "Sounding like someone worth meeting", by: "The Showroom Floor · Ep. 09",
+    blurb: "On a call the customer has only your voice to judge you by." },
+
+  // ---- Articles ----
+  { id: "battlecards", cat: "article", mins: 9, topic: "Product",
+    title: "Comparison battlecards", by: "Autoprism",
+    blurb: "Creta vs Seltos, Venue vs Nexon, Verna vs City, Alcazar vs XUV700 — including where each rival honestly beats us.", tag: "Updated" },
+  { id: "whatsapp", cat: "article", mins: 6, topic: "Communication",
+    title: "WhatsApp that gets replied to", by: "Autoprism",
+    blurb: "Openers, follow-ups, and the three habits that get you blocked." },
+  { id: "queue", cat: "article", mins: 5, topic: "Sales",
+    title: "Working the queue daily", by: "Autoprism",
+    blurb: "Why notes written from memory cost you the next call." },
+  { id: "exchange", cat: "article", mins: 7, topic: "Product",
+    title: "Talking about exchange valuation", by: "Autoprism",
+    blurb: "The customer's car is always worth more to them than to the market." },
+
+  // ---- Internal (your own floor) ----
+  { id: "closing-td", cat: "internal", mins: 8, topic: "Sales",
+    title: "Closing after the test drive", by: `Ravi Menon · 14 yrs, ${BR_A}`,
+    blurb: "The drive is over and the customer is standing by the car. The next ninety seconds decide it.", tag: "Most watched" },
+  { id: "home-td", cat: "internal", mins: 7, topic: "Sales",
+    title: "Home test drives that convert", by: "Divya Pillai · top converter",
+    blurb: "Takes an hour longer, closes far better. How to offer it and to whom." },
+  { id: "walkaround", cat: "internal", mins: 13, topic: "Product",
+    title: "The six-point walkaround", by: "Ravi Menon",
+    blurb: "A repeatable route around the car, in the order that builds interest." },
+] : [
   // ---- Videos (produced) ----
   { id: "speed-lead", cat: "video", mins: 6, topic: "Sales",
     title: "Speed to lead — the first hour", by: "Autoprism Sales Lab",
@@ -8223,7 +8940,105 @@ const LEARN_LOG = { video: 47, podcast: 63, article: 18, internal: 21 };
    there. So this side has no durations, no progress, no hours: it has search, models on
    top, and the answer two taps down. Anything that slows a rep down here costs a sale. */
 
-const PRODUCT_REF = [
+// Hyundai price bands come from the catalogue (ex-showroom, src/oem).
+const exBand = (model) => { const ps = findModel(model).variants.map(v => v.exShowroom); return `₹${(Math.min(...ps) / 1e5).toFixed(1)} – ${(Math.max(...ps) / 1e5).toFixed(1)} L ex-showroom`; };
+const PRODUCT_REF = IS_HYUNDAI ? [
+  {
+    model: "Creta", segment: "Mid-size SUV", price: exBand("Creta"),
+    specs: ["1.5 petrol (IVT) / 1.5 diesel (6AT) / 1.5 turbo (7DCT)", "6 airbags standard", "Level-2 ADAS on top trims", "Panoramic sunroof · ventilated front seats",
+      "Variant ladder: E → EX → EX(O) → S(O) → SX → SX Premium → King", "Knight and dual-tone options on selected trims"],
+    pitch: "The safe default in the segment — best service reach and the strongest resale.",
+    rivals: [
+      { name: "Kia Seltos",
+        headline: "Same platform and engines. The difference is what happens after the sale.",
+        wins: ["Widest service network in the segment", "Strongest 5-year resale", "Diesel-automatic on more trims"],
+        edge: "Seltos has a sharper interior. If they've seen it, agree — then move to ownership cost." },
+      { name: "Maruti Suzuki Grand Vitara",
+        headline: "They'll win on fuel economy. Win on everything you can feel.",
+        wins: ["Far stronger performance, petrol and diesel", "Better ride quality on bad roads", "Higher feature count at the same price"],
+        edge: "Strong-hybrid economy is genuinely better. Don't argue the number — reframe on drive quality." },
+    ],
+    articles: [
+      { title: "Creta variant ladder — which trim to pitch", mins: 6 },
+      { title: "Handling the \"waiting period\" objection", mins: 4 },
+    ],
+  },
+  {
+    model: "Venue", segment: "Compact SUV", price: exBand("Venue"),
+    specs: ["1.2 petrol / 1.0 turbo (7DCT) / 1.5 diesel", "HX2 → HX10 trim ladder", "Dual-tone roof options", "6 airbags"],
+    pitch: "Refinement and running cost, not crash rating. Compete where you win.",
+    rivals: [
+      { name: "Tata Nexon",
+        headline: "Nexon leads on safety rating — don't fight that. Compete on refinement.",
+        wins: ["Smoother turbo and gearbox", "Better cabin fit and finish", "Lower routine service cost"],
+        edge: "Nexon rates higher on crash safety. Be honest, then pivot to total ownership." },
+      { name: "Kia Sonet",
+        headline: "Closest rival on paper. Decided on delivery and service, not features.",
+        wins: ["Shorter waiting period on most variants", "Wider service footprint", "Better resale"],
+        edge: "Sonet's diesel-automatic is a genuine draw. Check stock before promising." },
+    ],
+    articles: [{ title: "Venue vs the sub-4m field — one-page summary", mins: 5 }],
+  },
+  {
+    model: "Exter", segment: "Micro SUV", price: exBand("Exter"),
+    specs: ["1.2 petrol (MT / AMT) and factory CNG (dual-cylinder)", "6 airbags standard", "Sunroof from mid trims", "Dashcam with dual camera on top trims"],
+    pitch: "A real SUV stance at hatchback money — sunroof, six airbags and factory CNG.",
+    rivals: [
+      { name: "Tata Punch",
+        headline: "Punch has the crash rating. Exter has the features and the factory CNG.",
+        wins: ["Factory-fitted dual-cylinder CNG with a usable boot", "Sunroof and dashcam on offer", "Six airbags across the range"],
+        edge: "Punch's 5-star rating is real — acknowledge it, then move to features and running cost." },
+    ],
+    articles: [{ title: "Explaining CNG running cost in one minute", mins: 3 }],
+  },
+  {
+    model: "Verna", segment: "Mid-size sedan", price: exBand("Verna"),
+    specs: ["1.5 NA (MT / IVT) / 1.5 turbo (7DCT)", "Level-2 ADAS", "Ventilated front seats", "5-star Global NCAP"],
+    pitch: "The turbo is the car. Get them to drive that variant, not the base.",
+    rivals: [
+      { name: "Honda City",
+        headline: "City sells on badge and refinement. Verna sells on everything measurable.",
+        wins: ["Turbo option City has no answer to", "More features at every price point", "5-star crash rating"],
+        edge: "City's resale and brand trust are real. Acknowledge, then get them into the turbo." },
+      { name: "Volkswagen Virtus",
+        headline: "Closest on performance. Wins and losses are on ownership, not the drive.",
+        wins: ["Far better service reach", "Lower maintenance cost", "More equipment as standard"],
+        edge: "Virtus feels more solid on the highway. Don't dispute it — compete on running cost." },
+    ],
+    articles: [{ title: "Why the turbo variant sells itself on a drive", mins: 4 }],
+  },
+  {
+    model: "Alcazar", segment: "6/7-seater SUV", price: exBand("Alcazar"),
+    specs: ["6 and 7 seat layouts", "1.5 turbo (7DCT) / 1.5 diesel", "Captain seats on Signature", "Level-2 ADAS"],
+    pitch: "Ask who sits in the third row. That question decides this segment.",
+    rivals: [
+      { name: "Mahindra XUV700",
+        headline: "XUV700 wins on power and price. Alcazar wins on the third row being usable.",
+        wins: ["Genuinely usable third row for adults", "Quieter at highway speed", "Shorter, more predictable wait"],
+        edge: "Don't compete on straight-line performance — you'll lose. Move to who's travelling." },
+    ],
+    articles: [{ title: "Selling the 6-seat vs 7-seat decision", mins: 5 }],
+  },
+  {
+    model: "Creta Electric", segment: "Electric SUV", price: exBand("Creta Electric"),
+    specs: ["42 kWh (390 km ARAI) or 51.4 kWh Long Range (473 km)", "DC fast charge 10–80% in ~58 min · 11 kW AC wall box", "V2L power output", "8 yr / 1,60,000 km battery warranty", "Road tax exempt in Telangana"],
+    pitch: "A Creta first, an EV second — the same space and service network, without the fuel bill.",
+    rivals: [
+      { name: "Tata Nexon EV",
+        headline: "Nexon EV is cheaper. Creta Electric is the bigger, more grown-up car.",
+        wins: ["More cabin and boot space", "Longer certified range on the 51.4 kWh pack", "Creta resale and service reach"],
+        edge: "Nexon EV undercuts on price. If budget is the constraint, show the 42 kWh Executive before losing them." },
+      { name: "Mahindra BE 6",
+        headline: "BE 6 is the head-turner. Creta Electric is the one the family agrees on.",
+        wins: ["Five-seat practicality and a usable rear seat", "Familiar Creta ownership", "Wider service network"],
+        edge: "BE 6 is quicker and more striking. Don't argue design — compete on everyday usability." },
+    ],
+    articles: [
+      { title: "The four EV objections and how to answer them", mins: 8 },
+      { title: "Home charger installation — what to promise", mins: 5 },
+    ],
+  },
+] : [
   {
     model: "Indie", segment: "Electric scooter", price: "₹1.63 – 1.77 L",
     specs: ["4 kWh IP67 battery · 161 km IDC (~110–120 km real)", "6.7 kW peak · 26 Nm · 0–40 in 3.9 s · 90 km/h",
@@ -8620,31 +9435,31 @@ function buildAdvice(me, execs) {
   if (TD_CLOSE(me) < TD_CLOSE(best) && me.testDrives >= 8) {
     const couldBe = Math.round((me.testDrives * TD_CLOSE(best)) / 100);
     out.push({
-      title: `Close more of the rides you already run`,
-      body: `You ran ${me.testDrives} test rides — more than anyone on the floor — but ${TD_CLOSE(me)}% turn into bookings `
-        + `against ${best.name.split(" ")[0]}'s ${TD_CLOSE(best)}%. At their rate your ${me.testDrives} rides would be `
+      title: `Close more of the ${TEST_VERB}s you already run`,
+      body: `You ran ${me.testDrives} ${testNounPlural} — more than anyone on the floor — but ${TD_CLOSE(me)}% turn into bookings `
+        + `against ${best.name.split(" ")[0]}'s ${TD_CLOSE(best)}%. At their rate your ${me.testDrives} ${TEST_VERB}s would be `
         + `${couldBe} bookings instead of ${me.bookings}.`,
-      action: `Ask for the booking before the customer gets off the scooter, not on a follow-up call.`,
-      module: "Closing after the test ride",
+      action: `Ask for the booking before the customer ${IS_HYUNDAI ? "steps out of the car" : "gets off the scooter"}, not on a follow-up call.`,
+      module: `Closing after the ${testNoun}`,
     });
   }
 
   if (HOME_PCT(me) < avg(HOME_PCT)) {
     out.push({
-      title: `Take more rides to the customer`,
-      body: `${HOME_PCT(me)}% of your rides happen at the customer's place, against ${avg(HOME_PCT)}% for the rest of the team. `
+      title: `Take more ${TEST_VERB}s to the customer`,
+      body: `${HOME_PCT(me)}% of your ${TEST_VERB}s happen at the customer's place, against ${avg(HOME_PCT)}% for the rest of the team. `
         + `${best.name.split(" ")[0]} runs ${HOME_PCT(best)}% at home and closes ${TD_CLOSE(best)}%.`,
-      action: `Offer a home test ride to anyone who has already visited once — the family is there and nobody is watching the clock.`,
-      module: "Home test rides that convert",
+      action: `Offer a home ${testNoun} to anyone who has already visited once — the family is there and nobody is watching the clock.`,
+      module: `Home ${testNounPlural} that convert`,
     });
   }
 
   if ((me.addOns || 0) < avg(u => u.addOns || 0)) {
     out.push({
       title: `Attach more add-ons`,
-      body: `${me.addOns} add-ons across ${me.achieved} scooters. The rest of the team average ${avg(u => u.addOns || 0)}. `
+      body: `${me.addOns} add-ons across ${me.achieved} ${VEHICLES}. The rest of the team average ${avg(u => u.addOns || 0)}. `
         + `It doesn't move you up the board, but it is the largest single lever on what you take home.`,
-      action: `Raise River Care and accessories at booking, while the customer is still deciding — not at delivery.`,
+      action: `Raise ${IS_HYUNDAI ? "the extended warranty" : "River Care"} and accessories at booking, while the customer is still deciding — not at delivery.`,
       module: "Selling the add-ons at booking",
     });
   }
@@ -8688,7 +9503,7 @@ function LeaderboardScreen({ currentId }) {
         <MetricBox span hero value={me.achieved} after={`/${me.target}`}
           label={<span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Trophy size={12} />Retails · this month</span>}
           sub={`#${myRank} of ${ranked.length} on the floor`}
-          sub2={above ? `${gap} more ${gap === 1 ? "scooter" : "scooters"} to pass ${above.name.split(" ")[0]}.` : "Top of the floor."}
+          sub2={above ? `${gap} more ${gap === 1 ? VEHICLE : VEHICLES} to pass ${above.name.split(" ")[0]}.` : "Top of the floor."}
           bar={{ value: me.target ? me.achieved / me.target : 0 }} />
       </MetricGrid>
 
@@ -8872,7 +9687,7 @@ function ProfileScreen({ user, onLogout, voiceFirst, onToggleVoiceFirst, lang, o
           { icon: Mail, label: "Email", value: user.email },
           { icon: Phone, label: "Phone", value: user.phone },
           { icon: MapPin, label: "Branch", value: user.branch },
-          { icon: Target, label: "Monthly Target", value: user.target ? `${user.target} scooters` : "—" },
+          { icon: Target, label: "Monthly Target", value: user.target ? `${user.target} ${VEHICLES}` : "—" },
         ].map((r, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 10px", borderTop: i ? `1px solid ${C.border}` : "none" }}>
             <r.icon size={15} color={C.sub} />
@@ -8977,11 +9792,11 @@ function AddLeadSheet({ onClose, onSubmit, prefill }) {
             {variantsForModel.map(v => <option key={v.id} value={v.variant}>{v.variant}</option>)}
           </select>
         )}
-        <input placeholder="Budget (optional, e.g. ₹1.6–1.7 L)" value={form.budget} onChange={e => setForm(f => ({ ...f, budget: e.target.value }))} style={{ ...formInputStyle, width: "100%" }} />
+        <input placeholder={IS_HYUNDAI ? "Budget (optional, e.g. ₹12–14 L)" : "Budget (optional, e.g. ₹1.6–1.7 L)"} value={form.budget} onChange={e => setForm(f => ({ ...f, budget: e.target.value }))} style={{ ...formInputStyle, width: "100%" }} />
         <div>
           <span style={{ fontFamily: F, fontSize: 10.5, color: C.sub, fontWeight: 600 }}>Source</span>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
-            {["Walk-in", "Website", "BikeDekho", "Referral", "Others"].map(s => (
+            {["Walk-in", "Website", PORTAL, "Referral", "Others"].map(s => (
               <button key={s} onClick={() => setForm(f => ({ ...f, source: s }))} style={chipStyle(form.source === s)}>{s}</button>
             ))}
           </div>
@@ -9032,7 +9847,7 @@ function QuickQuoteSheet({ onClose, onConvert }) {
             {variantsForModel.map(v => <option key={v.id} value={v.variant}>{v.variant}</option>)}
           </select>
         )}
-        <input type="number" min="0" step="0.01" placeholder="Discount, ₹ L (optional, e.g. 0.03)" value={form.discount}
+        <input type="number" min="0" step={IS_HYUNDAI ? 0.05 : 0.01} placeholder={IS_HYUNDAI ? "Discount, ₹ L (optional, e.g. 0.25)" : "Discount, ₹ L (optional, e.g. 0.03)"} value={form.discount}
           onChange={e => setForm(f => ({ ...f, discount: e.target.value }))} style={{ ...formInputStyle, width: "100%" }} />
       </div>
       <button disabled={!canGenerate} onClick={() => setResult(INVENTORY.find(v => v.model === form.model && v.variant === form.variant) || null)}
@@ -9170,7 +9985,7 @@ function FilteredLeadsScreen({ label, leads, onOpenLead, onCall, onWhatsApp, onL
 function BookingCelebration({ data, repName, onClose }) {
   const [copied, setCopied] = useState(false);
   const handleShare = async () => {
-    const text = `🛵 BOOKING CONFIRMED\n${data.model} ${data.variant}\nAdvance: ₹${data.advance} (${data.mode})\nDelivery: ${data.deliveryDate ? new Date(data.deliveryDate).toLocaleDateString("en-IN", {day:"2-digit",month:"short",year:"numeric"}) : "TBD"}\nClosed by: ${repName}`;
+    const text = `${VEH_EMOJI} BOOKING CONFIRMED\n${data.model} ${data.variant}\nAdvance: ₹${data.advance} (${data.mode})\nDelivery: ${data.deliveryDate ? new Date(data.deliveryDate).toLocaleDateString("en-IN", {day:"2-digit",month:"short",year:"numeric"}) : "TBD"}\nClosed by: ${repName}`;
     try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch(e) {}
   };
 
@@ -9291,9 +10106,9 @@ export default function SalesExecutiveApp() {
     if (!note) return [];
     const text = note.toLowerCase();
     const rules = [
-      { signal: "Exchange", words: ["exchange", "trade-in", "trade in", "old scooter", "old bike", "current scooter", "activa", "jupiter"], reason: "From this call: customer mentioned their current two-wheeler. Add the Exchange signal to start booking an evaluation?" },
+      { signal: "Exchange", words: IS_HYUNDAI ? EXCHANGE_WORDS : ["exchange", "trade-in", "trade in", "old scooter", "old bike", "current scooter", "activa", "jupiter"], reason: `From this call: customer mentioned their current ${IS_HYUNDAI ? "car" : "two-wheeler"}. Add the Exchange signal to start booking an evaluation?` },
       { signal: "Finance", words: ["loan", "emi", "finance", "down payment"], reason: "From this call: customer asked about loan/EMI options. Add the Finance signal to start the loan process?" },
-      { signal: "Comparing Competitor", words: ["ather", "rizta", "ola", "iqube", "chetak", "vida", "competitor", "comparing"], reason: "From this call: customer is comparing with a competitor. Add the signal to see the battle card?" },
+      { signal: "Comparing Competitor", words: [...COMPETITOR_WORDS, "competitor", "comparing"], reason: "From this call: customer is comparing with a competitor. Add the signal to see the battle card?" },
     ];
     return rules
       .filter(r => r.words.some(w => text.includes(w)))
@@ -9429,13 +10244,13 @@ export default function SalesExecutiveApp() {
         ...l, stage: "Lost", lostReason: { reason, note, date: today }, blockedUnit: null,
         timeline: [
           { type: "call", text: `Marked as Lost — ${reasonLabel}`, date: today },
-          ...(l.blockedUnit ? [{ type: "call", text: `Held scooter released — ${l.blockedUnit.model} ${l.blockedUnit.color} (VIN ${l.blockedUnit.vin})`, date: today }] : []),
+          ...(l.blockedUnit ? [{ type: "call", text: `Held ${VEHICLE} released — ${l.blockedUnit.model} ${l.blockedUnit.color} (VIN ${l.blockedUnit.vin})`, date: today }] : []),
           ...l.timeline,
         ],
       };
     }));
     if (freedUnit) setReleasedUnitId({ id: freedUnit.id, at: Date.now() });
-    showToast(freedUnit ? "Lead lost — held scooter released back to stock" : "Lead marked as Lost");
+    showToast(freedUnit ? `Lead lost — held ${VEHICLE} released back to stock` : "Lead marked as Lost");
   };
   const handleUpdateFinanceField = (leadId, field, value) => {
     setLeads(prev => prev.map(l => l.id !== leadId ? l : { ...l, finance: { ...l.finance, [field]: value } }));
@@ -9500,7 +10315,7 @@ export default function SalesExecutiveApp() {
         timeline: [{ type: "call", text: note, date: today }, ...l.timeline],
       };
     }));
-    showToast("🛵 Vehicle preference updated");
+    showToast(`${VEH_EMOJI} Vehicle preference updated`);
   };
   const handleLogWhatsApp = (leadId, { outcome, note }) => {
     const outcomeLabel = WHATSAPP_OUTCOMES.find(o => o.key === outcome)?.label || outcome;
@@ -9567,10 +10382,10 @@ export default function SalesExecutiveApp() {
           mode: data.mode, date: dateObj, time: data.time,
           location: locText ? { text: isLink ? "" : locText, mapsLink: isLink ? locText : "" } : null,
         },
-        timeline: [{ type: "test-drive", text: `Test ride ${isReschedule ? "rescheduled" : "scheduled"} — ${modeLabel} on ${fmt(dateObj)} at ${fmtTime(data.time)}`, date: today }, ...l.timeline],
+        timeline: [{ type: "test-drive", text: `${TestNoun} ${isReschedule ? "rescheduled" : "scheduled"} — ${modeLabel} on ${fmt(dateObj)} at ${fmtTime(data.time)}`, date: today }, ...l.timeline],
       };
     }));
-    showToast(`🛵 Test ride ${leads.find(l => l.id === leadId)?.testDrive ? "rescheduled" : "scheduled"}`);
+    showToast(`${VEH_EMOJI} ${TestNoun} ${leads.find(l => l.id === leadId)?.testDrive ? "rescheduled" : "scheduled"}`);
   };
   // Marks the upcoming test ride as done, clears it from the queue, and logs the customer's
   // actual response — this also feeds the existing "recently completed" suppression in Calls.
@@ -9579,7 +10394,7 @@ export default function SalesExecutiveApp() {
       if (l.id !== leadId) return l;
       const respLabel = TEST_DRIVE_RESPONSES.find(r => r.key === response)?.label || response;
       let updated = { ...l, testDrive: null };
-      updated.timeline = [{ type: "test-drive", text: `Test ride completed — ${respLabel}`, date: today }, ...l.timeline];
+      updated.timeline = [{ type: "test-drive", text: `${TestNoun} completed — ${respLabel}`, date: today }, ...l.timeline];
       if (note?.trim()) updated.notes = [note.trim(), ...l.notes];
 
       // Feedback decides what happens next — a hot response shouldn't sit as cold as a lukewarm
@@ -9608,27 +10423,27 @@ export default function SalesExecutiveApp() {
         updated.bucket = "comparing";
       } else if (response === "neutral") {
         updated.followUp = { date: d(4), window: null };
-        updated.nextAction = "Neutral on the test ride — check in and address concerns";
+        updated.nextAction = `Neutral on the ${testNoun} — check in and address concerns`;
       } else if (response === "wants_second") {
         updated.followUp = { date: d(1), window: null };
-        updated.nextAction = "Wants a second test ride — get it scheduled";
+        updated.nextAction = `Wants a second ${testNoun} — get it scheduled`;
       }
       // "not_liked" — no follow-up forced; leaving it to be reviewed and marked lost if that's
       // where it's heading, rather than pretending there's momentum that isn't there.
       return updated;
     }));
-    showToast("✅ Test ride marked complete");
+    showToast(`✅ ${TestNoun} marked complete`);
   };
   const handleCancelTestDrive = (leadId, { reason, note }) => {
     setLeads(prev => prev.map(l => {
       if (l.id !== leadId) return l;
       const reasonLabel = TEST_DRIVE_CANCEL_REASONS.find(r => r.key === reason)?.label || reason;
       let updated = { ...l, testDrive: null };
-      updated.timeline = [{ type: "test-drive", text: `Test ride cancelled — ${reasonLabel}`, date: today }, ...l.timeline];
+      updated.timeline = [{ type: "test-drive", text: `${TestNoun} cancelled — ${reasonLabel}`, date: today }, ...l.timeline];
       if (note?.trim()) updated.notes = [note.trim(), ...l.notes];
       return updated;
     }));
-    showToast("Test ride cancelled");
+    showToast(`${TestNoun} cancelled`);
   };
 
   // Post-call log: records the outcome as a timeline entry, and — for Call Back / Wants Test
@@ -9653,7 +10468,7 @@ export default function SalesExecutiveApp() {
       if (payload.outcome === "test_drive" && payload.testDrive.date) {
         const dateObj = parseDateInput(payload.testDrive.date);
         const modeLabel = TEST_DRIVE_MODES.find(m => m.key === payload.testDrive.mode)?.label || "";
-        text = `Call outcome: Wants test ride — ${modeLabel} on ${fmt(dateObj)} at ${fmtTime(payload.testDrive.time)}`;
+        text = `Call outcome: Wants ${testNoun} — ${modeLabel} on ${fmt(dateObj)} at ${fmtTime(payload.testDrive.time)}`;
         const locText = (payload.testDrive.locationText || "").trim();
         const isLink = locText.startsWith("http");
         updated.testDrive = {
