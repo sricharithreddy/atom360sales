@@ -4,19 +4,25 @@ import {
   Filter, Palette, Settings, ShieldCheck, ShoppingBag, Store, Target, Upload, User, UserX,
 } from "lucide-react";
 import { GROUP, ZONES, LOCATIONS, monthsOpen } from "../data/epicRiverLocations.js";
-import { stockFor, VARIANTS, COLOURS } from "../data/epicRiverInventory.js";
+import { stockFor, STOCK_VARIANTS, STOCK_COLOURS } from "../data/epicRiverInventory.js";
 import { MetricBox, MetricGrid } from "../ui/MetricGlass.jsx";
+import { OEM, IS_HYUNDAI, VEHICLE, testNoun, testNounPlural, TestNoun, vehicleWord, findModel, onRoadPrice } from "../oem/index.js";
 
 /* ==================================================================================
-   AUTOPRISM — CEO (Epic River, Raam Group)
+   AUTOPRISM — CEO (the active OEM's dealer group: Epic River / Raam Group for River,
+   Autoprism Hyundai / Autoprism Motors for Hyundai — see src/oem)
 
    Same design language as the Manager login: one idea per card, one compact table that
-   expands in place. The CEO sees 100 outlets and ~1,000 people.
+   expands in place. The CEO sees every outlet of the group (River 100, Hyundai 36) and its people.
 
    Every number is summed from Sales Executives, so a parent row always equals the sum of
    its children — in the People tree and in the Locations tree alike — and every ratio
-   (achievement, ₹/unit, accessories/unit, River Care attach) is computed from summed
+   (achievement, ₹/unit, accessories/unit, protection-plan attach) is computed from summed
    numerators and denominators, never an average of averages.
+
+   River output is frozen: every River seed and draw is kept in the same order, and every value
+   that used to be a River literal now comes from OEM (src/oem/river.js holds the same numbers).
+   Hyundai-only paths (car sales mix by model × variant × colour, product mix) are gated on IS_HYUNDAI.
    ================================================================================== */
 
 const C = {
@@ -76,16 +82,33 @@ const NOW_MI = MI(2026, 11);
 const DAY = 19, MONTH_DAYS = 30;
 const PERIOD_LINE = `Nov 2026 · MTD · day ${DAY} of ${MONTH_DAYS}`;
 
-/* ---------------- Product ---------------- */
-const P750 = 154799, P480 = 150799;   // ex-showroom after PM E-DRIVE subsidy
-const RC_PLUS2 = 5899, RC_PLUS5 = 9912;   // River Care packs
-const ONROAD_750 = 166748, ONROAD_480 = 162748;   // on-road price, the base for loan-to-value
+/* ---------------- Product (from OEM) ----------------
+   VARS / COLS: the stock catalogue of the active OEM (River: 750W / 480W × 5 colours; Hyundai: one
+   row per model × variant, every catalogue colour). River's two-variant maths (V0 / V1) is unchanged. */
+const VARS = STOCK_VARIANTS, COLS = STOCK_COLOURS;
+const MODEL0 = OEM.models[0].name;
+const onRoad = (model, variant) => onRoadPrice(model, variant).total;
+const [V0, V1] = IS_HYUNDAI ? [null, null] : VARS;                    // River: 750W, 480W
+const P750 = V0 && V0.exShowroom, P480 = V1 && V1.exShowroom;          // ex-showroom (River: after subsidy)
+const ONROAD_750 = V0 && onRoad(MODEL0, V0.key), ONROAD_480 = V1 && onRoad(MODEL0, V1.key);   // base for loan-to-value
+/* Protection plans: two paid tiers sold with the vehicle (River Care Plus Two / Plus Five;
+   Hyundai extended warranty 4th / 5th year). `rc` counts plans, `p5` the upper tier. */
+const PLANS = OEM.protectionPlans;
+const [PLAN_A, PLAN_B] = IS_HYUNDAI ? [PLANS.find(p => p.key === "ew4"), PLANS.find(p => p.key === "ew5")]
+  : [PLANS.find(p => p.key === "plus2"), PLANS.find(p => p.key === "plus5")];
+const RC_PLUS2 = PLAN_A.price, RC_PLUS5 = PLAN_B.price;
+const planShort = (p) => p.name.replace(/^Extended warranty/, "EW");          // "Plus Two" / "EW 4 yr"
+const PA_NAME = planShort(PLAN_A), PB_NAME = planShort(PLAN_B);
+const PLAN_FAMILY = IS_HYUNDAI ? "Ext. warranty" : PLAN_A.label.replace(" " + PLAN_A.name, "");   // "River Care"
+const PLAN_HEAD = IS_HYUNDAI ? ["Ext.", "warr. %"] : [PLAN_FAMILY.split(" ")[0], PLAN_FAMILY.split(" ").slice(1).join(" ") + " %"];
+const FORMAT_LABEL = (f) => OEM.network.formats[f]?.label || f;           // "Store" → "Showroom" (Hyundai)
+const VEH_S = (n) => vehicleWord(n);
 
-/* ---------------- Network: 100 outlets, as-is from the dataset ---------------- */
+/* ---------------- Network: the group's outlets, as-is from the dataset ---------------- */
 const ZONE_LABEL = Object.fromEntries(ZONES.map(z => [z.key, z.label]));
 const STATE_ABBR = { Telangana: "TG", "Andhra Pradesh": "AP", Maharashtra: "MH", "Tamil Nadu": "TN", Karnataka: "KA" };
-const FORMAT_BASE = { Flagship: 140, Store: 68, Express: 28 };   // mature monthly retail target
-const SE_RANGE = { Flagship: [13, 15], Store: [7, 9], Express: [3, 5] };
+const FORMAT_BASE = OEM.network.retailBase;   // mature monthly retail target
+const SE_RANGE = OEM.network.seRange;
 const ramp = (m) => (m < 0 ? 0 : Math.min(1, 0.6 + (0.4 * (m + 1)) / 12));
 
 const LOCS = LOCATIONS.map(l => {
@@ -94,12 +117,27 @@ const LOCS = LOCATIONS.map(l => {
   return { ...l, openMi: MI(y, m), mo, isNew: mo < 12, ses: [] };
 });
 const LOC_BY_ID = Object.fromEntries(LOCS.map(l => [l.id, l]));
+/* F&I and discount parameters per OEM. River: the numbers the River demo has always used.
+   Hyundai (demo assumptions): new-car buyers mostly take dealer insurance; ~70–85% finance a car;
+   accessory bills of ₹9–23k; extended-warranty attach 20–50%; discounts ₹10–42k per car. */
+const FI_P = IS_HYUNDAI ? {
+  insLow: [0.8, 0.86], insHigh: [0.88, 0.96], any: [0.68, 0.85], share: [0.6, 0.86], inCap: 0.72,
+  acc: [0.6, 0.92], bill: [9000, 14000], rc: [0.2, 0.3], p5: [0.25, 0.5],
+  bands: { ins: [0.78, 0.98], any: [0.6, 0.9], inn: [0.55, 0.4, 0.92, 0.72], rc: [0.18, 0.55], acc: [0.55, 0.95], p5: [0.2, 0.55] },
+  disc: { base: 18000, metro: 6000, age: 9000, noise: 6000, lo: 10000, hi: 42000 },
+} : {
+  insLow: [0.86, 0.895], insHigh: [0.94, 0.985], any: [0.39, 0.72], share: [0.67, 0.94], inCap: 0.64,
+  acc: [0.52, 0.88], bill: [1450, 1950], rc: [0.095, 0.27], p5: [0.16, 0.42],
+  bands: { ins: [0.84, 0.99], any: [0.35, 0.75], inn: [0.65, 0.25, 0.95, 0.65], rc: [0.08, 0.38], acc: [0.5, 0.9], p5: [0.15, 0.45] },
+  disc: { base: 1380, metro: 450, age: 900, noise: 500, lo: 1000, hi: 3500 },
+};
 (() => {
   // Plan status mix ≈ 60 / 25 / 15 — shuffled deterministically across outlets.
   const r = rngFor("status-v1");
   const idx = LOCS.map((_, i) => i);
   for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
-  idx.forEach((li, k) => { LOCS[li].plan = k < 60 ? "on" : k < 85 ? "risk" : "off"; });
+  const nOn = Math.round(LOCS.length * 0.6), nRisk = Math.round(LOCS.length * 0.85);   // River: 60 / 85 of 100
+  idx.forEach((li, k) => { LOCS[li].plan = k < nOn ? "on" : k < nRisk ? "risk" : "off"; });
   LOCS.forEach(l => {
     const q = rngFor("loc:" + l.id);
     l.scale = rr(q, 0.9, 1.12);
@@ -111,23 +149,22 @@ const LOC_BY_ID = Object.fromEntries(LOCS.map(l => [l.id, l]));
     q(); q(); q(); q();
     l.exch = rr(q, 0.07, 0.22); l.mix = rr(q, 0.6, 0.8);
     l.obRate = rr(q, 0.3, 0.6); l.tdr = rr(q, 0.32, 0.55); l.bkr = rr(q, 0.08, 0.24);
-    l.avgPrice = l.mix * P750 + (1 - l.mix) * P480;
     // Finance & insurance (own seed). Outlet-level rates; per-SE numbers are split from them.
-    const f = rngFor("fi4:" + l.id);
+    const f = rngFor("fi4:" + l.id), P = FI_P;
     l.fi = {
-      ins: f() < 0.06 ? rr(f, 0.86, 0.895) : rr(f, 0.94, 0.985),       // in-house policies ÷ units
-      prem: rr(f, 10350, 11450),                                       // ₹ per in-house policy
-      any: rr(f, 0.39, 0.72),                                          // any finance (in-house + self-arranged) ÷ units
-      share: rr(f, 0.67, 0.94),                                        // in-house ÷ all loans
+      ins: f() < 0.06 ? rr(f, ...P.insLow) : rr(f, ...P.insHigh),      // in-house policies ÷ units
+      prem: rr(f, ...OEM.insurancePremiumRange),                       // ₹ per in-house policy
+      any: rr(f, ...P.any),                                            // any finance (in-house + self-arranged) ÷ units
+      share: rr(f, ...P.share),                                        // in-house ÷ all loans
       ltv: rr(f, 0.745, 0.88),                                         // loan ÷ on-road price
-      acc: rr(f, 0.52, 0.88), bill: 1450 + 1950 * f() ** 1.5,          // accessory attach · ₹ per buyer
-      rc: 0.095 + 0.27 * f() ** 1.3, p5: rr(f, 0.16, 0.42),            // River Care attach · Plus Five share
+      acc: rr(f, ...P.acc), bill: P.bill[0] + P.bill[1] * f() ** 1.5,  // accessory attach · ₹ per buyer
+      rc: P.rc[0] + P.rc[1] * f() ** 1.3, p5: rr(f, ...P.p5),          // plan attach · upper-tier share
     };
-    if (l.fi.any * l.fi.share > 0.64) l.fi.any = 0.64 / l.fi.share;   // in-house finance stays ≤ ~65% of units
+    if (l.fi.any * l.fi.share > P.inCap) l.fi.any = P.inCap / l.fi.share;   // in-house finance cap (River ≤ ~65% of units)
   });
 })();
-// Calibrate so the group's full-month November target is ≈ 5,900 scooters.
-const CAL = 5900 / LOCS.reduce((s, l) => s + FORMAT_BASE[l.format] * l.scale * ramp(NOW_MI - l.openMi), 0);
+// Calibrate so the group's full-month November target is OEM.network.monthlyTarget (River ≈ 5,900 scooters).
+const CAL = OEM.network.monthlyTarget / LOCS.reduce((s, l) => s + FORMAT_BASE[l.format] * l.scale * ramp(NOW_MI - l.openMi), 0);
 const tgtM = (l, mi) => FORMAT_BASE[l.format] * l.scale * ramp(mi - l.openMi) * CAL;
 
 /* ---------------- People: one reporting line, ~1,000 people ---------------- */
@@ -250,6 +287,54 @@ function within(n, rate, lo, hi) {
   return a <= b ? clamp(Math.round(n * rate), a, b) : Math.round(n * rate);
 }
 const METRO_CITIES = new Set(["Hyderabad", "Secunderabad", "Pune", "Chennai", "Bengaluru", "Mumbai", "Thane", "Navi Mumbai"]);
+/* ---------------- Hyundai: what each SE sold, by model × variant × colour (sample data) ----------------
+   Per SE (own seed "hmix:"), MTD retail is split across models (catalogue sales-mix weight × outlet
+   tilt: metros lean Creta / Verna / Alcazar / EVs, districts Exter / Grand i10 Nios / Aura / Prime;
+   Ioniq 5 only at Flagships, Prime fleet models not at city showrooms), then each model's units across
+   its variants (catalogue weight), then each variant's units across the colours it is offered in
+   (catalogue weight × outlet noise) — all with the unbiased splitter, so Σ lines = retail per SE.
+   `sales[i]` = [[variant index in VARS, colour index in COLS, units], …]. River: null. */
+const HY = IS_HYUNDAI ? (() => {
+  const M = OEM.models;
+  const varIdx = new Map(VARS.map((v, i) => [v.key, i]));
+  const colIdx = new Map(COLS.map((c, i) => [c, i]));
+  const vars = M.map(m => m.variants.map(v => varIdx.get(`${m.name} ${v.name}`)));
+  const vcols = M.map(m => m.variants.map(v => m.colours.filter(c => v.colours.includes(c.name))));
+  const modelOf = VARS.map(v => M.findIndex(m => m.name === v.model));
+  const spec = VARS.map(v => findModel(v.model).variants.find(x => x.name === v.variant));
+  const FUELS = ["Petrol", "Diesel", "CNG", "Electric"];
+  const fuel = spec.map(x => Math.max(0, FUELS.indexOf(x.fuel.split("/")[0].trim())));
+  const auto = spec.map(x => (/^\s*\d?MT\s*$/.test(x.transmission) ? 0 : 1));
+  const onroad = VARS.map(v => onRoad(v.model, v.variant));
+  const METRO_TILT = { Creta: 1.15, Verna: 1.25, Alcazar: 1.2, "Creta Electric": 1.5, "Ioniq 5": 1.6, "Creta N Line": 1.3, "i20 N Line": 1.3, "Venue N Line": 1.2 };
+  const TOWN_TILT = { Exter: 1.25, "Grand i10 Nios": 1.3, Aura: 1.25, "Prime HB": 1.4, "Prime SD": 1.4 };
+  LOCS.forEach(l => {
+    const q = rngFor("hmw:" + l.id), metro = METRO_CITIES.has(l.city);
+    l.hyMW = M.map(m => {
+      if (m.name === "Ioniq 5" && l.format !== "Flagship") return 0;
+      if (m.name.startsWith("Prime") && l.format === "Express") return 0;
+      const t = metro ? METRO_TILT[m.name] || (TOWN_TILT[m.name] ? 0.85 : 1) : TOWN_TILT[m.name] || (METRO_TILT[m.name] ? 0.8 : 1);
+      return m.weight * t * rr(q, 0.8, 1.2);
+    });
+  });
+  const cNoise = (l, c) => 0.8 + 0.4 * (hashStr(l.id + ":" + c) / 4294967296);
+  function sales(s, retail) {
+    const r = rngFor("hmix:" + s.id), l = s.loc, out = [];
+    const pm = splitR(retail, l.hyMW.map(w => w * rr(r, 0.85, 1.15)), r);
+    M.forEach((m, mi) => {
+      if (!pm[mi]) return;
+      const pv = splitR(pm[mi], m.variants.map(v => v.weight), r);
+      m.variants.forEach((v, vi) => {
+        if (!pv[vi]) return;
+        const cs = vcols[mi][vi];
+        const pc = splitR(pv[vi], cs.map(c => c.weight * cNoise(l, c.name)), r);
+        cs.forEach((c, ci) => { if (pc[ci]) out.push([vars[mi][vi], colIdx.get(c.name), pc[ci]]); });
+      });
+    });
+    return out;
+  }
+  return { M, NM: M.length, NV: VARS.length, NC: COLS.length, varIdx, colIdx, modelOf, fuel, auto, onroad, FUELS, sales: new Array(SES.length), gen: sales };
+})() : null;
 const SE_ROWS = (() => {
   const rows = new Array(SES.length);
   LOCS.forEach(l => {
@@ -260,31 +345,42 @@ const SE_ROWS = (() => {
     // F&I: outlet totals from the outlet's rates, split across its SEs (weight = units × noise).
     const fi = l.fi, U = l.mtd, se = l.ses.map(i => SES[i]);
     const w = (j) => se.map((s, k) => tA[k] * (0.8 + 0.4 * s.nz[j]));
-    const L = within(U, fi.any, 0.35, 0.75);
-    const IN = within(L, fi.share, Math.max(0.65, (0.25 * U) / L || 0), Math.min(0.95, (0.65 * U) / L || 1));
-    const PL = within(U, fi.rc, 0.08, 0.38);
-    const pol = splitCap(within(U, fi.ins, 0.84, 0.99), w(0), tA);
+    const B = FI_P.bands, D = FI_P.disc;
+    const L = within(U, fi.any, ...B.any);
+    const IN = within(L, fi.share, Math.max(B.inn[0], (B.inn[1] * U) / L || 0), Math.min(B.inn[2], (B.inn[3] * U) / L || 1));
+    const PL = within(U, fi.rc, ...B.rc);
+    const pol = splitCap(within(U, fi.ins, ...B.ins), w(0), tA);
     const loans = splitCap(L, w(1), tA);
     const inL = splitCap(IN, w(2), loans);
-    const accB = splitCap(within(U, fi.acc, 0.5, 0.9), w(3), tA);
+    const accB = splitCap(within(U, fi.acc, ...B.acc), w(3), tA);
     const plans = splitCap(PL, w(4), tA);
-    const p5s = splitCap(within(PL, fi.p5, 0.15, 0.45), w(5), plans);
-    // Vehicle discount (own seed): an outlet-level ₹/scooter — metros and older outlets discount
+    const p5s = splitCap(within(PL, fi.p5, ...B.p5), w(5), plans);
+    // Vehicle discount (own seed): an outlet-level ₹/vehicle — metros and older outlets discount
     // more — split across its SEs in ₹10 steps (weight = units × SE noise), so the parts add back.
     const dq = rngFor("disc1:" + l.id);
-    l.discPU = clamp(1380 + (METRO_CITIES.has(l.city) ? 450 : 0) + 900 * clamp(l.mo / 18, 0, 1) + rr(dq, -500, 500), 1000, 3500);
+    l.discPU = clamp(D.base + (METRO_CITIES.has(l.city) ? D.metro : 0) + D.age * clamp(l.mo / 18, 0, 1) + rr(dq, -D.noise, D.noise), D.lo, D.hi);
     const discs = splitInt(Math.round((U * l.discPU) / 10), se.map((s, k) => tA[k] * rr(rngFor("disc1:" + s.id), 0.75, 1.25)));
     l.ses.forEach((i, k) => {
       const s = SES[i];
       const retail = tA[k];
-      const r750 = Math.round(retail * s.mix);
-      const n = inL[k], n750 = Math.round(n * s.mix);
-      const road = n750 * ONROAD_750 + (n - n750) * ONROAD_480;
+      const n = inL[k];
+      let value, road;
+      if (IS_HYUNDAI) {
+        // Car value from the SE's model × variant mix; financed cars at the SE's average on-road price.
+        const ln = HY.sales[i] = HY.gen(s, retail);
+        value = ln.reduce((x, [v, , u]) => x + u * VARS[v].exShowroom, 0);
+        const or = ln.reduce((x, [v, , u]) => x + u * HY.onroad[v], 0);
+        road = retail ? Math.round((n * or) / retail) : 0;
+      } else {
+        const r750 = Math.round(retail * s.mix), n750 = Math.round(n * s.mix);
+        value = r750 * P750 + (retail - r750) * P480;
+        road = n750 * ONROAD_750 + (n - n750) * ONROAD_480;
+      }
       const ltv = Math.min(0.9, fi.ltv * (0.98 + 0.04 * s.nz[7]));
       const p5 = p5s[k], p2 = plans[k] - p5;
       rows[i] = {
         heads: 1, target: tT[k], retail, book: retail + Math.round(retail * s.bkr),
-        value: r750 * P750 + (retail - r750) * P480,
+        value,
         ins: pol[k], insPrem: Math.round((pol[k] * fi.prem * (0.97 + 0.06 * s.nz[6])) / 10) * 10,
         loans: loans[k], fin: n, loanAmt: Math.round((road * ltv) / 1000) * 1000, loanRoad: road,
         accBuy: accB[k], acc: Math.round((accB[k] * fi.bill * (0.93 + 0.14 * s.nz[8])) / 10) * 10,
@@ -319,34 +415,24 @@ const aggOf = (t) => { let a = AGG.get(t.key); if (!a) { a = derive(sumIdx(t.ses
 const GROUP_AGG = derive(sumIdx(ALL_SE));
 
 /* ---------------- Insurer and finance-partner split (sample data) ----------------
-   ILLUSTRATIVE ONLY. Insurers are typical dealer tie-ups for two-wheelers, not River's or Epic
-   River's actual insurers. Lenders are evfin and its reported co-lending partners (see LENDERS).
+   ILLUSTRATIVE ONLY. Insurers and lenders come from OEM.insurers / OEM.lenders (share = target
+   group mix, f = avg premium / loan factor, anchor = the company every outlet ties up with).
    Every share, count and average below is sample data, not real volumes.
-   Each outlet ties up with TATA AIG plus 1–3 other insurers, and evfin plus 2–4 other lenders.
+   Each outlet ties up with the anchor insurer plus 1–3 others, and the anchor lender plus 2–4 others.
    The mix leans by state (Royal Sundaram in Tamil Nadu, Go Digit in Karnataka / Telangana,
-   Shriram in AP / TN districts, Muthoot in TN and districts); the non-anchor weights are
+   Shriram in AP / TN districts, Muthoot in TN and districts; Hyundai: SBI in districts, Hyundai
+   Capital in metros); the non-anchor weights are
    calibrated to the target group mix. Every SE's in-house policies (`ins`, `insPrem`) and in-house
    loans (`fin`, `loanAmt`) are split across the outlet's companies as integers that add back
    exactly, so any scope's split sums to that scope's policies / loans / ₹. Avg premium and avg
    loan differ slightly by company (factor `f`) around the SE's own average. */
-// TATA AIG is the anchor insurer: every outlet ties up with it and it writes ≈ 72–88% of the
-// outlet's in-house policies (≈ 80% group); the other five share the rest by `mix` × state tilt.
-const INSURERS = [
-  { name: "TATA AIG", mix: 80, f: 1.01, anchor: [0.72, 0.88] },
-  { name: "ICICI Lombard", mix: 6.5, f: 1.02 }, { name: "Bajaj Allianz", mix: 5.1, f: 0.99 },
-  { name: "HDFC ERGO", mix: 4.2, f: 1.035 }, { name: "Go Digit", mix: 2.8, f: 0.965 },
-  { name: "Royal Sundaram", mix: 1.4, f: 0.98 },
-];
-// Lenders: evfin (Greaves Finance, an EV two-wheeler NBFC with a public financing tie-up with River
-// Mobility) and the institutions it is reported to co-lend with. The names are real; the SHARES are
-// illustrative sample data, not actual volumes. evfin is the anchor: every outlet ties up with it
-// (≈ 22–38% of the outlet's in-house loans, ≈ 30% group) plus 2–4 of the others.
-const LENDERS = [
-  { name: "evfin (Greaves Finance)", mix: 30, f: 1.02, anchor: [0.22, 0.38] },
-  { name: "IDFC FIRST Bank", mix: 18, f: 1.0 }, { name: "HDFC Bank", mix: 16, f: 1.04 },
-  { name: "Kotak Mahindra Bank", mix: 13, f: 1.01 }, { name: "Shriram Finance", mix: 13, f: 0.955 },
-  { name: "Muthoot Capital", mix: 10, f: 0.965 },
-];
+// The anchor insurer writes a fixed share of each outlet's in-house policies (River: TATA AIG
+// ≈ 72–88%, ≈ 80% group); the others share the rest by `mix` × state tilt.
+const asMix = (list) => list.map(({ share, ...c }) => ({ ...c, mix: share }));
+const INSURERS = asMix(OEM.insurers);
+// Lenders: the anchor lender takes a fixed share of each outlet's in-house loans (River: evfin,
+// ≈ 22–38%, ≈ 30% group) plus 2–4 of the others. Names are real; SHARES are illustrative sample data.
+const LENDERS = asMix(OEM.lenders);
 const METROS = new Set(["Hyderabad", "Secunderabad", "Bengaluru", "Chennai", "Mumbai", "Navi Mumbai", "Thane", "Pune"]);
 function partnerTilt(kind, name, l) {
   const metro = METROS.has(l.city);
@@ -357,6 +443,8 @@ function partnerTilt(kind, name, l) {
   }
   if (name === "Shriram Finance") return (l.state === "Andhra Pradesh" || l.state === "Tamil Nadu") && !metro ? 2.2 : metro ? 0.45 : 0.9;
   if (name === "Muthoot Capital") return l.state === "Tamil Nadu" ? (metro ? 1.5 : 2.2) : metro ? 0.55 : 1.4;
+  if (name === "State Bank of India") return metro ? 0.8 : 1.5;
+  if (name === "Hyundai Capital India") return metro ? 1.25 : 0.8;
   return 1;
 }
 // `others`: how many companies besides the anchor an outlet ties up with.
@@ -486,38 +574,57 @@ const FN_MIN = fnIso(0), FN_MAX = fnIso(FN_DAYS - 1);
 const FN_RANGES = { this: [fnIdx("2026-11-01"), FN_DAYS - 1], last: [fnIdx("2026-10-01"), fnIdx("2026-10-31")] };
 const STAGES = ["leads", "att", "con", "int", "td", "bk", "rt"];
 const LOST_AT = ["l0", "l1", "l2", "l3", "l4", "l5"];   // lost at: lead · attempted · contacted · interested · test ride · booking
-// cf: conversion tilt per stage · lt: tilt on being closed as lost · metro / town / flag: mix tilts.
-const FN_SRC = [
-  { name: "Walk-in", mix: 26, cf: 1.16, lt: 0.8, metro: 0.8, town: 1.35, exp: 1.2 },
-  { name: "Website", mix: 12, cf: 1.0, lt: 1.0, metro: 1.4, town: 0.85, flag: 1.15 },
-  { name: "Referral", mix: 9, cf: 1.14, lt: 0.8, metro: 1, town: 1.1 },
-  { name: "BikeDekho", mix: 8, cf: 0.97, lt: 1.0, metro: 1.3, town: 0.9 },
-  { name: "BikeWale", mix: 7, cf: 0.97, lt: 1.0, metro: 1.3, town: 0.9 },
-  { name: "Google Ad", mix: 10, cf: 0.94, lt: 1.05, metro: 1.5, town: 0.85 },
-  { name: "Facebook Ad", mix: 8, cf: 0.88, lt: 1.1, metro: 1.4, town: 0.9 },
-  { name: "Instagram Ad", mix: 7, cf: 0.88, lt: 1.1, metro: 1.6, town: 0.75 },
-  { name: "Justdial", mix: 6, cf: 0.82, lt: 1.25, metro: 0.85, town: 1.3 },
-  { name: "OLX", mix: 4, cf: 0.76, lt: 1.3, metro: 0.85, town: 1.3 },
-  { name: "Corporate/Fleet", mix: 3, cf: 1.08, lt: 0.85, metro: 1.3, town: 0.7, flag: 1.6 },
-];
-const LOST_REASONS = [
+// Sources are OEM.leadSources; per source — cf: conversion tilt per stage · lt: tilt on being closed
+// as lost · metro / town / flag / exp: mix tilts (demo assumptions).
+const SRC_TILT = {
+  "Walk-in": { mix: 26, cf: 1.16, lt: 0.8, metro: 0.8, town: 1.35, exp: 1.2 },
+  "Website": { mix: 12, cf: 1.0, lt: 1.0, metro: 1.4, town: 0.85, flag: 1.15 },
+  "Hyundai Click to Buy": { mix: 7, cf: 1.04, lt: 0.95, metro: 1.4, town: 0.8 },
+  "Referral": { mix: 9, cf: 1.14, lt: 0.8, metro: 1, town: 1.1 },
+  "BikeDekho": { mix: 8, cf: 0.97, lt: 1.0, metro: 1.3, town: 0.9 },
+  "BikeWale": { mix: 7, cf: 0.97, lt: 1.0, metro: 1.3, town: 0.9 },
+  "CarDekho": { mix: 9, cf: 0.97, lt: 1.0, metro: 1.3, town: 0.9 },
+  "CarWale": { mix: 7, cf: 0.97, lt: 1.0, metro: 1.3, town: 0.9 },
+  "Google Ad": { mix: 10, cf: 0.94, lt: 1.05, metro: 1.5, town: 0.85 },
+  "Facebook Ad": { mix: 8, cf: 0.88, lt: 1.1, metro: 1.4, town: 0.9 },
+  "Instagram Ad": { mix: 7, cf: 0.88, lt: 1.1, metro: 1.6, town: 0.75 },
+  "Justdial": { mix: 6, cf: 0.82, lt: 1.25, metro: 0.85, town: 1.3 },
+  "OLX": { mix: 4, cf: 0.76, lt: 1.3, metro: 0.85, town: 1.3 },
+  "Corporate/Fleet": { mix: 3, cf: 1.08, lt: 0.85, metro: 1.3, town: 0.7, flag: 1.6 },
+};
+const FN_SRC = OEM.leadSources.map(name => ({ name, ...(SRC_TILT[name] || { mix: 5, cf: 1, lt: 1, metro: 1, town: 1 }) }));
+// Reasons: the ones in OEM.lostReasons, in this column order ("wait" = the OEM's waiting reason:
+// River "Long delivery wait", Hyundai "Long waiting period"; "chg" is River-only).
+const REASON_DEFS = [
   { key: "price", name: "Price / budget" }, { key: "comp", name: "Bought competitor" }, { key: "finr", name: "Finance rejected" },
-  { key: "chg", name: "Charging / range concern" }, { key: "wait", name: "Long delivery wait" }, { key: "nr", name: "Not reachable" },
+  { key: "chg", name: "Charging / range concern" }, { key: "wait", name: OEM.lostReasons.find(n => /wait/i.test(n)) }, { key: "nr", name: "Not reachable" },
   { key: "post", name: "Postponed purchase" }, { key: "exch", name: "Low exchange value" }, { key: "oth", name: "Other" },
 ];
-// Reason mix by the stage the lead was lost at (columns in LOST_REASONS order).
+const REASON_ON = REASON_DEFS.map(r => OEM.lostReasons.includes(r.name));
+const LOST_REASONS = REASON_DEFS.filter((_, k) => REASON_ON[k]);
+// Reason mix by the stage the lead was lost at (columns in REASON_DEFS order; Hyundai: waiting
+// periods weigh more on a car, charging / range drops out).
+const WAIT_W = IS_HYUNDAI ? 1.6 : 1;
 const REASON_BY_STAGE = [
   [10, 0, 0, 0, 0, 55, 18, 0, 8],       // never got past the lead
   [5, 0, 0, 0, 0, 75, 10, 0, 6],        // attempted, never contacted
   [24, 20, 11, 13, 5, 5, 16, 6, 3],     // contacted, not interested
-  [22, 23, 12, 12, 8, 0, 14, 7, 4],     // interested, no test ride
-  [18, 26, 24, 4, 10, 0, 8, 8, 2],      // test ride, no booking
+  [22, 23, 12, 12, 8, 0, 14, 7, 4],     // interested, no test ride / drive
+  [18, 26, 24, 4, 10, 0, 8, 8, 2],      // test ride / drive, no booking
   [0, 15, 40, 0, 30, 0, 10, 0, 5],      // booking cancelled
-];
-const COMPETITORS = [
-  { name: "Ather", mix: 34 }, { name: "Ola Electric", mix: 24 }, { name: "TVS iQube", mix: 18 },
-  { name: "Bajaj Chetak", mix: 13 }, { name: "Hero Vida", mix: 6 }, { name: "Other", mix: 5 },
-];
+].map(row => row.map((w, k) => (REASON_DEFS[k].key === "wait" ? w * WAIT_W : w)).filter((_, k) => REASON_ON[k]));
+// Lost-to-competitor brands (sample mix). River keeps its scooter list; Hyundai uses OEM.competitorBrands.
+const CMP_MIX = IS_HYUNDAI
+  ? { "Maruti Suzuki": 31, "Tata Motors": 20, "Mahindra": 15, "Kia": 16, "Toyota": 8, "Honda": 5 }
+  : null;
+const COMPETITORS = IS_HYUNDAI
+  ? [...OEM.competitorBrands.map(name => ({ name, mix: CMP_MIX[name] || 5 })), { name: "Other", mix: 5 }]
+  : [
+    { name: "Ather", mix: 34 }, { name: "Ola Electric", mix: 24 }, { name: "TVS iQube", mix: 18 },
+    { name: "Bajaj Chetak", mix: 13 }, { name: "Hero Vida", mix: 6 }, { name: "Other", mix: 5 },
+  ];
+// Hyundai: a car enquiry that gets through is a little likelier to be interested (leads ≈ 14× retail).
+const FN_PI = IS_HYUNDAI ? 1.2 : 1;
 const NSRC = FN_SRC.length, NRSN = LOST_REASONS.length, NCMP = COMPETITORS.length;
 const FN_SERIES = STAGES.length + LOST_AT.length;                  // 13 daily series
 const FN_KEYS = [...STAGES, ...LOST_AT, ...LOST_REASONS.map(r => r.key), ...COMPETITORS.map((_, i) => "c" + i)];
@@ -550,7 +657,9 @@ const FN_PREF = new Int32Array(FN_SERIES * NSE * FN_NP);
       * (c.name === "Ather" ? (l.state === "Karnataka" || l.state === "Tamil Nadu" ? 1.5 : 1) * (metro ? 1.15 : 0.75) : 1)
       * (c.name === "Ola Electric" && (l.state === "Telangana" || l.state === "Andhra Pradesh") ? 1.25 : 1)
       * (c.name === "Bajaj Chetak" && l.state === "Maharashtra" ? 1.5 : 1)
-      * (c.name === "TVS iQube" && !metro ? 1.3 : 1));
+      * (c.name === "TVS iQube" && !metro ? 1.3 : 1)
+      * (c.name === "Maruti Suzuki" && !metro ? 1.3 : 1) * (c.name === "Kia" && metro ? 1.2 : 1)
+      * (c.name === "Toyota" && l.state === "Karnataka" ? 1.4 : 1));
     // Retail per SE for the months before November (Nov is the Board's MTD, per SE).
     const monthR = {};
     months.forEach(([y, m]) => {
@@ -564,7 +673,7 @@ const FN_PREF = new Int32Array(FN_SERIES * NSE * FN_NP);
       day.fill(0);
       const qs = rngFor("fns:" + s.id);
       const pa = clamp(0.9 * f.a * rr(qs, 0.97, 1.03), 0.8, 0.97), pc = 0.72 * f.c * rr(qs, 0.92, 1.08),
-        pi = 0.45 * f.i * rr(qs, 0.9, 1.1), pt = 0.55 * f.t * rr(qs, 0.9, 1.1), pb = 0.45 * f.b * rr(qs, 0.9, 1.1);
+        pi = 0.45 * FN_PI * f.i * rr(qs, 0.9, 1.1), pt = 0.55 * f.t * rr(qs, 0.9, 1.1), pb = 0.45 * f.b * rr(qs, 0.9, 1.1);
       const ql = [0.3, 0.3, 0.5, 0.45, 0.42].map(x => clamp(x * f.lost * rr(qs, 0.9, 1.1), 0, 0.95));
       const qc = 0.04 * rr(qs, 0.6, 1.4);
       months.forEach(([y, m]) => {
@@ -678,9 +787,13 @@ function fnAggFor(a, b) {
 /* ---------------- Dealer income at the Admin rates ----------------
    Linear in the summed fields, so per-SE income summed = income of the sums.
    Vehicle margin = dealer margin (`vm`, % of ex-showroom, before discount) × ex-showroom value
-   − discounts given. FADA: two-wheeler dealer margins 2.9–7.5% of ex-showroom (avg < 5%); EV
-   margins reported lower. Demo default 4.5% (≈ ₹6,966 on a 750W, ₹6,786 on a 480W). */
-const DEFAULT_RATES = { vm: 4.5, ins: 15, pay: 1.5, file: 750, acc: 25, rc: 20 };
+   − discounts given. The default margin is OEM.dealerMarginPct (River 4.5%: FADA's two-wheeler
+   range of 2.9–7.5%, EV margins lower; Hyundai 4.0%: FADA's ≈ 3–5% for passenger vehicles).
+   The other payout defaults are demo assumptions per OEM (car loans pay a lower % but a bigger
+   file fee; car accessories / extended warranties carry a little more margin). */
+const DEFAULT_RATES = IS_HYUNDAI
+  ? { vm: OEM.dealerMarginPct, ins: 15, pay: 1, file: 1500, acc: 30, rc: 25 }
+  : { vm: OEM.dealerMarginPct, ins: 15, pay: 1.5, file: 750, acc: 25, rc: 20 };
 function withIncome(a, R) {
   const incVeh = (a.value * R.vm) / 100 - a.disc;
   const incIns = (a.insPrem * R.ins) / 100;
@@ -704,7 +817,7 @@ function aggWith(R) {
   return f;
 }
 
-/* ---------------- Stock (point in time) — the shared Epic River inventory ---------------- */
+/* ---------------- Stock (point in time) — the shared inventory (src/data, stockFor) ---------------- */
 const STOCK_AGG = new Map();
 function stockOf(t) {
   let o = STOCK_AGG.get(t.key);
@@ -715,7 +828,7 @@ function stockOf(t) {
   return o;
 }
 
-/* ---------------- Product mix: variant × care plan × colour (sample data) ----------------
+/* ---------------- Product mix (River): variant × care plan × colour (sample data) ----------------
    Per SE, month to date. Variant: the SE's 750W units are the ones already behind `value`
    (round(retail × SE mix)), the rest are 480W. Care plans: the SE's existing River Care counts
    (`rc`, `p5`) are dealt across the two variants in proportion to units (exact integers, capped),
@@ -723,7 +836,7 @@ function stockOf(t) {
    outlet's colour preference — group target ≈ Blue 28 · White 24 · Grey 19 · Red 16 · Yellow 13,
    metros lean White / Grey, districts Blue / Red, Spring Yellow higher in Tamil Nadu and the
    Kerala-side towns — with the unbiased splitter, so Σ colours = Σ variants = retail everywhere. */
-const PM_COLOUR_TARGET = [28, 16, 13, 24, 19];   // COLOURS order: Blue, Red, Yellow, White, Grey
+const PM_COLOUR_TARGET = [28, 16, 13, 24, 19];   // COLS order: Blue, Red, Yellow, White, Grey
 const KERALA_SIDE = new Set(["Coimbatore", "Mangaluru", "Mysuru"]);
 function colourTilt(l, ci) {
   const t = METRO_CITIES.has(l.city) ? [0.88, 0.85, 1, 1.18, 1.25][ci] : [1.12, 1.16, 1, 0.9, 0.84][ci];
@@ -733,13 +846,13 @@ function colourTilt(l, ci) {
 const PM_KEYS = ["u", "v750", "v480", "p2a", "p5a", "p2b", "p5b", "k0", "k1", "k2", "k3", "k4",
   "a0", "a1", "a2", "a3", "a4", "b0", "b1", "b2", "b3", "b4"];   // a/b = 750W / 480W units by colour
 const PM_ROWS = new Array(SES.length);
-(() => {
-  const noise = new Map(LOCS.map(l => { const q = rngFor("pmc:" + l.id); return [l.id, COLOURS.map(() => rr(q, 0.85, 1.15))]; }));
+if (!IS_HYUNDAI) (() => {
+  const noise = new Map(LOCS.map(l => { const q = rngFor("pmc:" + l.id); return [l.id, COLS.map(() => rr(q, 0.85, 1.15))]; }));
   const outletW = (l, base) => base.map((b, ci) => b * colourTilt(l, ci) * noise.get(l.id)[ci]);
   const S = PM_COLOUR_TARGET.reduce((a, b) => a + b, 0);
   let base = [...PM_COLOUR_TARGET];
   for (let it = 0; it < 24; it++) {
-    const tot = COLOURS.map(() => 0);
+    const tot = COLS.map(() => 0);
     LOCS.forEach(l => { const w = outletW(l, base), W = w.reduce((a, b) => a + b, 0); w.forEach((x, ci) => { tot[ci] += (l.mtd * x) / W; }); });
     const T = tot.reduce((a, b) => a + b, 0);
     base = base.map((b, ci) => b * Math.pow(PM_COLOUR_TARGET[ci] / S / (tot[ci] / T || 1e-3), 0.6));
@@ -753,12 +866,12 @@ const PM_ROWS = new Array(SES.length);
     const ka = splitR(v750, s.loc.pmW, r), kb = splitR(v480, s.loc.pmW, r);
     PM_ROWS[i] = { u: row.retail, v750, v480, p2a: pl[0] - p5[0], p5a: p5[0], p2b: pl[1] - p5[1], p5b: p5[1],
       k0: ka[0] + kb[0], k1: ka[1] + kb[1], k2: ka[2] + kb[2], k3: ka[3] + kb[3], k4: ka[4] + kb[4],
-      ...Object.fromEntries(COLOURS.flatMap((_, ci) => [["a" + ci, ka[ci]], ["b" + ci, kb[ci]]])) };
+      ...Object.fromEntries(COLS.flatMap((_, ci) => [["a" + ci, ka[ci]], ["b" + ci, kb[ci]]])) };
   });
 })();
 const PM_AGG = new Map();
 // Σ over a node's SEs; for a location node (or scope with locIds) also its stock by variant / colour.
-function pmOf(t) {
+function rpmOf(t) {
   let o = PM_AGG.get(t.key);
   if (o) return o;
   o = {}; PM_KEYS.forEach(k => { o[k] = 0; });
@@ -766,21 +879,65 @@ function pmOf(t) {
   o.sh750 = div(o.v750, o.u); o.sh480 = div(o.v480, o.u);
   o.p2 = o.p2a + o.p2b; o.p5 = o.p5a + o.p5b; o.plan = o.p2 + o.p5;
   o.planPct = div(o.plan, o.u); o.p5Pct = div(o.p5, o.u);
-  COLOURS.forEach((_, ci) => { o["ks" + ci] = div(o["k" + ci], o.u); });
+  COLS.forEach((_, ci) => { o["ks" + ci] = div(o["k" + ci], o.u); });
   if (t.locIds) {
     // s<v><c> / g<v><c>: stock / 90+ days aged units per variant (0 = 750W, 1 = 480W) × colour.
-    VARIANTS.forEach((_, vi) => COLOURS.forEach((_, ci) => { o[`s${vi}${ci}`] = 0; o[`g${vi}${ci}`] = 0; }));
+    VARS.forEach((_, vi) => COLS.forEach((_, ci) => { o[`s${vi}${ci}`] = 0; o[`g${vi}${ci}`] = 0; }));
     t.locIds.forEach(id => stockFor(id).lines.forEach(l => {
-      const k = `${l.variant === "750W" ? 0 : 1}${COLOURS.indexOf(l.colour)}`;
+      const k = `${l.variant === V0.key ? 0 : 1}${COLS.indexOf(l.colour)}`;
       o["s" + k] += l.units; o["g" + k] += l.buckets[3];
     }));
-    o.s750 = COLOURS.reduce((x, _, ci) => x + o["s0" + ci], 0); o.s480 = COLOURS.reduce((x, _, ci) => x + o["s1" + ci], 0);
-    COLOURS.forEach((_, ci) => { o["sk" + ci] = o["s0" + ci] + o["s1" + ci]; });
+    o.s750 = COLS.reduce((x, _, ci) => x + o["s0" + ci], 0); o.s480 = COLS.reduce((x, _, ci) => x + o["s1" + ci], 0);
+    COLS.forEach((_, ci) => { o["sk" + ci] = o["s0" + ci] + o["s1" + ci]; });
     o.stock = o.s750 + o.s480;
   }
   PM_AGG.set(t.key, o);
   return o;
 }
+
+/* ---------------- Product mix (Hyundai): model × variant × colour (sample data) ----------------
+   From each SE's sale lines (HY.sales: Σ lines = retail) and plan counts (`rc` = p2 + p5, the same
+   numbers as Add-ons). A node's numbers are Σ over its SEs: by model, by variant (model + variant)
+   and by colour, plus fuel and automatic counts; a scope with locIds adds Σ
+   stockFor by the same keys (and 90+ days aged). Arrays are non-enumerable so the tables' data-*
+   attributes stay numeric. */
+const FUEL_LABEL = ["Petrol", "Diesel", "CNG", "EV"];
+function hpmOf(t) {
+  let o = PM_AGG.get(t.key);
+  if (o) return o;
+  const { NM, NV, NC, modelOf, fuel, auto } = HY;
+  const mod = new Array(NM).fill(0), vr = new Array(NV).fill(0), col = new Array(NC).fill(0);
+  const fu = [0, 0, 0, 0];
+  let au = 0, u = 0, p2 = 0, p5 = 0;
+  t.ses.forEach(i => {
+    const row = SE_ROWS[i];
+    u += row.retail; p2 += row.p2; p5 += row.p5;
+    HY.sales[i].forEach(([v, c, n]) => {
+      vr[v] += n; mod[modelOf[v]] += n; col[c] += n; fu[fuel[v]] += n; au += auto[v] * n;
+    });
+  });
+  o = { u, p2, p5, plan: p2 + p5, planPct: div(p2 + p5, u), p5Pct: div(p5, u), auto: au, autoPct: div(au, u) };
+  fu.forEach((n, j) => { o["f" + j] = n; o["fs" + j] = div(n, u); });
+  const hide = (k, v) => Object.defineProperty(o, k, { value: v, enumerable: false });
+  hide("mod", mod); hide("vr", vr); hide("col", col);
+  if (t.locIds) {
+    const smod = new Array(NM).fill(0), svr = new Array(NV).fill(0), scol = new Array(NC).fill(0), scombo = new Map();
+    const gmod = new Array(NM).fill(0), gvr = new Array(NV).fill(0), gcol = new Array(NC).fill(0);
+    let st = 0, ag = 0;
+    t.locIds.forEach(id => stockFor(id).lines.forEach(l => {
+      const v = HY.varIdx.get(l.key), c = HY.colIdx.get(l.colour), m = modelOf[v], g = l.buckets[3];
+      svr[v] += l.units; smod[m] += l.units; scol[c] += l.units; st += l.units;
+      gvr[v] += g; gmod[m] += g; gcol[c] += g; ag += g;
+      const k = v * NC + c; scombo.set(k, (scombo.get(k) || 0) + l.units);
+    }));
+    o.stock = st; o.aged = ag;
+    hide("smod", smod); hide("svr", svr); hide("scol", scol); hide("scombo", scombo);
+    hide("gmod", gmod); hide("gvr", gvr); hide("gcol", gcol);
+  }
+  PM_AGG.set(t.key, o);
+  return o;
+}
+const pmOf = IS_HYUNDAI ? hpmOf : rpmOf;
 
 /* ---------------- The two trees ----------------
    A tree node: { key, name, kind, ses (SE indexes), locIds, kids() }. Children are built
@@ -860,6 +1017,7 @@ function seKey(fk, s, cfs) {
 function labelOf(fk, key) {
   if (key === UN) return "Unassigned";
   if (fk === "loc") return LOC_BY_ID[key].locality;
+  if (fk === "format") return FORMAT_LABEL(key);
   return key;
 }
 
@@ -946,7 +1104,7 @@ function Avatar({ t, size }) {
     justifyContent: "center", flexShrink: 0, fontFamily: F, fontWeight: 800, fontSize: size * 0.36 };
   if (t.kind === "CITY") return <span style={box}><MapPin size={size * 0.5} color="#fff" /></span>;
   if (t.kind === "OUTLET") return <span style={box}><Store size={size * 0.5} color="#fff" /></span>;
-  const txt = t.kind === "GROUP" ? "ER" : t.kind === "STATE" ? STATE_ABBR[t.name] || initials(t.name) : initials(t.name);
+  const txt = t.kind === "GROUP" ? initials(GROUP.name) : t.kind === "STATE" ? STATE_ABBR[t.name] || initials(t.name) : initials(t.name);
   return <span style={box}>{txt}</span>;
 }
 function rowSub(t, parent) {
@@ -959,7 +1117,7 @@ function rowSub(t, parent) {
       : n.role === "TL" || n.role === "SE" ? (parent ? `under ${parent}` : LOC_BY_ID[n.locId].locality) : "";
     return `${n.role}${heads}${place ? ` · ${place}` : ""}`;
   }
-  if (t.kind === "OUTLET") return `${t.loc.format}${t.loc.isNew ? " · new" : ""} · ${t.loc.ses.length} SEs`;
+  if (t.kind === "OUTLET") return `${FORMAT_LABEL(t.loc.format)}${t.loc.isNew ? " · new" : ""} · ${t.loc.ses.length} SEs`;
   const n = t.locIds.length;
   return `${t.kind === "GROUP" ? "Group" : t.kind === "STATE" ? "State" : "City"} · ${n} outlet${n === 1 ? "" : "s"}`;
 }
@@ -1104,6 +1262,7 @@ const small = (v, color = C.faint, size = 9) => (
   <span style={{ display: "block", fontFamily: F, fontSize: size, marginTop: 2, color, whiteSpace: "nowrap", lineHeight: 1.15 }}>{v}</span>
 );
 const two = (a, b) => <>{a}<br />{b}</>;
+const HW = (river, hyundai) => (IS_HYUNDAI ? hyundai : river);   // column width: car ₹ figures run a digit longer
 const BOARD_COLS = [
   { key: "t", label: "Target", w: 42, sort: (a) => a.target, cell: (a) => num(nIN(a.target)) },
   { key: "r", label: "Retail", w: 52, sort: (a) => a.retail, cell: (a) => (
@@ -1154,22 +1313,22 @@ const FINC_COLS = [
 // Finance · Add-ons (revenue, not margin).
 const ADDON_COLS = [
   rateCol("acc", "Acc %", 38, "accPct"),
-  { key: "bill", label: two("Avg acc", "bill"), w: 50, sort: (a) => a.accBill,
+  { key: "bill", label: two("Avg acc", "bill"), w: HW(50, 54), sort: (a) => a.accBill,
     cell: (a) => top2(rs(a.accBill), null, rsTone(a.accBill, G.accBill, a.retail, a.accBuy)) },
-  rateCol("rc", two("River", "Care %"), 58, "rcPct", (a) => `${pctS(a.p5Sh)} Plus Five`),
-  { key: "pu", label: two("Add-ons", "₹/unit"), w: 48, align: "right", sort: (a) => a.addPU,
+  rateCol("rc", two(...PLAN_HEAD), 58, "rcPct", (a) => `${pctS(a.p5Sh)} ${IS_HYUNDAI ? "5 yr" : PB_NAME}`),
+  { key: "pu", label: two("Add-ons", "₹/unit"), w: HW(48, 52), align: "right", sort: (a) => a.addPU,
     cell: (a) => top2(rs(a.addPU), null, rsTone(a.addPU, G.addPU, a.retail)) },
 ];
-// Finance · Income per vehicle — ₹ per scooter sold, at the Admin rates (`gi` = group with income).
+// Finance · Income per vehicle — ₹ per vehicle sold, at the Admin rates (`gi` = group with income).
 // Vehicle = net margin after discount; F&I = insurance commission + lender payout.
 const incomeCols = (gi) => {
   const col = (key, label, w, f, subF, align) => ({ key, label, w, align, sort: (a) => a[f],
     cell: (a) => top2(rs(a[f]), subF ? subF(a) : null, rsTone(a[f], gi[f], a.retail)) });
   return [
-    col("veh", "Vehicle", 58, "vehPV", (a) => grey(ok(a.discPV) ? `−${rs(a.discPV)} disc` : "—")),
+    col("veh", "Vehicle", HW(58, 62), "vehPV", (a) => grey(ok(a.discPV) ? `−${rs(a.discPV)} disc` : "—")),
     col("fi", "F&I", 54, "fiPV", (a) => ok(a.insPV) ? <>{grey(`ins ${rs(a.insPV)}`)}{grey(`fin ${rs(a.finPV)}`)}</> : null),
-    col("add", "Add-ons", 46, "addPV"),
-    col("tot", "Total", 48, "totPV", null, "right")];
+    col("add", "Add-ons", HW(46, 48), "addPV"),
+    col("tot", "Total", HW(48, 54), "totPV", null, "right")];
 };
 const STOCK_COLS = [
   { key: "u", label: "Units", w: 46, sort: (s) => s.units, cell: (s) => num(nIN(s.units), true) },
@@ -1196,7 +1355,7 @@ const FN_COLS = [
   stageCol("att", "Attempted", "leads", 64),
   stageCol("con", "Contacted", "att", 64),
   stageCol("int", "Interested", "con", 66),
-  stageCol("td", two("Test", "ride"), "int", 50),
+  stageCol("td", two(...TestNoun.split(" ")), "int", 50),
   stageCol("bk", "Booking", "td"),
   { key: "rt", label: "Retailed", w: 60, sort: (a) => a.rt,
     cell: (a) => top2(nIN(a.rt), <>{grey(pct1(div(a.rt, a.bk)))}{grey(`${pct1(div(a.rt, a.leads))} of leads`)}</>, C.ink, 12) },
@@ -1204,7 +1363,7 @@ const FN_COLS = [
     cell: (a) => top2(nIN(a.lost), grey(`${pct1(div(a.lost, a.leads))} of leads`), C.ink, 12) },
 ];
 const REASON_LABEL = { price: two("Price /", "budget"), comp: two("Bought", "competitor"), finr: two("Finance", "rejected"),
-  chg: two("Charging", "/ range"), wait: two("Delivery", "wait"), nr: two("Not", "reachable"), post: "Postponed",
+  chg: two("Charging", "/ range"), wait: IS_HYUNDAI ? two("Waiting", "period") : two("Delivery", "wait"), nr: two("Not", "reachable"), post: "Postponed",
   exch: two("Low", "exchange"), oth: "Other" };
 const LN_COLS = [
   { key: "lost", label: "Lost", w: 58, sort: (a) => a.lost,
@@ -1352,7 +1511,7 @@ function FunnelSection({ open }) {
     <RangeTreeCard title="Leads to Retail" Icon={Filter} testid="fn" cols={FN_COLS} open={open} hint={FN_HINT}
       summary={(g) => (
         <MetricGrid testid="fn-summary" style={{ padding: "2px 0 12px" }}>
-          <MetricBox span label="Leads" value={nIN(g.leads)} sub={`${nIN(g.td)} test rides · ${pct1(div(g.td, g.leads))} of leads`} testid="fn-sum-leads" />
+          <MetricBox span label="Leads" value={nIN(g.leads)} sub={`${nIN(g.td)} ${testNounPlural} · ${pct1(div(g.td, g.leads))} of leads`} testid="fn-sum-leads" />
           <MetricBox label="Retailed" value={nIN(g.rt)} sub={`${pct1(div(g.rt, g.leads))} of leads`} testid="fn-sum-rt" />
           <MetricBox label="Booking" value={nIN(g.bk)} sub={`${pct1(div(g.rt, g.bk))} to retail`} testid="fn-sum-bk" />
         </MetricGrid>
@@ -1369,7 +1528,7 @@ function LostSection({ open }) {
           <MetricGrid testid="ln-summary" style={{ padding: "2px 0 12px" }}>
             <MetricBox span label="Lost leads" value={nIN(g.lost)} sub={`${pct1(div(g.lost, g.leads))} of ${nIN(g.leads)} leads`} testid="ln-sum-lost" />
             <MetricBox label="Top reason" value={<span style={{ fontSize: 15 }}>{top.name}</span>} sub={`${pct1(div(g[top.key], g.lost))} of lost`} testid="ln-sum-top" />
-            <MetricBox label="Lost after test ride" value={nIN(g.lostTD)} sub={`${pct1(div(g.lostTD, g.lost))} of lost · ${nIN(g.l5)} cancelled bookings`} testid="ln-sum-td" />
+            <MetricBox label={`Lost after ${testNoun}`} value={nIN(g.lostTD)} sub={`${pct1(div(g.lostTD, g.lost))} of lost · ${nIN(g.l5)} cancelled bookings`} testid="ln-sum-td" />
           </MetricGrid>
         );
       }}
@@ -1519,16 +1678,16 @@ const FIN = {
   addons: {
     label: "Add-ons", title: "Add-ons", Icon: ShoppingBag, hint: FI_HINT, cols: () => ADDON_COLS,
     summary: (g) => [
-      ["Add-ons / scooter", rs(g.addPU), "acc + River Care"],
+      [`Add-ons / ${VEHICLE}`, rs(g.addPU), `acc + ${PLAN_FAMILY}`],
       ["Accessory attach", pctS(g.accPct), `avg bill ${rs(g.accBill)}`],
-      ["River Care attach", pctS(g.rcPct), `${pctS(g.p5Sh)} Plus Five`],
+      [`${PLAN_FAMILY} attach`, pctS(g.rcPct), `${pctS(g.p5Sh)} ${PB_NAME}`],
     ],
   },
   income: {
     label: "Income per vehicle", title: "Income per vehicle", Icon: IndianRupee, cols: incomeCols,
-    hint: "Epic River's earnings per scooter sold: vehicle margin after discount, plus insurance, finance and add-ons at the rates in Admin.",
+    hint: `${GROUP.name}'s earnings per ${VEHICLE} sold: vehicle margin after discount, plus insurance, finance and add-ons at the rates in Admin.`,
     summary: (g) => [
-      ["Income per scooter", rs(g.totPV), "incl. vehicle margin"],
+      [`Income per ${VEHICLE}`, rs(g.totPV), "incl. vehicle margin"],
       ["Vehicle margin", rs(g.vehPV), `after ${rs(g.discPV)} avg discount`],
       ["Total income", inr(g.incTot), "month to date"],
     ],
@@ -1569,7 +1728,8 @@ const SPLIT_DEF = {
   ins: { title: "Insurers", Icon: ShieldCheck, count: "Policies", avgLabel: two("Avg", "premium"), avg: rs, word: "insurer", note: "Sample partner mix",
     hint: "Share of in-house policies by insurer. Tap a header to sort." },
   fin: { title: "Finance partners", Icon: Landmark, count: "Loans", avgLabel: two("Avg", "loan"), avg: lakh, word: "lender",
-    note: "Lenders: evfin and its reported co-lending partners · shares are sample data",
+    note: IS_HYUNDAI ? "Sample lender mix · shares are demo assumptions"
+      : `Lenders: ${LENDERS.find(x => x.anchor).name.split(" ")[0]} and its reported co-lending partners · shares are sample data`,
     hint: "Share of in-house loans by lender. Tap a header to sort." },
 };
 const SCOPES = (() => {
@@ -1664,11 +1824,22 @@ function StockScreen({ open, embedded }) {
 }
 
 /* ---------------- Outlet stock card ---------------- */
-const SWATCH = {
-  "Monsoon Blue": ["Blue", "#2F5BA8"], "Summer Red": ["Red", "#C8352E"], "Spring Yellow": ["Yellow", "#E9B800"],
-  "Winter White": ["White", "#F4F4F0"], "Storm Grey": ["Grey", "#6B7280"],
-};
+/* Colour swatches from the OEM catalogue. SWATCH[name] = [short label, hex] (River: "Blue", "#2F5BA8").
+   Hyundai short labels are two lines ("Atlas" / "White"), dual-tones marked "DT" and drawn with a
+   dark roof band. */
+const COLOUR_OBJ = new Map();
+OEM.models.forEach(m => m.colours.forEach(c => { if (!COLOUR_OBJ.has(c.name)) COLOUR_OBJ.set(c.name, c); }));
+function colourShort(name) {
+  if (!IS_HYUNDAI) return name.split(" ").slice(-1)[0];
+  const dt = / with .* Roof$/.test(name) || / \/ /.test(name);
+  const base = name.replace(/ with .* Roof$/, "").replace(/ \/ .*$/, "").replace(/ Matte$/, " mt");
+  const w = base.split(" ");
+  return w.length > 1 ? two(w[0], w.slice(1).join(" ") + (dt ? " DT" : "")) : base + (dt ? " DT" : "");
+}
+const SWATCH = Object.fromEntries(COLS.map(c => [c, [colourShort(c), COLOUR_OBJ.get(c)?.hex || "#9AA0AE"]]));
+const swatchBg = (c) => (COLOUR_OBJ.get(c)?.dualTone ? `linear-gradient(180deg, #1F2023 0 38%, ${SWATCH[c][1]} 38%)` : SWATCH[c][1]);
 function StockCard({ id }) {
+  if (IS_HYUNDAI) return <HyStockCard id={id} />;
   const s = stockFor(id);
   const units = (v, c) => { const l = s.lines.find(x => x.variant === v && x.colour === c); return l ? l.units : 0; };
   const age = [0, 1, 2, 3].map(b => s.lines.reduce((x, l) => x + l.buckets[b], 0));
@@ -1680,7 +1851,7 @@ function StockCard({ id }) {
         right={<span data-testid="outlet-stock-total" data-total={s.total} style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink }}>{nIN(s.total)} units</span>} />
       <div style={{ ...grid, padding: "4px 4px 7px", borderBottom: `1.5px solid ${C.borderStrong}` }}>
         <span />
-        {COLOURS.map(c => (
+        {COLS.map(c => (
           <span key={c} title={c} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
             <span style={{ width: 10, height: 10, borderRadius: "50%", background: SWATCH[c][1], border: `1px solid ${C.borderStrong}` }} />
             <span style={{ ...head, fontSize: 8.5 }}>{SWATCH[c][0]}</span>
@@ -1688,8 +1859,8 @@ function StockCard({ id }) {
         ))}
         <span style={{ ...head, textAlign: "right" }}>Total</span>
       </div>
-      {VARIANTS.map(v => {
-        const row = COLOURS.map(c => units(v.key, c));
+      {VARS.map(v => {
+        const row = COLS.map(c => units(v.key, c));
         return (
           <div key={v.key} data-testid="outlet-stock-row" style={{ ...grid, padding: "9px 4px", borderBottom: `1px solid ${C.border}` }}>
             <span style={{ fontFamily: F, fontSize: 12, fontWeight: 700, color: C.ink }}>{v.key}</span>
@@ -1705,7 +1876,58 @@ function StockCard({ id }) {
           </React.Fragment>
         ))}
       </div>
-      <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, padding: "3px 4px 0" }}>Age in days · plus {s.demo} demo scooter{s.demo === 1 ? "" : "s"}</div>
+      <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, padding: "3px 4px 0" }}>Age in days · plus {s.demo} demo {VEH_S(s.demo)}</div>
+    </Card>
+  );
+}
+/* Hyundai: one row per model in stock (units, variants and colours stocked, 90+ aged), biggest first. */
+function HyStockCard({ id }) {
+  const s = stockFor(id);
+  const by = new Map();
+  s.lines.forEach(l => {
+    const m = by.get(l.model) || { model: l.model, units: 0, aged: 0, vars: new Set(), cols: new Map() };
+    m.units += l.units; m.aged += l.buckets[3]; m.vars.add(l.variant); m.cols.set(l.colour, (m.cols.get(l.colour) || 0) + l.units);
+    by.set(l.model, m);
+  });
+  const rows = [...by.values()].sort((a, b) => b.units - a.units || a.model.localeCompare(b.model));
+  const age = [0, 1, 2, 3].map(b => s.lines.reduce((x, l) => x + l.buckets[b], 0));
+  const grid = { display: "grid", gridTemplateColumns: "minmax(0,1fr) 44px 36px 44px", alignItems: "center", columnGap: 4 };
+  const head = { fontFamily: F, fontSize: 9, fontWeight: 800, color: C.sub, textTransform: "uppercase", letterSpacing: 0.2, textAlign: "center" };
+  return (
+    <Card data-testid="outlet-stock">
+      <CardHead Icon={Package} title="Stock" testid="outlet-stock-title" hint={`Today · ${inr(s.value)} ex-showroom`}
+        right={<span data-testid="outlet-stock-total" data-total={s.total} style={{ fontFamily: F, fontSize: 13, fontWeight: 800, color: C.ink }}>{nIN(s.total)} units</span>} />
+      <div style={{ ...grid, padding: "4px 4px 7px", borderBottom: `1.5px solid ${C.borderStrong}` }}>
+        <span style={{ ...head, textAlign: "left" }}>Model · top colours</span>
+        <span style={head}>Variants</span>
+        <span style={head}>90+</span>
+        <span style={{ ...head, textAlign: "right" }}>Units</span>
+      </div>
+      {rows.map(m => {
+        const top = [...m.cols.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4);
+        return (
+          <div key={m.model} data-testid="outlet-stock-row" data-model={m.model} data-units={m.units} style={{ ...grid, padding: "8px 4px", borderBottom: `1px solid ${C.border}` }}>
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: "block", fontFamily: F, fontSize: 12, fontWeight: 700, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.model}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 3, marginTop: 3 }}>
+                {top.map(([c]) => <Dot key={c} c={c} size={8} />)}
+                {m.cols.size > top.length && <span style={{ fontFamily: F, fontSize: 9, color: C.faint }}>+{m.cols.size - top.length}</span>}
+              </span>
+            </span>
+            <span style={{ textAlign: "center", fontFamily: F, fontSize: 12, fontWeight: 600, color: C.sub }}>{m.vars.size}</span>
+            <span style={{ textAlign: "center", fontFamily: F, fontSize: 12, fontWeight: m.aged ? 700 : 500, color: m.aged ? C.hot : C.ghost }}>{m.aged}</span>
+            <span style={{ textAlign: "right", fontFamily: F, fontSize: 12.5, fontWeight: 700, color: C.ink }}>{nIN(m.units)}</span>
+          </div>
+        );
+      })}
+      <div data-testid="outlet-stock-age" style={{ fontFamily: F, fontSize: 11.5, color: C.sub, padding: "10px 4px 2px" }}>
+        {["0–30", "31–60", "61–90", "90+"].map((k, i) => (
+          <React.Fragment key={k}>{i > 0 && " · "}
+            <span style={{ color: i === 3 && age[3] > 0 ? C.hot : C.sub, fontWeight: i === 3 && age[3] > 0 ? 700 : 500 }}>{k}: {age[i]}</span>
+          </React.Fragment>
+        ))}
+      </div>
+      <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, padding: "3px 4px 0" }}>Age in days · plus {s.demo} demo {VEH_S(s.demo)}</div>
     </Card>
   );
 }
@@ -1718,26 +1940,26 @@ function StockCard({ id }) {
    split table (People ⇄ Locations) with Variant | Colour column sets. */
 const AMBER_TXT = "#B45309";
 const GPM = pmOf(LOC_ROOT);
-const PM_VIEWS = [["variant", "Variant"], ["colour", "Colour"]];
+const PM_VIEWS = IS_HYUNDAI ? [["model", "Model"], ["variant", "Variant"], ["colour", "Colour"]] : [["variant", "Variant"], ["colour", "Colour"]];
 const pmShareCol = (key, label, n, sh, w, align) => ({ key, label, w, align, sort: (a) => a[sh],
   cell: (a) => top2(nIN(a[n]), grey(pctS(a[sh])), rateTone(a[sh], GPM[sh], a.u), 12) });
 const pmUnitsCol = (w) => ({ key: "u", label: "Units", w, sort: (a) => a.u,
   cell: (a) => top2(nIN(a.u), a.stock != null ? grey(`stock ${nIN(a.stock)}`) : null, C.ink, 12) });
-const PM_VAR_COLS = [
+const PM_VAR_COLS = IS_HYUNDAI ? null : [
   pmUnitsCol(48),
-  pmShareCol("a", "750W", "v750", "sh750", 46),
-  pmShareCol("b", "480W", "v480", "sh480", 46),
+  pmShareCol("a", V0.key, "v750", "sh750", 46),
+  pmShareCol("b", V1.key, "v480", "sh480", 46),
   { key: "pl", label: two("With", "plan %"), w: 52, align: "right", sort: (a) => a.planPct,
     cell: (a) => top2(pctS(a.planPct), grey(`P5 ${pctS(a.p5Pct)}`), rateTone(a.planPct, GPM.planPct, a.u), 12) },
 ];
 const Dot = ({ c, size = 9 }) => <span style={{ display: "inline-block", width: size, height: size, borderRadius: "50%", flexShrink: 0,
-  background: SWATCH[c][1], border: `1px solid ${C.borderStrong}`, boxSizing: "border-box" }} />;
+  background: swatchBg(c), border: `1px solid ${C.borderStrong}`, boxSizing: "border-box" }} />;
 const dotLabel = (c) => <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 3 }}><Dot c={c} />{SWATCH[c][0]}</span>;
-const PM_COL_COLS = [
+const PM_COL_COLS = IS_HYUNDAI ? null : [
   pmUnitsCol(52),
-  ...COLOURS.map((c, ci) => pmShareCol("k" + ci, dotLabel(c), "k" + ci, "ks" + ci, 54)),
+  ...COLS.map((c, ci) => pmShareCol("k" + ci, dotLabel(c), "k" + ci, "ks" + ci, 54)),
 ];
-const PM_HINT_V = "MTD retail by charger variant (grey = % of units); With plan = Plus Two + Plus Five. Green/red = 5 pts vs group (≥ 20 units). Tap a header to sort.";
+const PM_HINT_V = `MTD retail by charger variant (grey = % of units); With plan = ${PA_NAME} + ${PB_NAME}. Green/red = 5 pts vs group (≥ 20 units). Tap a header to sort.`;
 const PM_HINT_C = "MTD retail by colour (grey = % of units). Green/red = 5 pts vs group (≥ 20 units). Swipe for every colour; tap a header to sort.";
 
 /* Movement rows for one scope aggregate. Variant view: 750W / 480W (stock is per variant), each
@@ -1755,21 +1977,22 @@ function quantile(xs, q) {
   return i + 1 < s.length ? s[i] + (s[i + 1] - s[i]) * (p - i) : s[i];
 }
 function movementOf(a, view) {
+  if (IS_HYUNDAI) return hyMovementOf(a, view);
   let rows;
   if (view === "variant") {
-    rows = VARIANTS.map((v, vi) => {
+    rows = VARS.map((v, vi) => {
       const [sold, stock, P] = vi === 0 ? [a.v750, a.s750, "a"] : [a.v480, a.s480, "b"];
       const p2 = a["p2" + P], p5 = a["p5" + P];
-      const aged = COLOURS.reduce((x, _, ci) => x + a[`g${vi}${ci}`], 0);
+      const aged = COLS.reduce((x, _, ci) => x + a[`g${vi}${ci}`], 0);
       return mvRow(v.key, v.key, sold, stock, aged, stock * v.exShowroom, { kind: "variant", kids: [
         { key: v.key + ":std", name: `${v.key} · Standard`, n: sold - p2 - p5, kind: "plan" },
-        { key: v.key + ":p2", name: `${v.key} + Plus Two`, n: p2, kind: "plan" },
-        { key: v.key + ":p5", name: `${v.key} + Plus Five`, n: p5, kind: "plan" },
+        { key: v.key + ":p2", name: `${v.key} + ${PA_NAME}`, n: p2, kind: "plan" },
+        { key: v.key + ":p5", name: `${v.key} + ${PB_NAME}`, n: p5, kind: "plan" },
       ] });
     });
   } else {
-    rows = COLOURS.map((c, ci) => mvRow(c, c, a["k" + ci], a["sk" + ci], a[`g0${ci}`] + a[`g1${ci}`],
-      a[`s0${ci}`] * VARIANTS[0].exShowroom + a[`s1${ci}`] * VARIANTS[1].exShowroom, { kind: "colour", dot: c }));
+    rows = COLS.map((c, ci) => mvRow(c, c, a["k" + ci], a["sk" + ci], a[`g0${ci}`] + a[`g1${ci}`],
+      a[`s0${ci}`] * VARS[0].exShowroom + a[`s1${ci}`] * VARS[1].exShowroom, { kind: "colour", dot: c }));
   }
   // Fast mover: under 14 days of cover at the MTD pace. Slow mover: over 45 days.
   rows.forEach(r => {
@@ -1781,7 +2004,7 @@ function movementOf(a, view) {
 // Variant × colour combos in the scope with cover > 45 days (or stock with no sales).
 function slowCombos(a) {
   const out = { n: 0, units: 0, value: 0 };
-  VARIANTS.forEach((v, vi) => COLOURS.forEach((_, ci) => {
+  VARS.forEach((v, vi) => COLS.forEach((_, ci) => {
     const sold = a[(vi === 0 ? "a" : "b") + ci], stock = a[`s${vi}${ci}`];
     if (isSlow(sold, stock)) { out.n++; out.units += stock; out.value += stock * v.exShowroom; }
   }));
@@ -1811,7 +2034,11 @@ const Chip = ({ flag }) => flag ? (
 function MovementTable({ a, view, sort, onSort, label }) {
   const { rows, total } = movementOf(a, view);
   const cmp = mvCmp(sort);
-  const sorted = [...rows].sort(cmp);
+  // Folded rows ("Others", "N more variants") stay last whatever the sort.
+  const sorted = [...rows.filter(r => !r.folded)].sort(cmp).concat(rows.filter(r => r.folded));
+  // Hyundai variant view: model rows open to their variants; the two best sellers start open.
+  const [openM, setOpenM] = useState(() => new Set([...rows].filter(r => r.vkids).sort((x, y) => y.n - x.n).slice(0, 2).map(r => r.key)));
+  const toggleM = (k) => setOpenM(x => { const n = new Set(x); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   const cellW = (c) => ({ width: c.w, flexShrink: 0, textAlign: c.align || "center", paddingRight: c.align === "right" ? 4 : 0 });
   const coverTxt = (r) => {
     if (r.n === 0) return top2("—", r.stock > 0 ? grey("no sales") : null, C.faint, 12);
@@ -1820,10 +2047,10 @@ function MovementTable({ a, view, sort, onSort, label }) {
   };
   const nameCell = (r, strong, sub, barW, indent, chip) => (
     <span style={{ flex: 1, minWidth: 0, padding: `0 6px 0 ${indent ? 18 : 6}px` }}>
-      <span style={{ display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 4, rowGap: 2, minWidth: 0 }}>
+      <span style={{ display: "flex", alignItems: "center", flexWrap: IS_HYUNDAI && r.dot ? "nowrap" : "wrap", columnGap: 4, rowGap: 2, minWidth: 0 }}>
         {r.dot && <Dot c={r.dot} size={9} />}
         <span style={{ fontFamily: F, fontSize: indent ? 11.5 : 12.5, fontWeight: strong ? 800 : indent ? 500 : 700, color: indent ? C.sub : C.ink,
-          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...(IS_HYUNDAI && r.dot ? { minWidth: 0, flexShrink: 1 } : null) }}>{r.name}</span>
         {chip}
       </span>
       {sub != null && <span style={{ display: "block", fontFamily: F, fontSize: 9.5, color: C.faint, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</span>}
@@ -1835,17 +2062,28 @@ function MovementTable({ a, view, sort, onSort, label }) {
     </span>
   );
   const agedTxt = (n) => <span style={{ color: n > 0 ? C.hot : C.faint, fontWeight: n > 0 ? 700 : 400 }}>90+ aged {nIN(n)}</span>;
-  const row = (r) => (
+  const row = (r, indent, toggle) => {
+    const nc = nameCell(r, false, <>{pctS(div(r.n, total.n))} of sold · {agedTxt(r.aged)}</>, div(r.n, total.n), indent, <Chip flag={r.flag} />);
+    return (
     <div key={r.key} data-testid="mv-row" data-kind={r.kind} data-name={r.name} data-n={r.n} data-stock={r.stock} data-st={r.st} data-cover={r.cover ?? ""}
-      data-aged={r.aged} data-flag={r.flag || ""} data-view={view}
-      style={{ display: "flex", alignItems: "center", minHeight: 46, borderBottom: `1px solid ${C.border}`, borderLeft: "3px solid transparent" }}>
-      {nameCell(r, false, <>{pctS(div(r.n, total.n))} of sold · {agedTxt(r.aged)}</>, div(r.n, total.n), false, <Chip flag={r.flag} />)}
+      data-aged={r.aged} data-flag={r.flag || ""} data-view={view} data-parent={r.parent} data-folded={r.folded ? "1" : undefined}
+      style={{ display: "flex", alignItems: "center", minHeight: indent ? 40 : 46, borderBottom: `1px solid ${C.border}`, borderLeft: "3px solid transparent",
+        background: indent ? "#FAFBFE" : undefined }}>
+      {toggle ? (
+        <button type="button" data-testid="mv-open" aria-expanded={toggle.open} onClick={toggle.fn}
+          style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 0, padding: "0 0 0 3px", background: "none", border: "none",
+            cursor: "pointer", textAlign: "left", WebkitTapHighlightColor: "transparent" }}>
+          {toggle.open ? <ChevronDown size={11} color={C.faint} style={{ flexShrink: 0 }} /> : <ChevronRight size={11} color={C.faint} style={{ flexShrink: 0 }} />}
+          {nc}
+        </button>
+      ) : nc}
       <span style={cellW(MOV_COLS[0])}>{num(nIN(r.n), true, 12)}</span>
       <span style={cellW(MOV_COLS[1])}>{num(nIN(r.stock), false, 12)}</span>
       <span style={cellW(MOV_COLS[2])}>{num(pctS(r.st), true, 12)}</span>
       <span style={cellW(MOV_COLS[3])}>{coverTxt(r)}</span>
     </div>
-  );
+    );
+  };
   const kidRow = (k, parent) => (
     <div key={k.key} data-testid="mv-row" data-kind="plan" data-name={k.name} data-n={k.n} data-parent={parent.key}
       style={{ display: "flex", alignItems: "center", minHeight: 36, borderBottom: `1px solid ${C.border}`, borderLeft: "3px solid transparent", background: "#FAFBFE" }}>
@@ -1869,7 +2107,8 @@ function MovementTable({ a, view, sort, onSort, label }) {
       </div>
       {sorted.map(r => (
         <React.Fragment key={r.key}>
-          {row(r)}
+          {r.vkids ? row(r, false, { open: openM.has(r.key), fn: () => toggleM(r.key) }) : row(r)}
+          {r.vkids && openM.has(r.key) && r.vkids.map(k => row(k, true))}
           {r.kids && [...r.kids].sort((x, y) => (sort.key === "name" ? 0 : y.n - x.n)).map(k => kidRow(k, r))}
         </React.Fragment>
       ))}
@@ -1877,15 +2116,16 @@ function MovementTable({ a, view, sort, onSort, label }) {
   );
 }
 function MixSummary({ a }) {
-  const topV = a.v750 >= a.v480 ? ["750W", a.sh750] : ["480W", a.sh480];
-  const ci = COLOURS.reduce((x, _, i) => (a["k" + i] > a["k" + x] ? i : x), 0);
+  if (IS_HYUNDAI) return <HyMixSummary a={a} />;
+  const topV = a.v750 >= a.v480 ? [V0.key, a.sh750] : [V1.key, a.sh480];
+  const ci = COLS.reduce((x, _, i) => (a["k" + i] > a["k" + x] ? i : x), 0);
   const slow = slowCombos(a);
   return (
     <MetricGrid testid="pm-summary" style={{ padding: "2px 0 12px" }}>
       <MetricBox label="Top variant" value={topV[0]} sub={`${pctS(topV[1])} of retail`} testid="pm-sum-variant" />
-      <MetricBox label="Top colour" value={<span style={{ fontSize: 15 }}>{COLOURS[ci]}</span>} sub={`${pctS(a["ks" + ci])} of retail`} testid="pm-sum-colour" />
-      <MetricBox label="Care plan attach" value={pctS(a.planPct)} sub={`Plus Two ${nIN(a.p2)} · Plus Five ${nIN(a.p5)}`} testid="pm-sum-plan" />
-      <MetricBox label="Slow movers" value={nIN(slow.n)} after={`/ ${VARIANTS.length * COLOURS.length} combos`}
+      <MetricBox label="Top colour" value={<span style={{ fontSize: 15 }}>{COLS[ci]}</span>} sub={`${pctS(a["ks" + ci])} of retail`} testid="pm-sum-colour" />
+      <MetricBox label="Care plan attach" value={pctS(a.planPct)} sub={`${PA_NAME} ${nIN(a.p2)} · ${PB_NAME} ${nIN(a.p5)}`} testid="pm-sum-plan" />
+      <MetricBox label="Slow movers" value={nIN(slow.n)} after={`/ ${VARS.length * COLS.length} combos`}
         sub={`${nIN(slow.units)} units · ${inr(slow.value)} ex-showroom`} testid="pm-sum-slow" />
     </MetricGrid>
   );
@@ -1906,23 +2146,24 @@ function MixCard({ view, setView, fixed }) {
       <CardHead Icon={Package} title="Product mix & stock movement" testid={fixed ? "outlet-mix-title" : "pm-mix-title"}
         hint={fixed ? "This outlet: sold MTD vs stock today. Fast mover: under 14 days of cover · Slow: over 45 days." : MV_HINT} />
       {!fixed && (
-        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 4px 10px" }}>
+        <div style={IS_HYUNDAI ? { display: "flex", alignItems: "center", gap: 6, padding: "0 4px 10px", flexWrap: "wrap", rowGap: 8 }
+          : { display: "flex", alignItems: "center", gap: 6, padding: "0 4px 10px" }}>
           <span style={{ fontFamily: F, fontSize: 11, color: C.faint }}>Showing:</span>
           <select data-testid="pm-mix-scope" aria-label="Product mix scope" value={scopeKey} onChange={e => setScopeKey(e.target.value)} style={selectStyle}>
             {SCOPES.map(x => <option key={x.t.key} value={x.t.key}>{x.label}</option>)}
           </select>
-          <span style={{ flex: 1 }} />
+          <span style={{ flex: IS_HYUNDAI ? "1 0 auto" : 1 }} />
           <Seg value={view} onChange={setView} opts={PM_VIEWS} testid="pm-mix-view" />
         </div>
       )}
       <MixSummary a={a} />
       {fixed ? (
         <>
-          <MovementTable a={a} view="variant" sort={sort} onSort={onSort} label="Variant" />
+          <MovementTable a={a} view="variant" sort={sort} onSort={onSort} label={IS_HYUNDAI ? "Model · variant" : "Variant"} />
           <div style={{ height: 10 }} />
           <MovementTable a={a} view="colour" sort={sort} onSort={onSort} label="Colour" />
         </>
-      ) : <MovementTable a={a} view={view} sort={sort} onSort={onSort} label={scope.name} />}
+      ) : <MovementTable key={view} a={a} view={view} sort={sort} onSort={onSort} label={scope.name} />}
       <div style={{ fontFamily: F, fontSize: 10, color: C.faint, padding: "8px 4px 0", lineHeight: 1.4 }}>{MV_FOOT}</div>
     </Card>
   );
@@ -1969,13 +2210,143 @@ function PmTable({ view, setView, open }) {
     </Card>
   );
 }
+/* ---------------- Product mix · Hyundai ----------------
+   15 models, ~120 variants and ~35 colours don't fit a column per item, so:
+   · movement card: Model view (one row per model), Variant view (model rows that open to their
+     variants, sorted by units; the top 5 shown, the rest folded into "N more variants"), Colour
+     view (the top 7 colours, the rest folded into "Others");
+   · sales split table: Model (top 5 models + Other), Variant (fuel and gearbox mix + plan attach),
+     Colour (top 6 colours + Other) — all scroll sideways inside the card.
+   Folded rows are sums of what they fold, so Σ rows = the scope total in every view. */
+const HY_TOP_M = IS_HYUNDAI ? GPM.mod.map((n, i) => [n, i]).sort((x, y) => y[0] - x[0]).slice(0, 5).map(([, i]) => i) : null;
+const HY_TOP_C = IS_HYUNDAI ? GPM.col.map((n, i) => [n, i]).sort((x, y) => y[0] - x[0]).slice(0, 6).map(([, i]) => i) : null;
+const words2 = (name) => { const w = name.split(" "); return w.length > 1 ? two(w.slice(0, -1).join(" "), w[w.length - 1]) : name; };
+const hyCol = (key, label, w, nf) => ({ key, label, w, sort: (a) => div(nf(a), a.u),
+  cell: (a) => top2(nIN(nf(a)), grey(pctS(div(nf(a), a.u))), rateTone(div(nf(a), a.u), div(nf(GPM), GPM.u), a.u), 12) });
+const sumAt = (arr, idx) => idx.reduce((x, i) => x + arr[i], 0);
+const PMH_COLS = IS_HYUNDAI ? {
+  model: [
+    pmUnitsCol(52),
+    ...HY_TOP_M.map(mi => hyCol("m" + mi, words2(HY.M[mi].name), 58, (a) => a.mod[mi])),
+    hyCol("mo", two("Other", "models"), 58, (a) => a.u - sumAt(a.mod, HY_TOP_M)),
+  ],
+  variant: [
+    pmUnitsCol(52),
+    ...FUEL_LABEL.map((f, j) => (GPM["f" + j] > 0 ? hyCol("f" + j, f, 52, (a) => a["f" + j]) : null)).filter(Boolean),
+    { key: "at", label: two("Auto-", "matic"), w: 54, sort: (a) => a.autoPct,
+      cell: (a) => top2(pctS(a.autoPct), grey(`${nIN(a.auto)} units`), rateTone(a.autoPct, GPM.autoPct, a.u), 12) },
+    { key: "pl", label: two("With", "plan %"), w: 56, sort: (a) => a.planPct,
+      cell: (a) => top2(pctS(a.planPct), grey(`5 yr ${pctS(a.p5Pct)}`), rateTone(a.planPct, GPM.planPct, a.u), 12) },
+  ],
+  colour: [
+    pmUnitsCol(52),
+    ...HY_TOP_C.map(ci => hyCol("c" + ci, dotLabel(COLS[ci]), 56, (a) => a.col[ci])),
+    hyCol("co", two("Other", "colours"), 58, (a) => a.u - sumAt(a.col, HY_TOP_C)),
+  ],
+} : null;
+const PMH_HINT = {
+  model: "MTD retail by model — the top 5, the rest in Other (grey = % of units). Green/red = 5 pts vs group (≥ 20 units). Swipe for more; tap a header to sort.",
+  variant: `MTD retail by fuel and gearbox (grey = % of units); With plan = ${PA_NAME} + ${PB_NAME}. Green/red = 5 pts vs group (≥ 20 units). Swipe for more; tap a header to sort.`,
+  colour: "MTD retail by colour — the top 6, the rest in Other (grey = % of units; DT = dual-tone). Green/red = 5 pts vs group (≥ 20 units). Swipe for more; tap a header to sort.",
+};
+function hyMovementOf(a, view) {
+  const { M, NC, modelOf } = HY;
+  const flag = (r) => { r.flag = r.folded ? null : isSlow(r.n, r.stock) ? "slow" : r.n > 0 && r.cover < FAST_DAYS ? "fast" : null; return r; };
+  const vVal = (vi) => a.svr[vi] * VARS[vi].exShowroom;
+  const fold = (key, name, list, extra) => flag(mvRow(key, name, list.reduce((x, r) => x + r.n, 0), list.reduce((x, r) => x + r.stock, 0),
+    list.reduce((x, r) => x + r.aged, 0), list.reduce((x, r) => x + r.value, 0), { folded: true, ...extra }));
+  let rows;
+  if (view === "colour") {
+    const cVal = new Array(NC).fill(0);
+    a.scombo.forEach((n, k) => { cVal[k % NC] += n * VARS[Math.floor(k / NC)].exShowroom; });
+    const all = COLS.map((c, ci) => ci).filter(ci => a.col[ci] || a.scol[ci])
+      .map(ci => flag(mvRow("C" + ci, COLS[ci], a.col[ci], a.scol[ci], a.gcol[ci], cVal[ci], { kind: "colour", dot: COLS[ci] })))
+      .sort((x, y) => y.n - x.n || y.stock - x.stock || x.name.localeCompare(y.name));
+    rows = all.slice(0, 7);
+    const rest = all.slice(7);
+    if (rest.length) rows.push(fold("C-other", `Others · ${rest.length} colours`, rest, { kind: "colour" }));
+  } else {
+    rows = M.map((m, mi) => {
+      const vis = VARS.map((_, vi) => vi).filter(vi => modelOf[vi] === mi && (a.vr[vi] || a.svr[vi]));
+      if (!vis.length) return null;
+      const r = flag(mvRow("M" + mi, m.name, a.mod[mi], a.smod[mi], a.gmod[mi], vis.reduce((x, vi) => x + vVal(vi), 0), { kind: "model" }));
+      if (view === "variant") {
+        const kids = vis.map(vi => flag(mvRow("V" + vi, VARS[vi].variant, a.vr[vi], a.svr[vi], a.gvr[vi], vVal(vi), { kind: "variant", parent: r.key })))
+          .sort((x, y) => y.n - x.n || y.stock - x.stock || x.name.localeCompare(y.name));
+        r.vkids = kids.slice(0, 5);
+        if (kids.length > 5) r.vkids.push(fold(r.key + ":more", `${kids.length - 5} more variant${kids.length - 5 === 1 ? "" : "s"}`, kids.slice(5), { kind: "variant", parent: r.key }));
+      }
+      return r;
+    }).filter(Boolean);
+  }
+  return { rows, total: mvRow("total", "", a.u, a.stock, a.aged, VARS.reduce((x, _, vi) => x + vVal(vi), 0)) };
+}
+// Variants (model + variant) in the scope, sold or in stock, with cover > 45 days or stock and no sales.
+// (A car range has ~120 variants × ~35 colours; at variant × colour level almost every combo is thin.)
+function hySlowCombos(a) {
+  const out = { n: 0, units: 0, value: 0, of: 0 };
+  VARS.forEach((v, vi) => {
+    const sold = a.vr[vi], stock = a.svr[vi];
+    if (!sold && !stock) return;
+    out.of++;
+    if (isSlow(sold, stock)) { out.n++; out.units += stock; out.value += stock * v.exShowroom; }
+  });
+  return out;
+}
+function HyMixSummary({ a }) {
+  const mi = a.mod.reduce((x, n, i) => (n > a.mod[x] ? i : x), 0);
+  const ci = a.col.reduce((x, n, i) => (n > a.col[x] ? i : x), 0);
+  const slow = hySlowCombos(a);
+  const ell = { display: "block", fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
+  return (
+    <MetricGrid testid="pm-summary" style={{ padding: "2px 0 12px" }}>
+      <MetricBox label="Top model" value={<span style={ell}>{HY.M[mi].name}</span>} sub={`${pctS(div(a.mod[mi], a.u))} of retail`} testid="pm-sum-variant" />
+      <MetricBox label="Top colour" value={<span style={ell}>{COLS[ci]}</span>} sub={`${pctS(div(a.col[ci], a.u))} of retail`} testid="pm-sum-colour" />
+      <MetricBox label={`${PLAN_FAMILY} attach`} value={pctS(a.planPct)} sub={`${PA_NAME} ${nIN(a.p2)} · ${PB_NAME} ${nIN(a.p5)}`} testid="pm-sum-plan" />
+      <MetricBox label="Slow movers" value={nIN(slow.n)} after={`/ ${nIN(slow.of)} variants`}
+        sub={`${nIN(slow.units)} units · ${inr(slow.value)} ex-showroom`} testid="pm-sum-slow" />
+    </MetricGrid>
+  );
+}
+/* Sales split table (Hyundai): People ⇄ Locations, Model | Variant | Colour column sets, all sideways. */
+function HyPmTable({ view, setView, open }) {
+  const [mode, setMode] = useState("people");
+  const [exP, toggleP] = useExpanded([PEOPLE_ROOT.key]);
+  const [exL, toggleL] = useExpanded([LOC_ROOT.key]);
+  const cols = PMH_COLS[view];
+  const [sort, onSort, cmp] = useSort(cols, pmOf, { key: "u", dir: "desc" });
+  const people = mode === "people";
+  const root = people ? PEOPLE_ROOT : LOC_ROOT;
+  const base = { t: root, depth: 0, expanded: people ? exP : exL, onToggle: people ? toggleP : toggleL, onOutlet: people ? undefined : open, agg: pmOf, collapse: true };
+  const minW = FN_NAME_W + cols.reduce((x, c) => x + c.w, 0);
+  return (
+    <Card style={TABLE_CARD} data-testid="pm-card" data-mode={mode} data-view={view}>
+      <CardHead Icon={Palette} title="Sales by model, variant & colour" testid="pm-title"
+        right={<Seg value={mode} onChange={setMode} opts={MODES} testid="pm-mode" />} hint={PMH_HINT[view]} />
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 4px 9px", flexWrap: "wrap", rowGap: 6 }}>
+        <Seg value={view} onChange={setView} opts={PM_VIEWS} testid="pm-view" />
+        <span style={{ fontFamily: F, fontSize: 10.5, color: C.faint }}>MTD retail units{people ? "" : " · stock today"}</span>
+      </div>
+      <Legend items={LEGEND[mode]} />
+      <div data-testid="pm-scroll" style={{ overflow: "auto", maxHeight: 560, overscrollBehaviorX: "contain", borderRadius: 6 }}>
+        <div style={{ minWidth: minW }}>
+          <div data-testid="pm-pinned" style={{ position: "sticky", top: 0, zIndex: 3, background: C.card }}>
+            <FnHead cols={cols} sort={sort} onSort={onSort} />
+            <FnRow key={root.key + view} {...base} cols={cols} cmp={cmp} testid="pm" part="line" />
+          </div>
+          <FnRow key={root.key + view + ":kids"} {...base} cols={cols} cmp={cmp} testid="pm" part="kids" />
+        </div>
+      </div>
+    </Card>
+  );
+}
 function ProductMixSection({ open }) {
-  const [view, setView] = useState("variant");
+  const [view, setView] = useState(PM_VIEWS[0][0]);
   return (
     <>
       <div style={{ fontFamily: F, fontSize: 11, color: C.faint, margin: "0 0 9px 4px" }}>Product mix · MTD sales vs stock today</div>
       <MixCard view={view} setView={setView} />
-      <PmTable view={view} setView={setView} open={open} />
+      {IS_HYUNDAI ? <HyPmTable view={view} setView={setView} open={open} /> : <PmTable view={view} setView={setView} open={open} />}
     </>
   );
 }
@@ -2001,7 +2372,7 @@ function OutletScreen({ id, onBack, rates }) {
     <div data-testid="outlet-page" style={{ padding: "14px 14px 90px" }}>
       <BackBar title={l.name} sub={`${l.city} · ${l.state}`} onBack={onBack} />
       <div style={{ fontFamily: F, fontSize: 11.5, color: C.sub, margin: "0 0 12px 40px", lineHeight: 1.5 }}>
-        {l.format} · opened {monthLabel(l.opened)}{l.isNew ? " · new outlet" : ""}
+        {FORMAT_LABEL(l.format)}{l.workshop ? " + workshop" : ""} · opened {monthLabel(l.opened)}{l.isNew ? " · new outlet" : ""}
         {l.real && <div style={{ color: C.faint, fontSize: 11 }}>{l.address}</div>}
         {l.real && <div style={{ display: "flex", alignItems: "center", gap: 5, color: C.faint, fontSize: 11 }}><Phone size={11} color={C.faint} />{l.phone}</div>}
       </div>
@@ -2020,9 +2391,9 @@ function OutletScreen({ id, onBack, rates }) {
         {line("Avg premium", rs(a.premAvg), rsTone(a.premAvg, G.premAvg, a.retail, a.ins), rs(G.premAvg), `${nIN(a.ins)} policies · ${inr(a.insPrem)}`)}
         {line("In-house finance", pctS(a.finPct), rateTone(a.finPct, G.finPct, a.retail), pctS(G.finPct), `${pctS(a.finShare)} of loans · group ${pctS(G.finShare)}`)}
         {line("Avg loan", lakh(a.loanAvg), rsTone(a.loanAvg, G.loanAvg, a.retail, a.fin), lakh(G.loanAvg), `${nIN(a.fin)} loans · ${pctS(a.ltv)} LTV`)}
-        {line("Add-ons ₹/scooter", rs(a.addPU), rsTone(a.addPU, G.addPU, a.retail), rs(G.addPU), "accessories + River Care")}
-        {line("Vehicle margin / scooter", rs(a.vehPV), rsTone(a.vehPV, gi.vehPV, a.retail), rs(gi.vehPV), `after ${rs(a.discPV)} discount`)}
-        {line("Income per scooter", rs(a.totPV), rsTone(a.totPV, gi.totPV, a.retail), rs(gi.totPV), "incl. vehicle margin · Admin rates", true)}
+        {line(`Add-ons ₹/${VEHICLE}`, rs(a.addPU), rsTone(a.addPU, G.addPU, a.retail), rs(G.addPU), `accessories + ${PLAN_FAMILY}`)}
+        {line(`Vehicle margin / ${VEHICLE}`, rs(a.vehPV), rsTone(a.vehPV, gi.vehPV, a.retail), rs(gi.vehPV), `after ${rs(a.discPV)} discount`)}
+        {line(`Income per ${VEHICLE}`, rs(a.totPV), rsTone(a.totPV, gi.totPV, a.retail), rs(gi.totPV), "incl. vehicle margin · Admin rates", true)}
         </MetricGrid>
       </Card>
       <SplitCard kind="ins" scope={outletScope} compact />
@@ -2195,7 +2566,7 @@ function AdminFieldsScreen({ cfs, setCfs, showToast }) {
     </div>
   );
 }
-/* Payout & margin rates — what Epic River earns on each sale. In memory; Save recomputes
+/* Payout & margin rates — what the dealer group earns on each sale. In memory; Save recomputes
    Finance → Income per vehicle and the outlet pages. */
 const RATE_PCT = ["vm", "ins", "pay", "acc", "rc"];
 function AdminRatesScreen({ rates, setRates, showToast }) {
@@ -2213,7 +2584,7 @@ function AdminRatesScreen({ rates, setRates, showToast }) {
   const row = (...xs) => <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>{xs.map((x, i) => <React.Fragment key={i}>{x}</React.Fragment>)}</div>;
   return (
     <div style={{ padding: "14px 14px 90px" }}>
-      <ScreenHead title="Payout & margin rates" blurb="What Epic River earns on each sale. Used by Finance → Income per vehicle." />
+      <ScreenHead title="Payout & margin rates" blurb={`What ${GROUP.name} earns on each sale. Used by Finance → Income per vehicle.`} />
       <Card>
         <Field label="Dealer margin (% of ex-showroom)">{row(box("vm"), unit("% of ex-showroom, before discount"))}</Field>
         <Field label="Insurance commission">{row(box("ins"), unit("% of premium"))}</Field>
@@ -2221,10 +2592,10 @@ function AdminRatesScreen({ rates, setRates, showToast }) {
           box("pay"), unit("% of loan  +  ₹"),
           box("file"), unit("per file"))}</Field>
         <Field label="Accessory margin">{row(box("acc"), unit("% of accessory sales"))}</Field>
-        <Field label="River Care margin">{row(box("rc"), unit("% of plan sales"))}</Field>
+        <Field label={`${PLAN_FAMILY} margin`}>{row(box("rc"), unit("% of plan sales"))}</Field>
         <div data-testid="rates-preview" data-value={gi.totPV} style={{ borderTop: `1px solid ${C.border}`, padding: "11px 0 12px", marginTop: 2 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ flex: 1, fontFamily: F, fontSize: 12.5, fontWeight: 600, color: C.ink }}>Group income per scooter</span>
+            <span style={{ flex: 1, fontFamily: F, fontSize: 12.5, fontWeight: 600, color: C.ink }}>Group income per {VEHICLE}</span>
             <span style={{ fontFamily: F, fontSize: 15, fontWeight: 800, color: valid ? C.ink : C.faint }}>{rs(gi.totPV)}</span>
           </div>
           <div style={{ fontFamily: F, fontSize: 10.5, color: C.faint, marginTop: 2 }}>
@@ -2255,7 +2626,7 @@ function AdminLocationsScreen({ cfs, open }) {
               <span style={{ fontFamily: F, fontSize: 10, color: C.faint }}>{l.id}</span>
             </span>
             <span style={{ display: "block", fontFamily: F, fontSize: 10.5, color: C.faint, marginTop: 2, lineHeight: 1.4 }}>
-              {l.city} · {l.state} · {l.format} · {l.cluster} · opened {monthLabel(l.opened)}{l.isNew ? " · new" : ""}
+              {l.city} · {l.state} · {FORMAT_LABEL(l.format)} · {l.cluster} · opened {monthLabel(l.opened)}{l.isNew ? " · new" : ""}
               {locCfs.map(cf => ` · ${cf.label}: ${labelOf(cf.key, locKey(cf.key, l, cfs))}`).join("")}
             </span>
           </button>
